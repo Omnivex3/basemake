@@ -75,13 +75,15 @@ All other input is treated as SQL or natural language questions.`,
 			}
 		}
 
-		fmt.Fprintf(os.Stderr, "basemake REPL — type .help for commands, .quit to exit\n")
-		if conn != nil {
-			fmt.Fprintf(os.Stderr, "Connected: %s\n", conn.Name())
-		} else {
-			fmt.Fprintf(os.Stderr, "No connection. Use .connect <dsn> to connect.\n")
+		if !launchedFromInteractive {
+			fmt.Fprintf(os.Stderr, "basemake REPL — type .help for commands, .quit to exit\n")
+			if conn != nil {
+				fmt.Fprintf(os.Stderr, "Connected: %s\n", conn.Name())
+			} else {
+				fmt.Fprintf(os.Stderr, "No connection. Use .connect <dsn> to connect.\n")
+			}
+			fmt.Fprintln(os.Stderr)
 		}
-		fmt.Fprintln(os.Stderr)
 
 		scanner := bufio.NewScanner(os.Stdin)
 		fmt.Print("basemake> ")
