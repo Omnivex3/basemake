@@ -17,6 +17,9 @@ basemake*
 !*.go
 dbai
 
+# Config
+.basemake/
+
 # Test
 *.test
 *.out
