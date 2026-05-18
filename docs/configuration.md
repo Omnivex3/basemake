@@ -29,9 +29,12 @@ Location: `~/.dbai/config.json`
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `default_dsn` | string | `""` | Default connection string — used by `dbai query`, `dbai analyze`, and `dbai repl` when no active connection exists |
-| `output_format` | string | `"table"` | Default output format. Valid values: `"table"`, `"json"`, `"csv"`. Note: TSV is code-level only (FormatTSV constant), not exposed via config. |
+| `output_format` | string | `"table"` | Default output format. Valid values: `"table"`, `"json"`, `"csv"`. |
+| `ai_provider` | string | `"openai"` | AI provider for NL→SQL. Valid values: `"openai"`, `"anthropic"`. |
 | `openai_model` | string | `"gpt-4"` | OpenAI model for NL→SQL generation |
 | `openai_base_url` | string | `""` | Custom OpenAI API base URL (for proxies, Azure OpenAI, or local LLM servers) |
+| `anthropic_model` | string | `"claude-sonnet-4-20250514"` | Anthropic model for NL→SQL generation |
+| `anthropic_base_url` | string | `""` | Custom Anthropic API base URL |
 
 ### Config File Lifecycle
 
@@ -62,9 +65,12 @@ type Config struct {
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `OPENAI_API_KEY` | For NL queries | `""` | OpenAI API key for natural language → SQL generation. Without this, NL questions return a placeholder SQL telling you to set it. |
-| `OPENAI_MODEL` | No | `"gpt-4"` | Overrides the AI model. Takes precedence over `openai_model` in config file. |
-| `DBAI_DSN` | No | `""` | Default connection string fallback. Used when there's no active connection and no `default_dsn` in config. |
+| `OPENAI_API_KEY` | For OpenAI NL queries | `""` | OpenAI API key for natural language → SQL generation |
+| `OPENAI_MODEL` | No | `"gpt-4"` | Overrides the OpenAI model. Takes precedence over `openai_model` in config file. |
+| `ANTHROPIC_API_KEY` | For Anthropic NL queries | `""` | Anthropic API key. Required when `ai_provider` is `"anthropic"`. |
+| `ANTHROPIC_MODEL` | No | `"claude-sonnet-4-20250514"` | Overrides the Anthropic model. Takes precedence over `anthropic_model` in config. |
+| `AI_PROVIDER` | No | `"openai"` | AI provider: `"openai"` or `"anthropic"`. Takes precedence over `ai_provider` config. |
+| `DBAI_DSN` | No | `""` | Default connection string fallback. |
 
 ### OPENAI_API_KEY — No Key Behavior
 
@@ -129,6 +135,6 @@ Before the config file existed, dbai used `~/.dbai/dsn.txt` to persist the last-
 ## Known Limitations
 
 - No `dbai config set` command — you edit the JSON directly
-- No config validation on load (malformed JSON returns defaults and no error)
-- No per-profile configs (switching between databases requires re-editing the file)
-- Output format config doesn't support TSV (only code-level constant)
+3. **No streaming config** — streaming is always on by default and can only be disabled per-command with `--no-stream`. No config-level toggle.
+4. **No per-profile configs** — switching between databases requires re-editing the file
+5. **Output format config doesn't support TSV** (only code-level constant)

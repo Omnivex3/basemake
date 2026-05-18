@@ -1,10 +1,37 @@
 # AI Integration
 
-The AI integration allows dbai to translate natural language questions into SQL queries using the OpenAI Chat Completions API.
+The AI integration allows dbai to translate natural language questions into SQL queries using configurable LLM providers.
+
+## Supported Providers
+
+| Provider  | API Key Env Var       | Default Model                       | Config Field       |
+|-----------|----------------------|--------------------------------------|--------------------|
+| OpenAI    | `OPENAI_API_KEY`     | `gpt-4`                              | `openai_model`     |
+| Anthropic | `ANTHROPIC_API_KEY`  | `claude-sonnet-4-20250514`           | `anthropic_model`  |
+
+## Provider Selection
+
+Provider selection follows this precedence:
+
+1. `AI_PROVIDER` environment variable (`"openai"` or `"anthropic"`)
+2. `ai_provider` field in `~/.dbai/config.json`
+3. Default: `"openai"`
+
+Selected via `ai.SelectedProvider()`:
+
+```go
+func SelectedProvider() (Provider, error) {
+    // Check AI_PROVIDER env → config.ai_provider → "openai"
+    // For openai: check OPENAI_API_KEY → OPENAI_MODEL/env → config.openai_model → "gpt-4"
+    // For anthropic: check ANTHROPIC_API_KEY → ANTHROPIC_MODEL/env → config.anthropic_model → "claude-sonnet-4-20250514"
+}
+```
+
+If the required API key for the selected provider is not set, `ErrNoKey` is returned, and the command falls back to a placeholder SQL (`SELECT 1`).
 
 ## Architecture
 
-All AI functionality lives in `internal/ai/ai.go` — a single file with no external dependencies beyond the standard library, OpenAI HTTP API, and the local config package.
+All AI functionality lives in the `internal/ai` package with three files:
 
 ```
 User Question
@@ -211,12 +238,77 @@ if isNL && !queryExplain {
 
 This provides a clear feedback loop: if the AI hallucinated bad SQL, the user sees the error and can rephrase their question. The validation only runs for NL-generated queries (not raw SQL input) and is skipped in `--explain` mode (since EXPLAIN would be called twice).
 
+## Streaming Responses
+
+By default, NL→SQL generation streams tokens to stderr as they arrive from the LLM. This makes the tool feel instant — the user sees SQL appearing token by token instead of waiting for a full response.
+
+Streaming is enabled by default for both `dbai query` and `dbai repl`. Disable with `--no-stream`.
+
+### Streaming Implementation
+
+Both providers implement `GenerateSQLStream()` which returns a `<-chan string`:
+
+**OpenAI streaming:**
+```
+data: {"id":"...","object":"chat.completion.chunk","choices":[{"delta":{"content":"SELECT"}}]}
+data: {"id":"...","choices":[{"delta":{"content":" *"}}]}
+...
+data: [DONE]
+```
+
+**Anthropic streaming:**
+```
+event: content_block_delta
+data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"SELECT"}}
+...
+event: message_stop
+data: {"type":"message_stop"}
+```
+
+In both cases:
+- SSE (Server-Sent Events) are parsed line-by-line via `bufio.Scanner`
+- Each text delta is sent to the channel immediately
+- The channel is closed when generation completes
+- The command layer collects full SQL from the channel while printing tokens
+
+### No-Key Fallback
+
+When no API key is set and streaming is requested, a one-element channel is returned with the placeholder SQL, then closed. No streaming occurs — the placeholder appears instantly.
+
+## Context Compounding via Query History
+
+When generating SQL, dbai prepends recent natural language queries and their generated SQL to the system prompt. This creates a compounding context effect — the AI learns from past Q&A patterns.
+
+### How It Works
+
+The `history.BuildPromptWithHistory()` function constructs the system prompt:
+
+```
+You are a SQL expert. ...
+
+Recent queries you've helped with:
+- Question: show me users who ordered
+  SQL: SELECT u.name, COUNT(o.id) ...
+- Question: top products by revenue
+  SQL: SELECT p.name, SUM(o.total) ...
+
+Schema:
+  Database: mydb
+  Tables:
+    ...
+```
+
+### Configuration
+
+- History depth: 5 recent NL→SQL pairs (hardcoded in both `cmd/query.go` and `cmd/repl.go`)
+- History stored in `~/.dbai/history.db` (SQLite)
+- Only NATURAL LANGUAGE queries are included in the context (raw SQL inputs are excluded)
+- Set `AI_PROVIDER` env var or `ai_provider` config to switch between OpenAI and Anthropic
+
 ## Known Limitations
 
 1. **PostgreSQL-only dialect** — even when connected to MySQL or SQLite, the generated SQL targets PostgreSQL. This can produce incompatible SQL for MySQL-specific features or SQLite's limited SQL syntax.
 2. **Single-turn generation** — no multi-turn refinement. If the SQL is wrong, the user must rephrase.
-3. **No streaming** — the full response is buffered and returned at once. No token-by-token streaming.
-4. **Hardcoded model** — no automatic model selection based on query complexity. The config/env var model is used for everything.
-5. **No prompt caching** — the schema prompt is sent on every NL query. For large schemas (100+ tables), this can be slow and expensive.
-6. **Single provider** — OpenAI only. No Anthropic, local Ollama, or other LLM provider support (though `openai_base_url` config field exists for API-compatible proxies).
-7. **`openai_base_url` is defined but unused** — the config field exists in the Config struct but `callOpenAI()` always uses `https://api.openai.com/v1/chat/completions`. This is a dormant feature.
+3. **No prompt caching** — the schema prompt + history context is sent on every NL query. For large schemas (100+ tables), this can be slow and expensive.
+4. **History depth is hardcoded** — the 5 most recent NL queries are included in context. No config option to adjust this yet.
+5. **`openai_base_url` is unused by streaming** — both `GenerateSQL` and `GenerateSQLStream` use the base URL from the provider struct, which IS set from the config field. This now works correctly.

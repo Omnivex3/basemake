@@ -120,6 +120,7 @@ The `looksLikeSQL()` function determines whether input is raw SQL or natural lan
 | `--csv`      | Output results as CSV (comma-separated, quoted if needed)       | false   |
 | `--dry-run`  | Show generated SQL without executing                            | false   |
 | `--explain`  | Show execution plan alongside results                           | false   |
+| `--no-stream` | Disable streaming AI output (wait for full response)          | false   |
 
 ### Output Format Precedence
 
@@ -272,6 +273,7 @@ dbai repl --format json
 | `.tables` | List all tables with column counts |
 | `.schema` | Show full schema (columns, types, PKs, nullability, indexes) |
 | `.connect <dsn>` | Connect to a different database mid-session |
+| `.history` | Show recent query history with timestamps and AI provider |
 
 ### How It Works
 

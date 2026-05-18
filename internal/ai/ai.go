@@ -1,24 +1,103 @@
 package ai
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
-	"strings"
 
 	"github.com/DynamicKarabo/dbai/internal/config"
 )
 
-// QuestionToSQL converts a natural language question to SQL using OpenAI
+// Provider generates SQL from natural language questions.
+type Provider interface {
+	// Name returns a human-readable provider name (e.g., "OpenAI", "Anthropic").
+	Name() string
+
+	// GenerateSQL sends a prompt to the LLM and returns the generated SQL.
+	GenerateSQL(ctx context.Context, systemPrompt, question string) (string, error)
+
+	// GenerateSQLStream sends a prompt and returns a channel of text fragments.
+	// The channel is closed when generation is complete.
+	// Each fragment is a partial token that should be printed as it arrives.
+	GenerateSQLStream(ctx context.Context, systemPrompt, question string) (<-chan string, error)
+}
+
+// ErrNoKey is returned when the required API key is not set.
+var ErrNoKey = fmt.Errorf("API key not set")
+
+// SelectedProvider returns the configured AI provider based on env vars and config.
+func SelectedProvider() (Provider, error) {
+	cfg, _ := config.Load()
+
+	provider := os.Getenv("AI_PROVIDER")
+	if provider == "" {
+		provider = cfg.AIProvider
+	}
+	if provider == "" {
+		provider = "openai"
+	}
+
+	switch provider {
+	case "openai":
+		apiKey := os.Getenv("OPENAI_API_KEY")
+		model := os.Getenv("OPENAI_MODEL")
+		if model == "" {
+			model = cfg.OpenAIModel
+		}
+		if model == "" {
+			model = "gpt-4"
+		}
+		baseURL := os.Getenv("OPENAI_BASE_URL")
+		if baseURL == "" {
+			baseURL = cfg.OpenAIBaseURL
+		}
+		if baseURL == "" {
+			baseURL = "https://api.openai.com/v1"
+		}
+
+		if apiKey == "" {
+			return nil, ErrNoKey
+		}
+		return &openAIProvider{apiKey: apiKey, model: model, baseURL: baseURL}, nil
+
+	case "anthropic":
+		apiKey := os.Getenv("ANTHROPIC_API_KEY")
+		model := os.Getenv("ANTHROPIC_MODEL")
+		if model == "" {
+			model = cfg.AnthropicModel
+		}
+		if model == "" {
+			model = "claude-sonnet-4-20250514"
+		}
+		baseURL := os.Getenv("ANTHROPIC_BASE_URL")
+		if baseURL == "" {
+			baseURL = cfg.AnthropicBaseURL
+		}
+		if baseURL == "" {
+			baseURL = "https://api.anthropic.com"
+		}
+
+		if apiKey == "" {
+			return nil, ErrNoKey
+		}
+		return &anthropicProvider{apiKey: apiKey, model: model, baseURL: baseURL}, nil
+
+	default:
+		return nil, fmt.Errorf("unsupported AI provider: %s (use 'openai' or 'anthropic')", provider)
+	}
+}
+
+// QuestionToSQL is the main entry point for NL→SQL generation.
+// It selects the configured provider and calls GenerateSQL.
+// If no API key is set, it returns a placeholder SQL with instructions.
 func QuestionToSQL(ctx context.Context, schemaPrompt, question string) (string, error) {
-	apiKey := os.Getenv("OPENAI_API_KEY")
-	if apiKey == "" {
-		// Return a helpful placeholder when no API key is set
-		return "-- Set OPENAI_API_KEY for AI-powered queries\n-- Schema loaded. Run: export OPENAI_API_KEY=\"sk-...\"\nSELECT 1;", nil
+	provider, err := SelectedProvider()
+	if err == ErrNoKey {
+		return "-- Set OPENAI_API_KEY or ANTHROPIC_API_KEY for AI-powered queries\n" +
+			"-- Schema loaded. Export the key for your provider and run again.\nSELECT 1;", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("provider: %w", err)
 	}
 
 	systemPrompt := fmt.Sprintf(`You are a SQL expert. Given the following database schema, convert the user's natural language question into a SQL query.
@@ -32,101 +111,33 @@ Rules:
 Schema:
 %s`, schemaPrompt)
 
-	resp, err := callOpenAI(ctx, apiKey, systemPrompt, question)
-	if err != nil {
-		return "", fmt.Errorf("ai call: %w", err)
-	}
-
-	// Clean up response
-	sql := strings.TrimSpace(resp)
-	sql = strings.TrimPrefix(sql, "```sql")
-	sql = strings.TrimPrefix(sql, "```")
-	sql = strings.TrimSuffix(sql, "```")
-	sql = strings.TrimSpace(sql)
-
-	return sql, nil
+	return provider.GenerateSQL(ctx, systemPrompt, question)
 }
 
-type openAIRequest struct {
-	Model    string          `json:"model"`
-	Messages []openAIMessage `json:"messages"`
-	Temp     float64         `json:"temperature"`
-}
-
-type openAIMessage struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type openAIResponse struct {
-	Choices []struct {
-		Message struct {
-			Content string `json:"content"`
-		} `json:"message"`
-	} `json:"choices"`
-	Error *struct {
-		Message string `json:"message"`
-	} `json:"error,omitempty"`
-}
-
-func callOpenAI(ctx context.Context, apiKey, system, user string) (string, error) {
-	// Load model from config, fall back to env var, then default
-	model := os.Getenv("OPENAI_MODEL")
-	if model == "" {
-		cfg, err := config.Load()
-		if err == nil && cfg.OpenAIModel != "" {
-			model = cfg.OpenAIModel
-		}
+// QuestionToSQLStream is the streaming version of QuestionToSQL.
+// Returns a channel of text fragments for real-time display.
+func QuestionToSQLStream(ctx context.Context, schemaPrompt, question string) (<-chan string, error) {
+	provider, err := SelectedProvider()
+	if err == ErrNoKey {
+		ch := make(chan string, 1)
+		ch <- "-- Set OPENAI_API_KEY or ANTHROPIC_API_KEY for AI-powered queries\n-- Schema loaded. Export the key for your provider and run again.\nSELECT 1;"
+		close(ch)
+		return ch, nil
 	}
-	if model == "" {
-		model = "gpt-4"
-	}
-
-	body := openAIRequest{
-		Model: model,
-		Messages: []openAIMessage{
-			{Role: "system", Content: system},
-			{Role: "user", Content: user},
-		},
-		Temp: 0.1,
-	}
-
-	payload, err := json.Marshal(body)
 	if err != nil {
-		return "", fmt.Errorf("marshal: %w", err)
+		return nil, fmt.Errorf("provider: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(payload))
-	if err != nil {
-		return "", fmt.Errorf("create request: %w", err)
-	}
+	systemPrompt := fmt.Sprintf(`You are a SQL expert. Given the following database schema, convert the user's natural language question into a SQL query.
 
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("Content-Type", "application/json")
+Rules:
+- Generate PostgreSQL-compatible SQL
+- Return ONLY the SQL query — no markdown, no backticks, no explanations
+- Use proper formatting with newlines
+- If the question is ambiguous, make a reasonable assumption and add a comment explaining it
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("http call: %w", err)
-	}
-	defer resp.Body.Close()
+Schema:
+%s`, schemaPrompt)
 
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("read response: %w", err)
-	}
-
-	var result openAIResponse
-	if err := json.Unmarshal(data, &result); err != nil {
-		return "", fmt.Errorf("parse response: %w", err)
-	}
-
-	if result.Error != nil {
-		return "", fmt.Errorf("openai error: %s", result.Error.Message)
-	}
-
-	if len(result.Choices) == 0 {
-		return "", fmt.Errorf("no choices in response")
-	}
-
-	return result.Choices[0].Message.Content, nil
+	return provider.GenerateSQLStream(ctx, systemPrompt, question)
 }

@@ -326,10 +326,11 @@ func (m *myDB) ExplainJSON(ctx context.Context, query string) (string, error) { 
 
 ## Known Technical Debt
 
-1. **`openai_base_url` unused**: Config field exists but `callOpenAI()` hardcodes `https://api.openai.com/v1/chat/completions`
-2. **PostgreSQL-only NL→SQL**: System prompt targets PostgreSQL dialect regardless of connected database
-3. **TSV not exposed**: FormatTSV exists in the display package but has no CLI flag or config option
-4. **Single active connection**: The global `var active Database` means only one connection at a time
-5. **`SchemaForPrompt()` allocates**: Builds the schema string from scratch on every NL query
-6. **Test `TestNumericAlignment`**: Marked as test but only logs lines — no assertions
-7. **MySQL DBName**: Set to the full DSN string instead of extracting just the database name
+1. **PostgreSQL-only NL→SQL**: System prompt targets PostgreSQL dialect regardless of connected database
+2. **TSV not exposed**: FormatTSV exists in the display package but has no CLI flag or config option
+3. **Single active connection**: The global `var active Database` means only one connection at a time
+4. **`SchemaForPrompt()` allocates**: Builds the schema string from scratch on every NL query
+5. **Test `TestNumericAlignment`**: Marked as test but only logs lines — no assertions
+6. **MySQL DBName**: Set to the full DSN string instead of extracting just the database name
+7. **History depth hardcoded**: 5 recent NL queries included in context — not configurable
+8. **No streaming config toggle**: Can only disable per-command with `--no-stream`, no config file option

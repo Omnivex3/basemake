@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/DynamicKarabo/dbai/internal/ai"
 	"github.com/DynamicKarabo/dbai/internal/config"
 	"github.com/DynamicKarabo/dbai/internal/db"
 	"github.com/DynamicKarabo/dbai/internal/display"
+	"github.com/DynamicKarabo/dbai/internal/history"
 	"github.com/spf13/cobra"
 )
 
@@ -17,6 +19,7 @@ var queryJSON bool
 var queryCSV bool
 var queryDryRun bool
 var queryExplain bool
+var queryNoStream bool
 
 var queryCmd = &cobra.Command{
 	Use:   "query [question|sql]",
@@ -64,12 +67,33 @@ Uses your cached schema to generate accurate queries.
 				return fmt.Errorf("load schema: %w", err)
 			}
 
-			fmt.Fprintf(os.Stderr, "🤖 Generating SQL from: %s\n\n", input)
-			sql, err = ai.QuestionToSQL(cmd.Context(), s.SchemaForPrompt(), input)
-			if err != nil {
-				return fmt.Errorf("ai: %w", err)
+			// Build prompt with recent history for context compounding
+			prompt := history.BuildPromptWithHistory(s.SchemaForPrompt(), 5)
+
+			if queryNoStream {
+				// Blocking mode — wait for full response
+				fmt.Fprintf(os.Stderr, "🤖 Generating SQL from: %s\n\n", input)
+				sql, err = ai.QuestionToSQL(cmd.Context(), prompt, input)
+				if err != nil {
+					return fmt.Errorf("ai: %w", err)
+				}
+				fmt.Fprintf(os.Stderr, "%s\n\n", sql)
+			} else {
+				// Streaming mode — print tokens as they arrive
+				fmt.Fprintf(os.Stderr, "🤖 Generating SQL...\n\n")
+				ch, err := ai.QuestionToSQLStream(cmd.Context(), prompt, input)
+				if err != nil {
+					return fmt.Errorf("ai: %w", err)
+				}
+
+				var sb strings.Builder
+				for token := range ch {
+					sb.WriteString(token)
+					fmt.Fprint(os.Stderr, token)
+				}
+				sql = sb.String()
+				fmt.Fprintf(os.Stderr, "\n\n")
 			}
-			fmt.Fprintf(os.Stderr, "%s\n\n", sql)
 		}
 
 		// Dry-run: show SQL and exit
@@ -109,12 +133,15 @@ Uses your cached schema to generate accurate queries.
 			}
 		}
 
-		// Execute
+		// Execute with timing
+		startTime := time.Now()
 		rows, err := conn.Query(cmd.Context(), sql)
 		if err != nil {
 			return fmt.Errorf("query: %w", err)
 		}
 		defer rows.Close()
+
+		elapsed := time.Since(startTime).Seconds() * 1000
 
 		cols := rows.Columns()
 
@@ -142,6 +169,23 @@ Uses your cached schema to generate accurate queries.
 			}
 			resultRows = append(resultRows, row)
 		}
+
+		// Record in history
+		provider, _ := ai.SelectedProvider()
+		providerName := ""
+		if provider != nil {
+			providerName = provider.Name()
+		}
+		_ = history.Record(history.Entry{
+			Question:           input,
+			SQLGenerated:       sql,
+			DatabaseName:       conn.Name(),
+			ExecutedAt:         startTime,
+			ExecutionTimeMs:    elapsed,
+			RowCount:           len(resultRows),
+			WasNaturalLanguage: isNL,
+			ProviderUsed:       providerName,
+		})
 
 		// Build row count message
 		plural := "rows"
@@ -202,4 +246,5 @@ func init() {
 	queryCmd.Flags().BoolVar(&queryCSV, "csv", false, "Output results as CSV")
 	queryCmd.Flags().BoolVar(&queryDryRun, "dry-run", false, "Generate SQL but don't execute")
 	queryCmd.Flags().BoolVar(&queryExplain, "explain", false, "Show execution plan alongside results")
+	queryCmd.Flags().BoolVar(&queryNoStream, "no-stream", false, "Disable streaming AI output (wait for full response)")
 }

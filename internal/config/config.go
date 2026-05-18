@@ -9,17 +9,22 @@ import (
 
 // Config holds persistent configuration for dbai
 type Config struct {
-	DefaultDSN    string `json:"default_dsn,omitempty"`
-	OutputFormat  string `json:"output_format,omitempty"`
-	OpenAIModel   string `json:"openai_model,omitempty"`
-	OpenAIBaseURL string `json:"openai_base_url,omitempty"`
+	DefaultDSN      string `json:"default_dsn,omitempty"`
+	OutputFormat    string `json:"output_format,omitempty"`
+	AIProvider      string `json:"ai_provider,omitempty"`
+	OpenAIModel     string `json:"openai_model,omitempty"`
+	OpenAIBaseURL   string `json:"openai_base_url,omitempty"`
+	AnthropicModel  string `json:"anthropic_model,omitempty"`
+	AnthropicBaseURL string `json:"anthropic_base_url,omitempty"`
 }
 
 // DefaultConfig returns a config with sensible defaults
 func DefaultConfig() *Config {
 	return &Config{
-		OutputFormat: "table",
-		OpenAIModel:  "gpt-4",
+		OutputFormat:   "table",
+		AIProvider:     "openai",
+		OpenAIModel:    "gpt-4",
+		AnthropicModel: "claude-sonnet-4-20250514",
 	}
 }
 

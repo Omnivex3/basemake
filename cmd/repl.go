@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/DynamicKarabo/dbai/internal/ai"
 	"github.com/DynamicKarabo/dbai/internal/config"
 	"github.com/DynamicKarabo/dbai/internal/db"
 	"github.com/DynamicKarabo/dbai/internal/display"
+	"github.com/DynamicKarabo/dbai/internal/history"
 	"github.com/spf13/cobra"
 )
 
@@ -103,15 +105,17 @@ All other input is treated as SQL or natural language questions.`,
 				if err := showFullSchema(conn); err != nil {
 					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				}
-			case strings.HasPrefix(line, ".connect "):
-				dsn := strings.TrimPrefix(line, ".connect ")
-				conn, err = db.Connect(dsn)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "⚠ Connect failed: %v\n", err)
-				} else {
-					fmt.Fprintf(os.Stderr, "✓ Connected: %s\n", conn.Name())
-				}
-			default:
+		case strings.HasPrefix(line, ".connect "):
+			dsn := strings.TrimPrefix(line, ".connect ")
+			conn, err = db.Connect(dsn)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "⚠ Connect failed: %v\n", err)
+			} else {
+				fmt.Fprintf(os.Stderr, "✓ Connected: %s\n", conn.Name())
+			}
+		case line == ".history":
+			showHistory()
+		default:
 				// Execute as query
 				if err := executeREPLQuery(conn, line, format); err != nil {
 					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -132,6 +136,7 @@ func printHelp() {
   .tables     List tables in the current database
   .schema     Show the full schema with columns and indexes
   .connect <dsn>  Connect to a different database
+  .history    Show recent query history
 
 Any other input is treated as a SQL query or natural language question.
 Use --format flag to set output format (table, json, csv).`)
@@ -190,19 +195,32 @@ func executeREPLQuery(conn db.Database, input string, format display.Format) err
 		if err != nil {
 			return fmt.Errorf("load schema: %w", err)
 		}
+		// Build prompt with history context
+		prompt := history.BuildPromptWithHistory(s.SchemaForPrompt(), 5)
+
 		fmt.Fprintf(os.Stderr, "🤖 Generating SQL...\n")
-		sql, err = ai.QuestionToSQL(context.Background(), s.SchemaForPrompt(), input)
+		ch, err := ai.QuestionToSQLStream(context.Background(), prompt, input)
 		if err != nil {
 			return fmt.Errorf("ai: %w", err)
 		}
-		fmt.Fprintf(os.Stderr, "%s\n\n", sql)
+		var sb strings.Builder
+		for token := range ch {
+			sb.WriteString(token)
+			fmt.Fprint(os.Stderr, token)
+		}
+		sql = sb.String()
+		fmt.Fprintf(os.Stderr, "\n\n")
 	}
 
+	// Execute with timing
+	startTime := time.Now()
 	rows, err := conn.Query(context.Background(), sql)
 	if err != nil {
 		return fmt.Errorf("query: %w", err)
 	}
 	defer rows.Close()
+
+	elapsed := time.Since(startTime).Seconds() * 1000
 
 	cols := rows.Columns()
 	var resultRows [][]string
@@ -229,11 +247,28 @@ func executeREPLQuery(conn db.Database, input string, format display.Format) err
 		resultRows = append(resultRows, row)
 	}
 
+	// Record in history
+	provider, _ := ai.SelectedProvider()
+	providerName := ""
+	if provider != nil {
+		providerName = provider.Name()
+	}
+	_ = history.Record(history.Entry{
+		Question:           input,
+		SQLGenerated:       sql,
+		DatabaseName:       conn.Name(),
+		ExecutedAt:         startTime,
+		ExecutionTimeMs:    elapsed,
+		RowCount:           len(resultRows),
+		WasNaturalLanguage: isNL,
+		ProviderUsed:       providerName,
+	})
+
 	plural := "rows"
 	if len(resultRows) == 1 {
 		plural = "row"
 	}
-	msg := fmt.Sprintf("(%d %s)", len(resultRows), plural)
+	msg := fmt.Sprintf("(%d %s, %.0fms)", len(resultRows), plural, elapsed)
 
 	res := display.Result{
 		Columns: cols,
@@ -250,4 +285,32 @@ func executeREPLQuery(conn db.Database, input string, format display.Format) err
 	}
 
 	return nil
+}
+
+func showHistory() {
+	entries, err := history.List(20)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading history: %v\n", err)
+		return
+	}
+	if len(entries) == 0 {
+		fmt.Fprintln(os.Stderr, "No query history yet.")
+		return
+	}
+	fmt.Fprintf(os.Stderr, "Recent queries (last %d):\n\n", len(entries))
+	for _, e := range entries {
+		label := "  SQL"
+		if e.WasNaturalLanguage {
+			label = "  NL "
+		}
+		timeStr := e.ExecutedAt.Format("15:04:05")
+		fmt.Fprintf(os.Stderr, "%s %s", timeStr, label)
+		if e.ProviderUsed != "" {
+			fmt.Fprintf(os.Stderr, " [%s]", e.ProviderUsed)
+		}
+		fmt.Fprintf(os.Stderr, "  %s\n", e.Question)
+		if len(e.Question) > 60 {
+			fmt.Fprintf(os.Stderr, "      → %s\n", e.SQLGenerated[:min(len(e.SQLGenerated), 80)])
+		}
+	}
 }
