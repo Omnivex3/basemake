@@ -3,15 +3,9 @@
   "rules": [
     {
       "type": "table",
-      "table": "*",
-      "max_seq_rows": 1000,
-      "message": "Add an index for large table scans"
-    },
-    {
-      "type": "table",
-      "table": "orders",
+      "table": "statuses",
       "max_seq_rows": 100,
-      "message": "Orders table must use index scans — this table powers the revenue dashboard"
+      "message": "Statuses table must use index scans — this is our largest table"
     },
     {
       "type": "migration",

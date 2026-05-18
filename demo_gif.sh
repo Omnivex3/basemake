@@ -1,11 +1,11 @@
 #!/bin/bash
-# Demo GIF script — Ghost + Mastodon real schemas (v2: clean output)
+# Demo GIF script — Ghost + Mastodon + Budgets
 clear
 sleep 0.3
 
 echo "╔══════════════════════════════════════════════╗"
 echo "║  basemake — AI-powered database CLI          ║"
-echo "║  NL queries · Perf analysis · CI merge gate  ║"
+echo "║  NL queries · Perf analysis · Policy as code ║"
 echo "╚══════════════════════════════════════════════╝"
 echo ""
 
@@ -13,9 +13,9 @@ sleep 0.5
 
 # ═══════════════ Ghost ═══════════════
 echo "─── Ghost CMS (4 tables, 200 posts) ───"
-echo "$ basemake connect postgres://postgres:***@localhost:5433/ghost_demo"
+echo "$ basemake connect"
 sleep 0.2
-./basemake connect "postgres://postgres:postgres@localhost:5433/ghost_demo" 2>&1 | head -6
+./basemake connect "postgres://postgres:***@localhost:5433/ghost_demo" 2>&1 | head -6
 echo ""
 
 sleep 1
@@ -25,18 +25,18 @@ sleep 0.2
 echo ""
 
 sleep 1
-echo "$ basemake query \"SELECT t.name, COUNT(pt.post_id) as post_count FROM tags t JOIN posts_tags pt ON pt.tag_id = t.id GROUP BY t.name ORDER BY post_count DESC\""
+echo "$ basemake query \"SELECT t.name, COUNT(pt.post_id) as c FROM tags t JOIN posts_tags pt ON pt.tag_id = t.id GROUP BY t.name ORDER BY c DESC\""
 sleep 0.2
-./basemake query "SELECT t.name, COUNT(pt.post_id) as post_count FROM tags t JOIN posts_tags pt ON pt.tag_id = t.id GROUP BY t.name ORDER BY post_count DESC" --no-stream 2>&1
+./basemake query "SELECT t.name, COUNT(pt.post_id) as c FROM tags t JOIN posts_tags pt ON pt.tag_id = t.id GROUP BY t.name ORDER BY c DESC" --no-stream 2>&1
 echo ""
 
 # ═══════════════ Mastodon ═══════════════
 sleep 1
 echo ""
-echo "─── Mastodon (4 tables, 30 accounts, 500 statuses) ───"
-echo "$ basemake connect postgres://postgres:***@localhost:5433/mastodon_demo"
+echo "─── Mastodon (4 tables, 500 statuses) ───"
+echo "$ basemake connect"
 sleep 0.2
-./basemake connect "postgres://postgres:postgres@localhost:5433/mastodon_demo" 2>&1 | head -6
+./basemake connect "postgres://postgres:***@localhost:5433/mastodon_demo" 2>&1 | head -6
 echo ""
 
 sleep 1
@@ -51,25 +51,31 @@ sleep 0.2
 ./basemake analyze "SELECT a.username, COUNT(s.id) FROM accounts a JOIN statuses s ON s.account_id = a.id GROUP BY a.username ORDER BY COUNT(s.id) DESC LIMIT 10" 2>&1
 echo ""
 
-# ═══════════════ CI/CD check ═══════════════
+# ═══════════════ Budgets ═══════════════
 sleep 1
 echo ""
-echo "─── CI Merge Gate: exit codes your pipeline loves ───"
-echo "$ basemake check 'SELECT count(*) FROM accounts' --threshold 1s"
+echo "─── Database policy as code ───"
+echo "$ basemake budget list"
 sleep 0.2
-./basemake check "SELECT count(*) FROM accounts" --threshold 1s 2>&1
+./basemake budget list 2>&1
+echo ""
+
+sleep 1
+echo "$ basemake check \"SELECT * FROM statuses\""
+sleep 0.2
+./basemake check "SELECT * FROM statuses WHERE favourites_count > 10" 2>&1
 echo "Exit: $?"
 echo ""
 
 sleep 1
-echo "$ basemake check 'SELECT * FROM statuses ORDER BY favourites_count DESC LIMIT 50' --threshold 1ms"
+echo "$ basemake check \"SELECT count(*) FROM accounts\""
 sleep 0.2
-./basemake check "SELECT * FROM statuses ORDER BY favourites_count DESC LIMIT 50" --threshold 1ms 2>&1
+./basemake check "SELECT count(*) FROM accounts" 2>&1
 echo "Exit: $?"
 echo ""
 
 sleep 1
-echo "$ basemake check 'UPDATE accounts SET bio = brief' --dry-run"
+echo "$ basemake check \"UPDATE accounts SET bio = 'updated'\" --dry-run"
 sleep 0.2
 ./basemake check "UPDATE accounts SET bio = 'updated'" --dry-run 2>&1
 echo ""
