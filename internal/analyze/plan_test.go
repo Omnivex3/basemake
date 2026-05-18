@@ -1,6 +1,7 @@
 package analyze
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -729,5 +730,361 @@ func TestMySQL_CrossParsePGWithIndex(t *testing.T) {
 	}
 	if r.IndexScans != 1 {
 		t.Errorf("PG IndexScans = %d, want 1", r.IndexScans)
+	}
+}
+
+// ──────────────────────────────────────────────
+// Advanced Stress Tests
+// ──────────────────────────────────────────────
+
+// 16. Concurrent parsing — must be goroutine-safe
+func TestMySQL_ConcurrentParse(t *testing.T) {
+	plans := []string{mysqlTableScan, mysqlAccessTypes, mysqlHashJoin, mysqlNoTable,
+		mysqlSubqueryInWhere, mysqlDerivedTable, mysqlUnion, mysqlIndexMerge,
+		mysqlNullFields, mysqlDeepNesting, mysqlNegativeCost}
+	iterations := 50
+	errs := make(chan error, iterations*len(plans))
+
+	for i := 0; i < iterations; i++ {
+		for _, p := range plans {
+			go func(plan string) {
+				_, err := ParsePlan(plan)
+				errs <- err
+			}(p)
+		}
+	}
+
+	for i := 0; i < iterations*len(plans); i++ {
+		if err := <-errs; err != nil {
+			t.Errorf("concurrent parse error: %v", err)
+		}
+	}
+}
+
+// 17. Real-world complex plan — 6 tables, joins, filters, subquery, derived
+const mysqlComplexRealWorld = `{
+  "query_block": {
+    "select_id": 1,
+    "cost_info": { "query_cost": "1520.00" },
+    "table": {
+      "table_name": "orders",
+      "access_type": "ALL",
+      "rows_examined_per_scan": 50000,
+      "rows_produced_per_join": 10000,
+      "filtered": "20.00",
+      "cost_info": { "read_cost": "100.00", "eval_cost": "500.00", "prefix_cost": "600.00" },
+      "attached_condition": "(` + "`orders`.`status` = 'pending'" + `)",
+      "nested_loop": [
+        {"table": {
+          "table_name": "users",
+          "access_type": "eq_ref",
+          "key": "PRIMARY",
+          "rows_examined_per_scan": 1,
+          "cost_info": { "prefix_cost": "601.00" }
+        }},
+        {"table": {
+          "table_name": "order_items",
+          "access_type": "ref",
+          "key": "idx_order_id",
+          "rows_examined_per_scan": 5,
+          "filtered": "90.00",
+          "cost_info": { "prefix_cost": "650.00" },
+          "nested_loop": [
+            {"table": {
+              "table_name": "products",
+              "access_type": "eq_ref",
+              "key": "PRIMARY",
+              "rows_examined_per_scan": 1,
+              "attached_condition": "(` + "`products`.`stock` > 0)" + `",
+              "cost_info": { "prefix_cost": "651.00" }
+            }}
+          ]
+        }},
+        {"table": {
+          "table_name": "<derived3>",
+          "access_type": "ALL",
+          "rows_examined_per_scan": 0,
+          "cost_info": { "prefix_cost": "1520.00" },
+          "materialized_from_subquery": {
+            "query_block": {
+              "select_id": 3,
+              "table": {
+                "table_name": "inventory_log",
+                "access_type": "ALL",
+                "rows_examined_per_scan": 200000,
+                "attached_condition": "(` + "`inventory_log`.`action` = 'ship')" + `"
+              }
+            }
+          }
+        }}
+      ]
+    },
+    "subqueries": [
+      {
+        "query_block": {
+          "select_id": 2,
+          "table": {
+            "table_name": "promotions",
+            "access_type": "ref",
+            "key": "idx_active",
+            "rows_examined_per_scan": 3
+          }
+        }
+      }
+    ]
+  }
+}`
+
+func TestMySQL_ComplexRealWorld(t *testing.T) {
+	r, err := ParsePlan(mysqlComplexRealWorld)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Should parse: orders (table scan) + users (eq_ref) + order_items (ref)
+	// + products (eq_ref) + <derived3> (table scan) = 5 nodes
+	// subqueries are RawMessage, not flattened
+	if len(r.Nodes) != 5 {
+		t.Fatalf("nodes = %d, want 5 (4 physical + 1 derived)", len(r.Nodes))
+	}
+	// Root should be orders table scan
+	if r.Nodes[0].RelationName != "orders" || r.Nodes[0].NodeType != "Table Scan" {
+		t.Errorf("root = %s on %s, want Table Scan on orders", r.Nodes[0].NodeType, r.Nodes[0].RelationName)
+	}
+	// Should have 2 table scans (orders + derived3)
+	if r.SequentialScans != 2 {
+		t.Errorf("SequentialScans = %d, want 2", r.SequentialScans)
+	}
+	// Should flag warning for orders table scan (50000 rows > 100)
+	foundOrdersIssue := false
+	for _, iss := range r.Issues {
+		if iss.TableName == "orders" && iss.NodeType == "Table Scan" {
+			foundOrdersIssue = true
+			break
+		}
+	}
+	if !foundOrdersIssue {
+		t.Error("expected table scan issue for orders (50000 rows)")
+	}
+	// Should not crash on String() output
+	output := r.String()
+	if len(output) < 50 {
+		t.Errorf("String() too short: %d chars", len(output))
+	}
+}
+
+// 18. Report.String() formatting for MySQL
+func TestMySQL_ReportStringFormatting(t *testing.T) {
+	r, err := ParsePlan(mysqlTableScan)
+	if err != nil {
+		t.Fatalf("ParsePlan: %v", err)
+	}
+	output := r.String()
+	checks := []string{"Scan Summary", "Sequential Scans:", "Plan Tree:", "big_logs", "Table Scan"}
+	for _, c := range checks {
+		if !strings.Contains(output, c) {
+			t.Errorf("missing %q in MySQL report output", c)
+		}
+	}
+	// Verify no garbage
+	if strings.Contains(output, "<nil>") || strings.Contains(output, "%!") {
+		t.Error("report contains formatting garbage")
+	}
+
+	// Test with indexed plan
+	r2, _ := ParsePlan(mysqlIndexMerge)
+	output2 := r2.String()
+	if !strings.Contains(output2, "Index Merge") {
+		t.Error("missing Index Merge in report output")
+	}
+}
+
+// 19. Deep recursion test — simulate 200-level nested join
+func TestMySQL_DeepRecursionLimit(t *testing.T) {
+	// Build a deeply nested JSON programmatically
+	nested := `{"query_block":{"select_id":1,"table":{"table_name":"t0","access_type":"ALL","rows_examined_per_scan":1`
+	for i := 1; i < 200; i++ {
+		nested += fmt.Sprintf(`,"nested_loop":[{"table":{"table_name":"t%d","access_type":"ref","key":"idx","rows_examined_per_scan":1`, i)
+	}
+	// Close all the brackets
+	for i := 0; i < 199; i++ {
+		nested += "}}]"
+	}
+	nested += "}}}"
+
+	r, err := ParsePlan(nested)
+	if err != nil {
+		t.Fatalf("deep recursion parse error: %v", err)
+	}
+	if len(r.Nodes) != 200 {
+		t.Fatalf("nodes = %d, want 200", len(r.Nodes))
+	}
+	// Verify depth increments for all nodes
+	for i := 1; i < len(r.Nodes); i++ {
+		if r.Nodes[i].Depth != r.Nodes[i-1].Depth+1 {
+			t.Errorf("node[%d].Depth = %d, expected %d", i, r.Nodes[i].Depth, r.Nodes[i-1].Depth+1)
+			break
+		}
+	}
+	// Verify no crash on String()
+	_ = r.String()
+}
+
+// 20. MySQL plan with backtick table names and special characters
+const mysqlSpecialChars = `{
+  "query_block": { "select_id": 1, "table": {
+    "table_name": "user's data",
+    "access_type": "ALL",
+    "rows_examined_per_scan": 1000,
+    "attached_condition": "(` + "`user's data`.`status` = 'active' OR `user's data`.`name` LIKE '%test%')" + `"
+  }}
+}`
+
+func TestMySQL_SpecialChars(t *testing.T) {
+	r, err := ParsePlan(mysqlSpecialChars)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if r.Nodes[0].RelationName != "user's data" {
+		t.Errorf("RelationName = %q, want %q", r.Nodes[0].RelationName, "user's data")
+	}
+	if !strings.Contains(r.Nodes[0].Filter, "status") {
+		t.Errorf("Filter should contain condition, got %q", r.Nodes[0].Filter)
+	}
+}
+
+// 21. MySQL plan with very large row count (edge of float64)
+const mysqlHugeRows = `{
+  "query_block": { "select_id": 1, "table": {
+    "table_name": "huge",
+    "access_type": "ALL",
+    "rows_examined_per_scan": 1e12,
+    "cost_info": { "query_cost": "1e10" }
+  }}
+}`
+
+func TestMySQL_HugeRows(t *testing.T) {
+	r, err := ParsePlan(mysqlHugeRows)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if r.Nodes[0].PlanRows != 1e12 {
+		t.Errorf("PlanRows = %f, want 1e12", r.Nodes[0].PlanRows)
+	}
+	foundHugeIssue := false
+	for _, iss := range r.Issues {
+		if iss.NodeType == "Table Scan" && iss.TableName == "huge" {
+			foundHugeIssue = true
+			break
+		}
+	}
+	if !foundHugeIssue {
+		t.Error("expected table scan issue for huge table (1e12 rows)")
+	}
+}
+
+// 22. MySQL plan with empty nested_loop and hash_join arrays
+const mysqlEmptyArrays = `{
+  "query_block": { "select_id": 1, "table": {
+    "table_name": "t1",
+    "access_type": "ALL",
+    "rows_examined_per_scan": 100,
+    "nested_loop": [],
+    "hash_join": []
+  }}
+}`
+
+func TestMySQL_EmptyArrays(t *testing.T) {
+	r, err := ParsePlan(mysqlEmptyArrays)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(r.Nodes) != 1 {
+		t.Fatalf("nodes = %d, want 1 (empty arrays should be no-ops)", len(r.Nodes))
+	}
+}
+
+// 23. Non-MySQL plan with "query_block" in data — test auto-detection doesn't false positive
+const pgPlanWithQueryBlockText = `[
+  {
+    "Plan": {
+      "Node Type": "Seq Scan",
+      "Relation Name": "query_block",
+      "Actual Rows": 1,
+      "Actual Total Time": 0.1
+    },
+    "Execution Time": 0.2
+  }
+]`
+
+func TestMySQL_AutoDetectNoFalsePositive(t *testing.T) {
+	r, err := ParsePlan(pgPlanWithQueryBlockText)
+	if err != nil {
+		t.Fatalf("PG plan with 'query_block' table name should still parse as PG: %v", err)
+	}
+	// Should parse as PostgreSQL, not MySQL
+	if r.ExecutionTime != 0.2 {
+		t.Errorf("ExecutionTime = %f, want 0.2 (PG parse)", r.ExecutionTime)
+	}
+	if len(r.Nodes) != 1 {
+		t.Fatalf("nodes = %d, want 1", len(r.Nodes))
+	}
+	if r.Nodes[0].NodeType != "Seq Scan" {
+		t.Errorf("NodeType = %q, want %q (PG node type)", r.Nodes[0].NodeType, "Seq Scan")
+	}
+	if r.Nodes[0].RelationName != "query_block" {
+		t.Errorf("RelationName = %q, want %q", r.Nodes[0].RelationName, "query_block")
+	}
+}
+
+// 24. MySQL plan built incrementally from string (simulating large result concatenation)
+func TestMySQL_LargePlanMemory(t *testing.T) {
+	// Build a plan with 50 tables in one nested_loop
+	plan := `{"query_block":{"select_id":1,"table":{"table_name":"base","access_type":"ALL","rows_examined_per_scan":100,"nested_loop":[`
+	for i := 1; i < 50; i++ {
+		if i > 1 {
+			plan += ","
+		}
+		plan += fmt.Sprintf(`{"table":{"table_name":"t%d","access_type":"ref","key":"idx","rows_examined_per_scan":1}}`, i)
+	}
+	plan += `]}}}`
+
+	r, err := ParsePlan(plan)
+	if err != nil {
+		t.Fatalf("large plan parse error: %v", err)
+	}
+	if len(r.Nodes) != 50 {
+		t.Fatalf("nodes = %d, want 50 (base + 49 joins)", len(r.Nodes))
+	}
+	// All 49 joined tables should be at depth 1
+	for i := 1; i < 50; i++ {
+		if r.Nodes[i].Depth != 1 {
+			t.Errorf("node[%d].Depth = %d, want 1", i, r.Nodes[i].Depth)
+			break
+		}
+	}
+	_ = r.String()
+}
+
+// 25. Negative rows count
+const mysqlNegativeRows = `{
+  "query_block": { "select_id": 1, "table": {
+    "table_name": "weird", "access_type": "ALL",
+    "rows_examined_per_scan": -50
+  }}
+}`
+
+func TestMySQL_NegativeRows(t *testing.T) {
+	r, err := ParsePlan(mysqlNegativeRows)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if r.Nodes[0].PlanRows != -50 {
+		t.Errorf("PlanRows = %f, want -50", r.Nodes[0].PlanRows)
+	}
+	// Negative rows should NOT trigger "high row count" issue (< 100)
+	for _, iss := range r.Issues {
+		if iss.NodeType == "Table Scan" && iss.TableName == "weird" {
+			t.Errorf("unexpected issue for negative rows: %s", iss.Message)
+		}
 	}
 }

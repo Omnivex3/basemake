@@ -80,8 +80,9 @@ type Report struct {
 func ParsePlan(jsonPlan string) (*Report, error) {
 	trimmed := strings.TrimSpace(jsonPlan)
 
-	// Auto-detect: MySQL uses "query_block" at the root, PG uses an array with "Plan"
-	if strings.Contains(trimmed, `"query_block"`) {
+	// Auto-detect: MySQL uses a single JSON object starting with { containing "query_block"
+	// PG uses an array [...] at the top level — even if "query_block" appears in data
+	if len(trimmed) > 0 && trimmed[0] == '{' && strings.Contains(trimmed, `"query_block"`) {
 		return ParsePlanMySQL(jsonPlan)
 	}
 
