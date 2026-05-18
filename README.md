@@ -2,7 +2,7 @@
 
 [![Release](https://img.shields.io/github/v/release/DynamicKarabo/dbai?style=flat&label=release)](https://github.com/DynamicKarabo/dbai/releases)
 [![CI](https://github.com/DynamicKarabo/dbai/actions/workflows/release.yml/badge.svg)](https://github.com/DynamicKarabo/dbai/actions/workflows/release.yml)
-[![Go](https://img.shields.io/badge/Go-1.24-00ADD8?style=flat&logo=go)](https://go.dev)
+[![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat&logo=go)](https://go.dev)
 [![GitHub Downloads](https://img.shields.io/github/downloads/DynamicKarabo/dbai/total?style=flat&label=downloads)](https://github.com/DynamicKarabo/dbai/releases)
 
 Query, analyze, and optimize your databases with natural language.
@@ -70,10 +70,13 @@ dbai query "SELECT count(*) FROM users" --json
 
 ## Supported Databases
 
-- **PostgreSQL** — full support (introspect, query, explain)
-- **MySQL** — full support (introspect, query, explain)
-- MariaDB — via MySQL driver
-- More coming...
+| Database | Introspect | Query | Explain |
+|----------|:----------:|:-----:|:-------:|
+| **PostgreSQL** | ✅ | ✅ | ✅ JSON |
+| **SQLite** | ✅ | ✅ | ✅ |
+| **MySQL** | ✅ | ✅ | ✅ text |
+| MariaDB | via MySQL driver | | |
+| CockroachDB | via PostgreSQL driver (use `postgresql://`) |
 
 ## Configuration
 

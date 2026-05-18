@@ -28,7 +28,7 @@ func TestDetectDriver(t *testing.T) {
 }
 
 func TestDetectDriverUnsupported(t *testing.T) {
-	_, err := detectDriver("sqlite:///tmp/test.db")
+	_, err := detectDriver("oracle://user:pass@localhost:1521/db")
 	if err == nil {
 		t.Error("expected error for unsupported driver, got nil")
 	}
@@ -38,5 +38,25 @@ func TestDetectDriverInvalid(t *testing.T) {
 	_, err := detectDriver("not-a-dsn")
 	if err == nil {
 		t.Error("expected error for invalid DSN, got nil")
+	}
+}
+
+func TestDetectDriverSQLite(t *testing.T) {
+	d, err := detectDriver("sqlite:///tmp/test.db")
+	if err != nil {
+		t.Fatalf("detectDriver(sqlite) error: %v", err)
+	}
+	if d.Scheme() != "sqlite" {
+		t.Errorf("scheme = %q, want %q", d.Scheme(), "sqlite")
+	}
+}
+
+func TestDetectDriverPostgresAlias(t *testing.T) {
+	d, err := detectDriver("postgresql://user@localhost/db")
+	if err != nil {
+		t.Fatalf("detectDriver(postgresql) error: %v", err)
+	}
+	if d.Scheme() != "postgres" {
+		t.Errorf("scheme = %q, want %q", d.Scheme(), "postgres")
 	}
 }
