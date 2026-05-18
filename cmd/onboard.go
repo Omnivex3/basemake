@@ -21,10 +21,11 @@ func runOnboarding() {
 	fmt.Println("    1) OpenAI    (GPT-4, GPT-4o — needs API key)")
 	fmt.Println("    2) Anthropic (Claude Sonnet 4 — needs API key)")
 	fmt.Println("    3) Ollama    (run local, free — needs Ollama running)")
+	fmt.Println("    4) OpenCode  (use your existing API key)")
 	fmt.Println()
 
 	for {
-		fmt.Print("  Pick 1-3 [3]: ")
+		fmt.Print("  Pick 1-4 [3]: ")
 		choice, _ := reader.ReadString('\n')
 		choice = strings.TrimSpace(choice)
 		if choice == "" {
@@ -42,8 +43,11 @@ func runOnboarding() {
 			fmt.Println("  ✓ Ollama selected! Make sure it's running on localhost:11434.")
 			saveProvider("ollama")
 			return
+		case "4":
+			setupOpenCode(reader)
+			return
 		default:
-			fmt.Println("  ✗ Pick 1, 2, or 3")
+			fmt.Println("  ✗ Pick 1, 2, 3, or 4")
 		}
 	}
 }
@@ -100,6 +104,66 @@ func setAPIKey(envVar, key string) {
 	os.Setenv(envVar, key)
 
 	fmt.Printf("  ✓ Saved to ~/.basemake/env\n")
+}
+
+func setupOpenCode(reader *bufio.Reader) {
+	fmt.Println("  Using your existing OpenCode API key (OpenAI-compatible).")
+	fmt.Println()
+
+	fmt.Print("  Paste your API key: ")
+	key, _ := reader.ReadString('\n')
+	key = strings.TrimSpace(key)
+
+	if key == "" {
+		fmt.Println("  ⚠ No key entered. You can set it later with:")
+		fmt.Println("  export OPENAI_API_KEY=<your-key>")
+		return
+	}
+
+	fmt.Println()
+	fmt.Print("  Base URL [https://api.openai.com/v1]: ")
+	baseURL, _ := reader.ReadString('\n')
+	baseURL = strings.TrimSpace(baseURL)
+	if baseURL == "" {
+		baseURL = "https://api.openai.com/v1"
+	}
+
+	fmt.Println()
+	fmt.Print("  Model [deepseek-chat]: ")
+	model, _ := reader.ReadString('\n')
+	model = strings.TrimSpace(model)
+	if model == "" {
+		model = "deepseek-chat"
+	}
+
+	saveProvider("openai")
+	setAPIKey("OPENAI_API_KEY", key)
+	setEnvVar("OPENAI_BASE_URL", baseURL)
+	setEnvVar("OPENAI_MODEL", model)
+	fmt.Printf("  ✓ OpenCode ready! Model: %s | %s\n", model, baseURL)
+}
+
+func setEnvVar(key, value string) {
+	home, _ := os.UserHomeDir()
+	envPath := home + "/.basemake/env"
+	os.MkdirAll(home+"/.basemake", 0755)
+
+	existing := map[string]string{}
+	if data, err := os.ReadFile(envPath); err == nil {
+		for _, line := range strings.Split(string(data), "\n") {
+			if parts := strings.SplitN(strings.TrimSpace(line), "=", 2); len(parts) == 2 {
+				existing[parts[0]] = parts[1]
+			}
+		}
+	}
+	existing[key] = value
+
+	var lines []string
+	for k, v := range existing {
+		lines = append(lines, k+"="+v)
+	}
+	os.WriteFile(envPath, []byte(strings.Join(lines, "\n")+"\n"), 0600)
+	os.Setenv(key, value)
 }
 
 func loadAPIKeysFromEnv() {
