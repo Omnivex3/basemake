@@ -73,7 +73,6 @@ type Model struct {
 
 	version string
 	aiLabel string
-	started bool // whether initial welcome has been shown
 }
 
 // ── Constructor ──
@@ -96,11 +95,13 @@ func NewModel(conn db.Database, format display.Format, version string) Model {
 		conn:    conn,
 		format:  format,
 		state:   stateIdle,
-		started: false,
 		input:   ti,
 		spinner: s,
 		version: version,
 		aiLabel: aiLabel,
+		messages: []message{
+			{kind: msgBot, content: fullStartupView(conn, aiLabel, version)},
+		},
 	}
 }
 
@@ -117,10 +118,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.input.Width = max(30, msg.Width-8)
-		if !m.started {
-			m.started = true
-			m.messages = append(m.messages, message{kind: msgBot, content: fullStartupView(m.conn, m.aiLabel, m.version)})
-		}
 
 	case tea.KeyMsg:
 		if m.state == stateIdle && msg.String() == "enter" {
