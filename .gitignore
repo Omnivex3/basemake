@@ -1,7 +1,3 @@
-# Binaries
-/dbai
-/dbai.exe
-
 # IDE
 .vscode/
 .idea/
@@ -16,3 +12,15 @@ vendor/
 # Build artifacts
 dist/
 release/
+basemake*
+!basemake-demo.gif
+!*.go
+
+# Test
+*.test
+*.out
+*.test*
+
+# Coverage
+coverage.*
+coverage/
