@@ -26,26 +26,24 @@ func init() {
 var replCmd = &cobra.Command{
 	Use:   "repl",
 	Short: "Interactive SQL shell",
-	Long: `Start an interactive database shell with AI-powered query assistance.
+	Long: `Chat with your database using natural language.
 
 Special commands:
-  .help       Show this help
+  .help       Show available commands
   .quit       Exit
   .tables     List tables in the current database
   .schema     Show the full schema
   .connect <dsn>  Connect to a different database
 
-All other input is treated as SQL or natural language questions.`,
+Everything else is a question or SQL query.`,
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Load config
 		cfg, err := config.Load()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "⚠ Config load: %v\n", err)
 			cfg = config.DefaultConfig()
 		}
 
-		// Determine output format
 		format := display.FormatTable
 		switch replFormat {
 		case "json":
@@ -60,7 +58,7 @@ All other input is treated as SQL or natural language questions.`,
 			}
 		}
 
-		// Try active connection, or use default DSN
+		// Try active connection or default DSN
 		conn, err := db.ActiveConnection()
 		if err != nil {
 			dsn := cfg.DefaultDSN
@@ -70,123 +68,126 @@ All other input is treated as SQL or natural language questions.`,
 			if dsn != "" {
 				conn, err = db.Connect(dsn)
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "⚠ Connect failed: %v\n", err)
+					fmt.Fprintf(os.Stderr, "  ⚠ Connect failed: %v\n", err)
 				}
 			}
 		}
 
 		if !launchedFromInteractive {
-			fmt.Fprintf(os.Stderr, "basemake REPL — type .help for commands, .quit to exit\n")
+			// Print warm welcome
+			fmt.Println("  ╭──────────────────────────────────────────────╮")
+			fmt.Println("  │  🤖  Welcome to basemake                     │")
+			fmt.Println("  │  Chat with your database in plain English.   │")
+			fmt.Println("  │                                              │")
 			if conn != nil {
-				fmt.Fprintf(os.Stderr, "Connected: %s\n", conn.Name())
+				fmt.Printf("  │  🟢 Connected: %-28s│\n", conn.Name())
 			} else {
-				fmt.Fprintf(os.Stderr, "No connection. Use .connect <dsn> to connect.\n")
+				fmt.Println("  │  🔴 No database connected                  │")
+				fmt.Println("  │  Use  .connect <dsn>  to get started       │")
 			}
-			fmt.Fprintln(os.Stderr)
+			fmt.Println("  │  Type  .help  for commands                   │")
+			fmt.Println("  ╰──────────────────────────────────────────────╯")
+			fmt.Println()
 		}
 
 		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("basemake> ")
+		fmt.Print("  You > ")
 
 		for scanner.Scan() {
 			line := strings.TrimSpace(scanner.Text())
 
 			switch {
 			case line == "":
-				// Empty line — skip
+				// Skip empty
 			case line == ".quit" || line == ".exit":
-				fmt.Fprintln(os.Stderr, "Bye!")
+				fmt.Println("  🤖 Bye! Come back anytime.")
 				return nil
 			case line == ".help":
-				printHelp()
+				printChatHelp()
 			case line == ".tables":
-				if err := showTables(conn); err != nil {
-					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-				}
+				showTables(conn)
 			case line == ".schema":
-				if err := showFullSchema(conn); err != nil {
-					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				showFullSchema(conn)
+			case strings.HasPrefix(line, ".connect "):
+				dsn := strings.TrimPrefix(line, ".connect ")
+				conn, err = db.Connect(dsn)
+				if err != nil {
+					fmt.Printf("  🤖 ⚠ Connect failed: %v\n", err)
+				} else {
+					fmt.Printf("  🤖 ✅ Connected: %s\n", conn.Name())
 				}
-		case strings.HasPrefix(line, ".connect "):
-			dsn := strings.TrimPrefix(line, ".connect ")
-			conn, err = db.Connect(dsn)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "⚠ Connect failed: %v\n", err)
-			} else {
-				fmt.Fprintf(os.Stderr, "✓ Connected: %s\n", conn.Name())
-			}
-		case line == ".history":
-			showHistory()
-		default:
-				// Execute as query
-				if err := executeREPLQuery(conn, line, format); err != nil {
-					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			case line == ".history":
+				showHistory()
+			default:
+				if err := executeChatQuery(conn, line, format); err != nil {
+					fmt.Printf("  🤖 ⚠ %v\n", err)
 				}
 			}
 
-			fmt.Print("basemake> ")
+			fmt.Print("\n  You > ")
 		}
 
 		return scanner.Err()
 	},
 }
 
-func printHelp() {
-	fmt.Fprintln(os.Stderr, `Commands:
-  .help       Show this help
-  .quit       Exit the REPL
-  .tables     List tables in the current database
-  .schema     Show the full schema with columns and indexes
-  .connect <dsn>  Connect to a different database
-  .history    Show recent query history
+func printChatHelp() {
+	fmt.Println(`  🤖 Commands:
+    .help              Show this
+    .quit              Exit
+    .tables            List tables
+    .schema            Show full schema
+    .connect <dsn>     Connect to a DB
+    .history           Past questions
 
-Any other input is treated as a SQL query or natural language question.
-Use --format flag to set output format (table, json, csv).`)
+  Everything else is a question or SQL.`)
 }
 
-func showTables(conn db.Database) error {
+func showTables(conn db.Database) {
 	if conn == nil {
-		return fmt.Errorf("no active connection — use .connect <dsn>")
+		fmt.Print("  🤖 No database connected. Use  .connect <dsn>")
+		return
 	}
-		schema, err := conn.Introspect(context.Background())
+	schema, err := conn.Introspect(context.Background())
 	if err != nil {
-		return fmt.Errorf("introspect: %w", err)
+		fmt.Printf("  🤖 ⚠ %v", err)
+		return
 	}
-	fmt.Fprintf(os.Stderr, "Tables in %s (%d total):\n", schema.DBName, len(schema.Tables))
+	fmt.Printf("  🤖 Found %d tables in %s:\n", len(schema.Tables), schema.DBName)
 	for _, t := range schema.Tables {
-		fmt.Fprintf(os.Stderr, "  %s (%d columns)\n", t.Name, len(t.Columns))
+		fmt.Printf("    📦 %s (%d columns)\n", t.Name, len(t.Columns))
 	}
-	return nil
 }
 
-func showFullSchema(conn db.Database) error {
+func showFullSchema(conn db.Database) {
 	if conn == nil {
-		return fmt.Errorf("no active connection — use .connect <dsn>")
+		fmt.Print("  🤖 No database connected. Use  .connect <dsn>")
+		return
 	}
-		schema, err := conn.Introspect(context.Background())
+	schema, err := conn.Introspect(context.Background())
 	if err != nil {
-		return fmt.Errorf("introspect: %w", err)
+		fmt.Printf("  🤖 ⚠ %v", err)
+		return
 	}
 	for _, t := range schema.Tables {
-		fmt.Fprintf(os.Stderr, "%s (%d columns, %d indexes):\n", t.Name, len(t.Columns), len(t.Indexes))
+		fmt.Printf("  📦 %s (%d cols, %d indexes):\n", t.Name, len(t.Columns), len(t.Indexes))
 		for _, c := range t.Columns {
 			pk := ""
 			if c.IsPK {
-				pk = " [PK]"
+				pk = " 🔑"
 			}
 			nullable := ""
 			if c.IsNullable {
 				nullable = " nullable"
 			}
-			fmt.Fprintf(os.Stderr, "  %s %s%s%s\n", c.Name, c.Type, pk, nullable)
+			fmt.Printf("    ├─ %s %s%s%s\n", c.Name, c.Type, pk, nullable)
 		}
 	}
-	return nil
 }
 
-func executeREPLQuery(conn db.Database, input string, format display.Format) error {
+func executeChatQuery(conn db.Database, input string, format display.Format) error {
 	if conn == nil {
-		return fmt.Errorf("no active connection — use .connect <dsn>")
+		return fmt.Errorf("no database connected — use  .connect <dsn>")
 	}
 
 	sql := input
@@ -197,28 +198,29 @@ func executeREPLQuery(conn db.Database, input string, format display.Format) err
 		if err != nil {
 			return fmt.Errorf("load schema: %w", err)
 		}
-		// Build prompt with history context
+
 		prompt := history.BuildPromptWithHistory(s.SchemaForPrompt(), 5)
 
-		fmt.Fprintf(os.Stderr, "🤖 Generating SQL...\n")
+		fmt.Print("  🤖 Thinking...\n\n  ")
 		ch, err := ai.QuestionToSQLStream(context.Background(), prompt, input)
 		if err != nil {
 			return fmt.Errorf("ai: %w", err)
 		}
+
 		var sb strings.Builder
 		for token := range ch {
 			sb.WriteString(token)
-			fmt.Fprint(os.Stderr, token)
+			fmt.Print(token)
 		}
 		sql = sb.String()
-		fmt.Fprintf(os.Stderr, "\n\n")
+		fmt.Println()
 	}
 
-	// Execute with timing
+	// Execute
 	startTime := time.Now()
 	rows, err := conn.Query(context.Background(), sql)
 	if err != nil {
-		return fmt.Errorf("query: %w", err)
+		return fmt.Errorf("query failed: %w", err)
 	}
 	defer rows.Close()
 
@@ -249,7 +251,7 @@ func executeREPLQuery(conn db.Database, input string, format display.Format) err
 		resultRows = append(resultRows, row)
 	}
 
-	// Record in history
+	// Record history
 	provider, _ := ai.SelectedProvider()
 	providerName := ""
 	if provider != nil {
@@ -266,25 +268,21 @@ func executeREPLQuery(conn db.Database, input string, format display.Format) err
 		ProviderUsed:       providerName,
 	})
 
-	plural := "rows"
-	if len(resultRows) == 1 {
-		plural = "row"
-	}
-	msg := fmt.Sprintf("(%d %s, %.0fms)", len(resultRows), plural, elapsed)
-
+	// Print results
+	fmt.Println()
 	res := display.Result{
 		Columns: cols,
 		Rows:    resultRows,
-		Message: msg,
 	}
-
 	if err := display.Print(os.Stdout, res, format); err != nil {
 		return fmt.Errorf("print: %w", err)
 	}
 
-	if format != display.FormatTable {
-		fmt.Fprintf(os.Stderr, "\n%s\n", msg)
+	plural := "rows"
+	if len(resultRows) == 1 {
+		plural = "row"
 	}
+	fmt.Printf("\n  🤖 %d %s in %.0fms\n", len(resultRows), plural, elapsed)
 
 	return nil
 }
@@ -292,27 +290,24 @@ func executeREPLQuery(conn db.Database, input string, format display.Format) err
 func showHistory() {
 	entries, err := history.List(20)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading history: %v\n", err)
+		fmt.Printf("  🤖 ⚠ %v\n", err)
 		return
 	}
 	if len(entries) == 0 {
-		fmt.Fprintln(os.Stderr, "No query history yet.")
+		fmt.Print("  🤖 No questions yet. Ask me something!")
 		return
 	}
-	fmt.Fprintf(os.Stderr, "Recent queries (last %d):\n\n", len(entries))
+	fmt.Printf("  🤖 Last %d questions:\n", len(entries))
 	for _, e := range entries {
-		label := "  SQL"
-		if e.WasNaturalLanguage {
-			label = "  NL "
+		icon := "💬"
+		if !e.WasNaturalLanguage {
+			icon = "🔤"
 		}
 		timeStr := e.ExecutedAt.Format("15:04:05")
-		fmt.Fprintf(os.Stderr, "%s %s", timeStr, label)
-		if e.ProviderUsed != "" {
-			fmt.Fprintf(os.Stderr, " [%s]", e.ProviderUsed)
+		question := e.Question
+		if len(question) > 60 {
+			question = question[:57] + "..."
 		}
-		fmt.Fprintf(os.Stderr, "  %s\n", e.Question)
-		if len(e.Question) > 60 {
-			fmt.Fprintf(os.Stderr, "      → %s\n", e.SQLGenerated[:min(len(e.SQLGenerated), 80)])
-		}
+		fmt.Printf("    %s [%s] %s\n", icon, timeStr, question)
 	}
 }

@@ -73,7 +73,6 @@ func init() {
 		originalHelp(cmd, args)
 	})
 }
-
 func enterInteractiveMode() error {
 	launchedFromInteractive = true
 
@@ -93,24 +92,25 @@ func enterInteractiveMode() error {
 		}
 	}
 
-	// Status line
-	fmt.Print("  ")
+	// Compact status
+	dbStatus := "🔴 Not connected"
 	if conn != nil {
-		fmt.Printf("🟢 DB: %s\n", conn.Name())
-	} else {
-		fmt.Print("🔴 DB: Not connected\n")
+		name := conn.Name()
+		if len(name) > 30 {
+			name = name[:27] + "..."
+		}
+		dbStatus = "🟢 " + name
 	}
 
-	fmt.Print("  ")
+	aiStatus := "🔴 No API key"
 	if hasAPIKey {
-		fmt.Printf("🟢 AI: %s\n", strings.ToUpper(cfg.AIProvider))
+		aiStatus = "🟢 " + strings.ToUpper(cfg.AIProvider)
 	} else if cfg != nil && cfg.AIProvider == "ollama" {
-		fmt.Print("🟡 AI: Ollama (local)\n")
+		aiStatus = "🟡 Ollama (local)"
 		hasAPIKey = true
-	} else {
-		fmt.Print("🔴 AI: No API key set\n")
 	}
 
+	fmt.Printf("  %s  ·  %s\n", dbStatus, aiStatus)
 	fmt.Println()
 
 	// First time — run onboarding
@@ -119,15 +119,20 @@ func enterInteractiveMode() error {
 		fmt.Println()
 		runOnboarding()
 		fmt.Println()
-
-		// Reload state after onboarding — REPL will connect on its own
 	}
 
-	// Drop into REPL
-	fmt.Println(strings.Repeat("─", 50))
-	fmt.Println("  Type your question in plain English or SQL.")
-	fmt.Println("  .help for commands  ·  .quit to exit")
-	fmt.Println(strings.Repeat("─", 50))
+	fmt.Println("  ╭──────────────────────────────────────────────╮")
+	if conn != nil {
+		name := conn.Name()
+		if len(name) > 28 {
+			name = name[:25] + "..."
+		}
+		fmt.Printf("  │  🤖  basemake  ·  🟢 %-28s│\n", name)
+	} else {
+		fmt.Println("  │  🤖  basemake  ·  🔴 No DB                 │")
+	}
+	fmt.Println("  │  Ask me anything about your data.           │")
+	fmt.Println("  ╰──────────────────────────────────────────────╯")
 	fmt.Println()
 
 	return replCmd.RunE(replCmd, []string{})
