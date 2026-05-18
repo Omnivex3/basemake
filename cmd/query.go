@@ -3,10 +3,10 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/DynamicKarabo/dbai/internal/ai"
 	"github.com/DynamicKarabo/dbai/internal/db"
-	"github.com/DynamicKarabo/dbai/internal/schema"
 	"github.com/spf13/cobra"
 )
 
@@ -39,7 +39,7 @@ Uses your cached schema to generate accurate queries.
 		isNL := !looksLikeSQL(sql)
 
 		if isNL {
-			s, err := schema.Load()
+			s, err := db.LoadSchema()
 			if err != nil {
 				return fmt.Errorf("load schema: %w", err)
 			}
@@ -118,9 +118,10 @@ func looksLikeSQL(s string) bool {
 			}
 		}
 	}
+	upper := strings.ToUpper(trimmed)
 	keywords := []string{"SELECT", "WITH", "EXPLAIN", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", "TRUNCATE"}
 	for _, kw := range keywords {
-		if len(trimmed) >= len(kw) && trimmed[:len(kw)] == kw {
+		if len(upper) >= len(kw) && upper[:len(kw)] == kw {
 			return true
 		}
 	}

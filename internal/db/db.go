@@ -41,28 +41,28 @@ type Database interface {
 
 // Schema holds database metadata populated by Introspect
 type Schema struct {
-	DBName string
-	Tables []TableInfo
+	DBName string      `json:"db_name"`
+	Tables []TableInfo `json:"tables"`
 }
 
 type TableInfo struct {
-	Name    string
-	Columns []ColumnInfo
-	Indexes []IndexInfo
+	Name    string       `json:"name"`
+	Columns []ColumnInfo `json:"columns"`
+	Indexes []IndexInfo  `json:"indexes"`
 }
 
 type ColumnInfo struct {
-	Name       string
-	Type       string
-	IsPK       bool
-	IsNullable bool
-	Default    string
+	Name       string `json:"name"`
+	Type       string `json:"type"`
+	IsPK       bool   `json:"is_pk"`
+	IsNullable bool   `json:"is_nullable"`
+	Default    string `json:"default,omitempty"`
 }
 
 type IndexInfo struct {
-	Name   string
-	Unique bool
-	Cols   []string
+	Name   string   `json:"name"`
+	Unique bool     `json:"unique"`
+	Cols   []string `json:"cols"`
 }
 
 // active holds the current database connection

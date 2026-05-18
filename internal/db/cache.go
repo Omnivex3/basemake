@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // TotalColumns returns the total number of columns across all tables
@@ -23,6 +24,36 @@ func (s *Schema) TotalIndexes() int {
 		count += len(t.Indexes)
 	}
 	return count
+}
+
+// SchemaForPrompt returns a compact schema description for AI prompts
+func (s *Schema) SchemaForPrompt() string {
+	result := fmt.Sprintf("Database: %s\n\nTables:\n", s.DBName)
+	for _, t := range s.Tables {
+		result += fmt.Sprintf("  %s:\n", t.Name)
+		for _, c := range t.Columns {
+			pk := ""
+			if c.IsPK {
+				pk = " [PK]"
+			}
+			nullable := ""
+			if c.IsNullable {
+				nullable = " nullable"
+			}
+			result += fmt.Sprintf("    - %s %s%s%s\n", c.Name, c.Type, pk, nullable)
+		}
+		if len(t.Indexes) > 0 {
+			result += "    Indexes:\n"
+			for _, idx := range t.Indexes {
+				u := ""
+				if idx.Unique {
+					u = " (unique)"
+				}
+				result += fmt.Sprintf("      - %s on (%s)%s\n", idx.Name, strings.Join(idx.Cols, ", "), u)
+			}
+		}
+	}
+	return result
 }
 
 func cacheDir() string {
@@ -51,4 +82,24 @@ func SaveSchema(s *Schema) error {
 	}
 
 	return nil
+}
+
+// LoadSchema reads the cached schema from disk
+func LoadSchema() (*Schema, error) {
+	data, err := os.ReadFile(cachePath())
+	if err != nil {
+		return nil, fmt.Errorf("no cached schema — run 'dbai connect' first: %w", err)
+	}
+
+	var s Schema
+	if err := json.Unmarshal(data, &s); err != nil {
+		return nil, fmt.Errorf("parse schema cache: %w", err)
+	}
+
+	return &s, nil
+}
+
+// Save persists the schema to local cache
+func (s *Schema) Save() error {
+	return SaveSchema(s)
 }
