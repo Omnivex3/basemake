@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -140,7 +141,7 @@ func showTables(conn db.Database) error {
 	if conn == nil {
 		return fmt.Errorf("no active connection — use .connect <dsn>")
 	}
-	schema, err := conn.Introspect(nil)
+		schema, err := conn.Introspect(context.Background())
 	if err != nil {
 		return fmt.Errorf("introspect: %w", err)
 	}
@@ -155,7 +156,7 @@ func showFullSchema(conn db.Database) error {
 	if conn == nil {
 		return fmt.Errorf("no active connection — use .connect <dsn>")
 	}
-	schema, err := conn.Introspect(nil)
+		schema, err := conn.Introspect(context.Background())
 	if err != nil {
 		return fmt.Errorf("introspect: %w", err)
 	}
@@ -190,14 +191,14 @@ func executeREPLQuery(conn db.Database, input string, format display.Format) err
 			return fmt.Errorf("load schema: %w", err)
 		}
 		fmt.Fprintf(os.Stderr, "🤖 Generating SQL...\n")
-		sql, err = ai.QuestionToSQL(nil, s.SchemaForPrompt(), input)
+		sql, err = ai.QuestionToSQL(context.Background(), s.SchemaForPrompt(), input)
 		if err != nil {
 			return fmt.Errorf("ai: %w", err)
 		}
 		fmt.Fprintf(os.Stderr, "%s\n\n", sql)
 	}
 
-	rows, err := conn.Query(nil, sql)
+	rows, err := conn.Query(context.Background(), sql)
 	if err != nil {
 		return fmt.Errorf("query: %w", err)
 	}
