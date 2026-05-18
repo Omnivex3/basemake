@@ -15,7 +15,6 @@ import (
 
 var (
 	pushServerURL string
-	pushSQL       string
 	pushDuration  string
 	pushUser      string
 	historyLimit  int

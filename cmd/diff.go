@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -34,8 +35,7 @@ Useful for catching schema drift between environments.
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var fromSchema, toSchema *db.Schema
-		fromName := diffFrom
-		toName := diffTo
+		var fromName, toName string
 
 		// Mode 1: Compare two saved schema files
 		if diffFileFrom != "" && diffFileTo != "" {
@@ -108,7 +108,7 @@ func introspectDSN(dsn string) (*db.Schema, error) {
 	}
 	defer conn.Close()
 
-	return conn.Introspect(nil)
+	return conn.Introspect(context.TODO())
 }
 
 // loadSchemasFromFiles loads two schema JSON files from disk.
