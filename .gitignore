@@ -15,6 +15,7 @@ release/
 basemake*
 !basemake-demo.gif
 !*.go
+dbai
 
 # Test
 *.test
