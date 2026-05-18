@@ -68,10 +68,9 @@ Uses your cached schema to generate accurate queries.
 			}
 
 			// Build prompt with recent history for context compounding
-			prompt := history.BuildPromptWithHistory(s.SchemaForPrompt(), 5)
-
-			// Get dialect from active connection or config
 			dialect := detectDialect()
+			// Pass dialect so the AI generates correct SQL for the connected DB
+			prompt := history.BuildPromptWithHistory(s.SchemaForPrompt(), 5, dialect)
 
 			if queryNoStream {
 				// Blocking mode — wait for full response
@@ -273,4 +272,10 @@ func init() {
 	queryCmd.Flags().BoolVar(&queryDryRun, "dry-run", false, "Generate SQL but don't execute")
 	queryCmd.Flags().BoolVar(&queryExplain, "explain", false, "Show execution plan alongside results")
 	queryCmd.Flags().BoolVar(&queryNoStream, "no-stream", false, "Disable streaming AI output (wait for full response)")
+	// Register same flags on root so `basemake "question" --flag` works
+	rootCmd.Flags().BoolVar(&queryJSON, "json", false, "Output results as JSON")
+	rootCmd.Flags().BoolVar(&queryCSV, "csv", false, "Output results as CSV")
+	rootCmd.Flags().BoolVar(&queryDryRun, "dry-run", false, "Generate SQL but don't execute")
+	rootCmd.Flags().BoolVar(&queryExplain, "explain", false, "Show execution plan alongside results")
+	rootCmd.Flags().BoolVar(&queryNoStream, "no-stream", false, "Disable streaming AI output (wait for full response)")
 }

@@ -15,11 +15,22 @@ var rootCmd = &cobra.Command{
 	Long: `basemake connects to your database, learns your schema,
 and lets you ask questions in plain English.
 
-  basemake connect postgres://user:pass@localhost:5432/mydb
+  basemake connect postgres://user:***@localhost:5432/mydb
   basemake "show me users who ordered last month"
-  basemake --explain "why is this query slow?"`,
+  basemake analyze "SELECT * FROM orders WHERE ..."`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
+	// Accept arbitrary args so `basemake "show me users"` works.
+	// These are forwarded to the query command via RunE.
+	Args: cobra.ArbitraryArgs,
+	// Forward positional args to the query command
+	// so `basemake "show me users"` works as advertised.
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 0 {
+			return queryCmd.RunE(cmd, args)
+		}
+		return cmd.Help()
+	},
 }
 
 func Execute() {
