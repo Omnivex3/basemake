@@ -40,6 +40,11 @@ Supports PostgreSQL and MySQL connection strings.
 			fmt.Fprintf(os.Stderr, "  ⚠ Cache write failed: %v\n", err)
 		}
 
+		// Persist DSN for subsequent commands
+		if err := db.SaveDSN(dsn); err != nil {
+			fmt.Fprintf(os.Stderr, "  ⚠ Config write failed: %v\n", err)
+		}
+
 		// Pretty print tables
 		for _, t := range schema.Tables {
 			fmt.Printf("%s (%d columns, %d indexes)\n", t.Name, len(t.Columns), len(t.Indexes))

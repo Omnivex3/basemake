@@ -69,6 +69,7 @@ func (p *postgresDB) Introspect(ctx context.Context) (*Schema, error) {
 	currentTable := ""
 	var table *TableInfo
 	tableMap := make(map[string]*TableInfo)
+	tableOrder := []string{}
 
 	for rows.Next() {
 		var tbl, col, typ, nullable string
@@ -80,10 +81,9 @@ func (p *postgresDB) Introspect(ctx context.Context) (*Schema, error) {
 		if tbl != currentTable {
 			table = &TableInfo{Name: tbl}
 			tableMap[tbl] = table
-			s.Tables = append(s.Tables, *table)
+			tableOrder = append(tableOrder, tbl)
 			currentTable = tbl
 		}
-		// Find the actual pointer
 		table = tableMap[tbl]
 		n := false
 		if nullable == "YES" {
@@ -100,6 +100,11 @@ func (p *postgresDB) Introspect(ctx context.Context) (*Schema, error) {
 			IsNullable: n,
 			Default:    d,
 		})
+	}
+
+	// Build final table list from the ordered map
+	for _, name := range tableOrder {
+		s.Tables = append(s.Tables, *tableMap[name])
 	}
 
 	// Get indexes

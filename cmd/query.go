@@ -21,10 +21,17 @@ Uses your cached schema to generate accurate queries.
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		input := args[0]
-
+	// Find active connection or reconnect
 		conn, err := db.ActiveConnection()
 		if err != nil {
-			return fmt.Errorf("no active connection — run 'dbai connect' first: %w", err)
+			dsn, loadErr := db.LoadDSN()
+			if loadErr != nil {
+				return fmt.Errorf("no active connection — run 'dbai connect' first: %w", err)
+			}
+			conn, err = db.Connect(dsn)
+			if err != nil {
+				return fmt.Errorf("reconnect: %w", err)
+			}
 		}
 
 		// Determine if input is SQL or natural language

@@ -62,6 +62,7 @@ func (m *mysqlDB) Introspect(ctx context.Context) (*Schema, error) {
 
 	currentTable := ""
 	tableMap := make(map[string]*TableInfo)
+	tableOrder := []string{}
 
 	for rows.Next() {
 		var tbl, col, typ, nullable string
@@ -73,7 +74,7 @@ func (m *mysqlDB) Introspect(ctx context.Context) (*Schema, error) {
 		if tbl != currentTable {
 			t := &TableInfo{Name: tbl}
 			tableMap[tbl] = t
-			s.Tables = append(s.Tables, *t)
+			tableOrder = append(tableOrder, tbl)
 			currentTable = tbl
 		}
 		table := tableMap[tbl]
@@ -92,6 +93,11 @@ func (m *mysqlDB) Introspect(ctx context.Context) (*Schema, error) {
 			IsNullable: n,
 			Default:    d,
 		})
+	}
+
+	// Build final table list from the ordered map
+	for _, name := range tableOrder {
+		s.Tables = append(s.Tables, *tableMap[name])
 	}
 
 	// Get indexes
