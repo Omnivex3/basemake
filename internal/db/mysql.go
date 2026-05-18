@@ -189,9 +189,15 @@ func (m *mysqlDB) Explain(ctx context.Context, query string) (string, error) {
 	return plan, nil
 }
 
-// ExplainJSON returns an error — MySQL doesn't support JSON format EXPLAIN
+// ExplainJSON runs EXPLAIN FORMAT=JSON and returns the plan as a JSON string.
+// MySQL supports FORMAT=JSON since 5.6.
 func (m *mysqlDB) ExplainJSON(ctx context.Context, query string) (string, error) {
-	return "", fmt.Errorf("mysql explain json: MySQL does not support JSON format EXPLAIN")
+	var plan string
+	err := m.conn.QueryRowContext(ctx, "EXPLAIN FORMAT=JSON "+query).Scan(&plan)
+	if err != nil {
+		return "", fmt.Errorf("mysql explain json: %w", err)
+	}
+	return plan, nil
 }
 
 func (m *mysqlDB) ExplainNoAnalyze(ctx context.Context, query string) (string, error) {

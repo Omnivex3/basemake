@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"    // MySQL driver for watch queries
@@ -195,14 +197,38 @@ func (s *Server) recordWatchResult(watchID int64, durationMs int64, rowCount int
 }
 
 // openDB opens a database connection based on DSN prefix.
+// For mysql:// DSNs, converts to go-sql-driver native format (user:pass@tcp(host:port)/db).
 func openDB(dsn string) (*sql.DB, error) {
+	// Convert mysql:// to native go-sql-driver format
+	if strings.HasPrefix(dsn, "mysql://") {
+		nativeDSN := dsn
+		parsed, err := url.Parse(dsn)
+		if err == nil {
+			user := ""
+			if parsed.User != nil {
+				user = parsed.User.String()
+			}
+			host := parsed.Host
+			if host == "" {
+				host = "127.0.0.1:3306"
+			} else if !strings.Contains(host, ":") {
+				host = host + ":3306"
+			}
+			dbName := strings.TrimPrefix(parsed.Path, "/")
+			params := parsed.RawQuery
+			nativeDSN = fmt.Sprintf("%s@tcp(%s)/%s", user, host, dbName)
+			if params != "" {
+				nativeDSN += "?" + params
+			}
+		}
+		return sql.Open("mysql", nativeDSN)
+	}
+
 	switch {
-	case len(dsn) > 9 && dsn[:9] == "postgres:":
+	case strings.HasPrefix(dsn, "postgres://") || strings.HasPrefix(dsn, "postgresql://"):
 		return sql.Open("postgres", dsn)
-	case len(dsn) > 7 && dsn[:7] == "mysql://":
-		return sql.Open("mysql", dsn)
-	case len(dsn) > 6 && dsn[:6] == "sqlite:":
-		return sql.Open("sqlite", dsn[7:])
+	case strings.HasPrefix(dsn, "sqlite:") || strings.HasPrefix(dsn, "sqlite://"):
+		return sql.Open("sqlite", strings.TrimPrefix(dsn, "sqlite://"))
 	default:
 		return sql.Open("postgres", dsn)
 	}

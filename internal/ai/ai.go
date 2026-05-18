@@ -117,8 +117,9 @@ func QuestionToSQL(ctx context.Context, dialect, schemaPrompt, question string) 
 		return "", fmt.Errorf("provider: %w", err)
 	}
 
-	systemPrompt := buildPrompt(dialect, schemaPrompt)
-	return provider.GenerateSQL(ctx, systemPrompt, question)
+	// schemaPrompt is already a full system prompt from BuildPromptWithHistory
+	// — pass it directly, no re-wrapping
+	return provider.GenerateSQL(ctx, schemaPrompt, question)
 }
 
 // QuestionToSQLStream is the streaming version of QuestionToSQL.
@@ -135,8 +136,9 @@ func QuestionToSQLStream(ctx context.Context, dialect, schemaPrompt, question st
 		return nil, fmt.Errorf("provider: %w", err)
 	}
 
-	systemPrompt := buildPrompt(dialect, schemaPrompt)
-	return provider.GenerateSQLStream(ctx, systemPrompt, question)
+	// schemaPrompt is already a full system prompt from BuildPromptWithHistory
+	// — pass it directly, no re-wrapping
+	return provider.GenerateSQLStream(ctx, schemaPrompt, question)
 }
 
 // buildPrompt constructs the system prompt with dialect-appropriate rules.
