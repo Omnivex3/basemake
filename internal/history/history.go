@@ -177,13 +177,13 @@ func Close() error {
 
 // BuildPromptWithHistory appends recent query history context to a system prompt.
 func BuildPromptWithHistory(schemaPrompt string, historyDepth int) string {
-	prompt := fmt.Sprintf(`You are a SQL expert. Given the following database schema, convert the user's natural language question into a SQL query.
+	prompt := `You are a SQL expert. Given the following database schema, convert the user's natural language question into a SQL query.
 
 Rules:
 - Generate PostgreSQL-compatible SQL
 - Return ONLY the SQL query — no markdown, no backticks, no explanations
 - Use proper formatting with newlines
-- If the question is ambiguous, make a reasonable assumption and add a comment explaining it`)
+- If the question is ambiguous, make a reasonable assumption and add a comment explaining it`
 
 	// Add recent history for context compounding
 	entries, err := Recent(historyDepth)
