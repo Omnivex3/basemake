@@ -134,12 +134,16 @@ Examples:
 			if planReport, planErr := analyze.ParsePlan(planJSON); planErr == nil {
 				for _, node := range planReport.Nodes {
 				if (node.NodeType == "Seq Scan" || node.NodeType == "Table Scan") && node.RelationName != "" {
-						scans = append(scans, budget.ScanInfo{
-							Table:    node.RelationName,
-							RowCount: int(node.ActualRows),
-						})
+					rowCount := int(node.ActualRows)
+					if rowCount == 0 {
+						rowCount = int(node.PlanRows) // fallback for MySQL (no actual timing)
 					}
+					scans = append(scans, budget.ScanInfo{
+						Table:    node.RelationName,
+						RowCount: rowCount,
+					})
 				}
+			}
 			}
 
 			budgetReport := budget.EvaluateCheck(sql, scans, budgetsFile)

@@ -1081,10 +1081,185 @@ func TestMySQL_NegativeRows(t *testing.T) {
 	if r.Nodes[0].PlanRows != -50 {
 		t.Errorf("PlanRows = %f, want -50", r.Nodes[0].PlanRows)
 	}
-	// Negative rows should NOT trigger "high row count" issue (< 100)
 	for _, iss := range r.Issues {
 		if iss.NodeType == "Table Scan" && iss.TableName == "weird" {
 			t.Errorf("unexpected issue for negative rows: %s", iss.Message)
 		}
+	}
+}
+
+// ──────────────────────────────────────────────
+// Final Round Stress Tests
+// ──────────────────────────────────────────────
+
+// 26. Unknown access_type — should fall through to raw string, not crash
+const mysqlUnknownAccessType = `{
+  "query_block": { "select_id": 1, "table": {
+    "table_name": "t1", "access_type": "super_fast_quantum_lookup_v2",
+    "rows_examined_per_scan": 10
+  }}
+}`
+
+func TestMySQL_UnknownAccessType(t *testing.T) {
+	r, err := ParsePlan(mysqlUnknownAccessType)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if r.Nodes[0].NodeType != "super_fast_quantum_lookup_v2" {
+		t.Errorf("NodeType = %q, want raw string %q", r.Nodes[0].NodeType, "super_fast_quantum_lookup_v2")
+	}
+	if r.SequentialScans != 0 {
+		t.Errorf("SequentialScans = %d, want 0 (unknown type)", r.SequentialScans)
+	}
+}
+
+// 27. Null entries in nested_loop array — should skip, not crash
+const mysqlNullInNestedLoop = `{
+  "query_block": { "select_id": 1, "table": {
+    "table_name": "t1", "access_type": "ALL", "rows_examined_per_scan": 100,
+    "nested_loop": [
+      null,
+      {"table": {"table_name": "t2", "access_type": "ref", "key": "idx", "rows_examined_per_scan": 1}},
+      null,
+      {"table": {"table_name": "t3", "access_type": "ref", "key": "idx2", "rows_examined_per_scan": 1}},
+      null
+    ]
+  }}
+}`
+
+func TestMySQL_NullInNestedLoop(t *testing.T) {
+	r, err := ParsePlan(mysqlNullInNestedLoop)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(r.Nodes) != 3 {
+		t.Fatalf("nodes = %d, want 3 (t1 + t2 + t3, nulls skipped)", len(r.Nodes))
+	}
+	if r.Nodes[1].RelationName != "t2" || r.Nodes[2].RelationName != "t3" {
+		t.Errorf("child tables wrong: got %s, %s", r.Nodes[1].RelationName, r.Nodes[2].RelationName)
+	}
+}
+
+// 28. Very long table name (MySQL max is 64 chars)
+var mysqlLongTableName = `{
+  "query_block": { "select_id": 1, "table": {
+    "table_name": "` + fmt.Sprintf("t%s", strings.Repeat("a", 63)) + `",
+    "access_type": "ALL",
+    "rows_examined_per_scan": 100
+  }}
+}`
+
+func TestMySQL_LongTableName(t *testing.T) {
+	r, err := ParsePlan(mysqlLongTableName)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	expectedLen := 64
+	if len(r.Nodes[0].RelationName) != expectedLen {
+		t.Errorf("RelationName length = %d, want %d", len(r.Nodes[0].RelationName), expectedLen)
+	}
+}
+
+// 29. Report.String() race condition — multiple goroutines
+func TestMySQL_ReportStringRace(t *testing.T) {
+	r, err := ParsePlan(mysqlComplexRealWorld)
+	if err != nil {
+		t.Fatalf("parse error: %v", err)
+	}
+	done := make(chan bool, 20)
+	for i := 0; i < 20; i++ {
+		go func() {
+			_ = r.String()
+			done <- true
+		}()
+	}
+	for i := 0; i < 20; i++ {
+		<-done
+	}
+}
+
+// 30. MySQL plan with unexpected extra fields and unusual values
+const mysqlMixedTypes = `{
+  "query_block": { "select_id": 1, "extra_field_unknown": "foo",
+    "table": {
+    "table_name": "t1",
+    "access_type": "ALL",
+    "rows_examined_per_scan": 100,
+    "unknown_extra": null,
+    "extra_nested": {"a": 1}
+  }}
+}`
+
+func TestMySQL_MixedTypes(t *testing.T) {
+	r, err := ParsePlan(mysqlMixedTypes)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if r.Nodes[0].RelationName != "t1" || r.Nodes[0].NodeType != "Table Scan" {
+		t.Errorf("basic structure wrong: %s on %s", r.Nodes[0].NodeType, r.Nodes[0].RelationName)
+	}
+	if r.SequentialScans != 1 {
+		t.Errorf("SequentialScans = %d, want 1", r.SequentialScans)
+	}
+}
+
+// 31. Plan with only cost_info at query_block level, no table-level cost
+const mysqlMinimalCost = `{
+  "query_block": { "select_id": 1, "cost_info": { "query_cost": "5.00" }, "table": {
+    "table_name": "t1", "access_type": "ALL", "rows_examined_per_scan": 100
+  }}
+}`
+
+func TestMySQL_MinimalCost(t *testing.T) {
+	r, err := ParsePlan(mysqlMinimalCost)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if r.TotalCost != 5.0 {
+		t.Errorf("TotalCost = %f, want 5.0", r.TotalCost)
+	}
+}
+
+// 32. No top-level table node
+const mysqlNoTopLevelTable = `{
+  "query_block": { "select_id": 1, "cost_info": { "query_cost": "100.00" }
+  }
+}`
+
+func TestMySQL_NoTopLevelTable(t *testing.T) {
+	r, err := ParsePlan(mysqlNoTopLevelTable)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if r.TotalCost != 100.0 {
+		t.Errorf("TotalCost = %f, want 100.0", r.TotalCost)
+	}
+	if len(r.Nodes) != 0 {
+		t.Fatalf("nodes = %d, want 0 (no table)", len(r.Nodes))
+	}
+}
+
+// 33. Consecutive calls with different dialects
+func TestMySQL_ConsecutiveDifferentDialects(t *testing.T) {
+	r1, err := ParsePlan(samplePlan)
+	if err != nil {
+		t.Fatalf("PG plan failed: %v", err)
+	}
+	r2, err := ParsePlan(mysqlTableScan)
+	if err != nil {
+		t.Fatalf("MySQL plan failed: %v", err)
+	}
+	r3, err := ParsePlan(samplePlanWithIndex)
+	if err != nil {
+		t.Fatalf("PG plan second call failed: %v", err)
+	}
+	if r1.ExecutionTime != 12.5 {
+		t.Errorf("r1: PG ExecutionTime = %f, want 12.5", r1.ExecutionTime)
+	}
+	if r2.SequentialScans != 1 {
+		t.Errorf("r2: MySQL SequentialScans = %d, want 1", r2.SequentialScans)
+	}
+	if r3.IndexScans != 1 {
+		t.Errorf("r3: PG IndexScans = %d, want 1", r3.IndexScans)
 	}
 }
