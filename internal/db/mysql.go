@@ -158,3 +158,8 @@ func (m *mysqlDB) Explain(ctx context.Context, query string) (string, error) {
 	}
 	return plan, nil
 }
+
+// ExplainJSON returns an error — MySQL doesn't support JSON format EXPLAIN
+func (m *mysqlDB) ExplainJSON(ctx context.Context, query string) (string, error) {
+	return "", fmt.Errorf("mysql explain json: MySQL does not support JSON format EXPLAIN")
+}

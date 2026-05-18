@@ -161,12 +161,22 @@ func (p *postgresDB) Query(ctx context.Context, sql string) (*Rows, error) {
 
 	return &Rows{rows: rows, cols: cols}, nil
 }
-
+// Explain runs EXPLAIN ANALYZE and returns the raw plan text
 func (p *postgresDB) Explain(ctx context.Context, query string) (string, error) {
 	var plan string
 	err := p.conn.QueryRowContext(ctx, "EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) "+query).Scan(&plan)
 	if err != nil {
 		return "", fmt.Errorf("postgres explain: %w", err)
+	}
+	return plan, nil
+}
+
+// ExplainJSON runs EXPLAIN ANALYZE with JSON format for structured analysis
+func (p *postgresDB) ExplainJSON(ctx context.Context, query string) (string, error) {
+	var plan string
+	err := p.conn.QueryRowContext(ctx, "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) "+query).Scan(&plan)
+	if err != nil {
+		return "", fmt.Errorf("postgres explain json: %w", err)
 	}
 	return plan, nil
 }

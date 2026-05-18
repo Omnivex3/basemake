@@ -37,6 +37,7 @@ type Database interface {
 	Introspect(ctx context.Context) (*Schema, error)
 	Query(ctx context.Context, sql string) (*Rows, error)
 	Explain(ctx context.Context, sql string) (string, error)
+	ExplainJSON(ctx context.Context, sql string) (string, error)
 }
 
 // Schema holds database metadata populated by Introspect
