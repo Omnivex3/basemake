@@ -123,7 +123,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.KeyMsg:
-		return m.handleKeyMsg(msg)
+		if m.state == stateIdle && msg.String() == "enter" {
+			input := strings.TrimSpace(m.input.Value())
+			m.input.SetValue("")
+			if input == "" {
+				break
+			}
+			if strings.HasPrefix(input, ".") {
+				model, cmd := m.handleDotCommand(input)
+				return model, cmd
+			}
+			m.messages = append(m.messages, message{kind: msgUser, content: input})
+			m.state = stateThinking
+			if looksLikeSQL(input) {
+				return m, m.execQueryCmd(input, false)
+			}
+			return m, m.startNLCmd(input)
+		}
+		if msg.String() == "ctrl+c" {
+			return m, tea.Quit
+		}
 
 	case queryResultMsg:
 		m.state = stateIdle
@@ -152,51 +171,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case spinner.TickMsg:
-		if m.state == stateIdle {
-			break
+		if m.state != stateIdle {
+			var cmd tea.Cmd
+			m.spinner, cmd = m.spinner.Update(msg)
+			return m, cmd
 		}
-		var cmd tea.Cmd
-		m.spinner, cmd = m.spinner.Update(msg)
-		return m, cmd
 	}
 
+	// Always feed non-control keys into the text input
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
 	return m, cmd
-}
-
-// ── Key Handling ──
-
-func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if m.state != stateIdle {
-		return m, nil
-	}
-
-	switch msg.String() {
-	case "ctrl+c":
-		return m, tea.Quit
-
-	case "enter":
-		input := strings.TrimSpace(m.input.Value())
-		m.input.SetValue("")
-		if input == "" {
-			return m, nil
-		}
-
-		if strings.HasPrefix(input, ".") {
-			return m.handleDotCommand(input)
-		}
-
-		m.messages = append(m.messages, message{kind: msgUser, content: input})
-		m.state = stateThinking
-
-		if looksLikeSQL(input) {
-			return m, m.execQueryCmd(input, false)
-		}
-		return m, m.startNLCmd(input)
-	}
-
-	return m, nil
 }
 
 // ── Dot Commands ──
