@@ -29,7 +29,7 @@ func NewServer(store *Store, port int, version string) *Server {
 	}
 }
 
-// Start runs the HTTP server on the configured port.
+// Start runs the HTTP server on the configured port and starts the watch scheduler.
 func (s *Server) Start() error {
 	addr := fmt.Sprintf(":%d", s.port)
 
@@ -41,6 +41,8 @@ func (s *Server) Start() error {
 	mux.HandleFunc("/api/events/", withCORS(s.handleEvents))
 	mux.HandleFunc("/api/budgets/sync", withCORS(s.handleBudgetsSync))
 	mux.HandleFunc("/api/budgets/latest", withCORS(s.handleBudgetsLatest))
+	mux.HandleFunc("/api/watches", withCORS(s.handleWatches))
+	mux.HandleFunc("/api/watches/", withCORS(s.handleWatchesByID))
 
 	// Root redirect to health
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -57,6 +59,10 @@ func (s *Server) Start() error {
 	log.Printf("  API: http://localhost:%d/api/health", s.port)
 	log.Printf("  Events: http://localhost:%d/api/events", s.port)
 	log.Printf("  Budgets: http://localhost:%d/api/budgets/latest", s.port)
+	log.Printf("  Watches: http://localhost:%d/api/watches", s.port)
+
+	// Start watch scheduler in background
+	go s.scheduleWatches()
 
 	return http.ListenAndServe(addr, mux)
 }
@@ -204,7 +210,7 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 func withCORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
 		if r.Method == http.MethodOptions {
@@ -214,6 +220,165 @@ func withCORS(next http.HandlerFunc) http.HandlerFunc {
 
 		next(w, r)
 	}
+}
+
+// --- Watch Handlers ---
+
+func (s *Server) handleWatches(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		s.listWatches(w, r)
+	case http.MethodPost:
+		s.createWatch(w, r)
+	default:
+		writeError(w, http.StatusMethodNotAllowed, "use GET or POST")
+	}
+}
+
+func (s *Server) handleWatchesByID(w http.ResponseWriter, r *http.Request) {
+	// Extract watch ID from path: /api/watches/<id>[/results]
+	path := r.URL.Path
+	parts := splitPath(path)
+
+	if len(parts) < 3 {
+		writeError(w, http.StatusBadRequest, "missing watch ID")
+		return
+	}
+
+	id, err := strconv.ParseInt(parts[2], 10, 64)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid watch ID")
+		return
+	}
+
+	// /api/watches/<id>/results
+	if len(parts) >= 4 && parts[3] == "results" {
+		if r.Method != http.MethodGet {
+			writeError(w, http.StatusMethodNotAllowed, "use GET")
+			return
+		}
+		s.listWatchResults(w, r, id)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		s.getWatch(w, r, id)
+	case http.MethodDelete:
+		s.deleteWatch(w, r, id)
+	default:
+		writeError(w, http.StatusMethodNotAllowed, "use GET or DELETE")
+	}
+}
+
+func (s *Server) listWatches(w http.ResponseWriter, r *http.Request) {
+	watches, err := s.store.ListWatches()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if watches == nil {
+		watches = []Watch{}
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"watches": watches,
+		"count":   len(watches),
+	})
+}
+
+func (s *Server) createWatch(w http.ResponseWriter, r *http.Request) {
+	var req CreateWatchRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid JSON: "+err.Error())
+		return
+	}
+
+	if req.SQL == "" {
+		writeError(w, http.StatusBadRequest, "sql is required")
+		return
+	}
+	if req.IntervalSec <= 0 {
+		req.IntervalSec = 300 // default 5 min
+	}
+	if req.Label == "" {
+		req.Label = truncateLabel(req.SQL)
+	}
+
+	watch := &Watch{
+		SQL:         req.SQL,
+		Label:       req.Label,
+		IntervalSec: req.IntervalSec,
+		ThresholdMs: req.ThresholdMs,
+		DSN:         req.DSN,
+		Enabled:     true,
+		CreatedBy:   req.CreatedBy,
+	}
+
+	id, err := s.store.InsertWatch(watch)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, map[string]int64{"id": id})
+}
+
+func (s *Server) getWatch(w http.ResponseWriter, r *http.Request, id int64) {
+	watch, err := s.store.GetWatch(id)
+	if err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, watch)
+}
+
+func (s *Server) deleteWatch(w http.ResponseWriter, r *http.Request, id int64) {
+	if err := s.store.DeleteWatch(id); err != nil {
+		writeError(w, http.StatusNotFound, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+func (s *Server) listWatchResults(w http.ResponseWriter, r *http.Request, watchID int64) {
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	results, err := s.store.ListWatchResults(watchID, limit)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if results == nil {
+		results = []WatchResult{}
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"results": results,
+		"count":   len(results),
+	})
+}
+
+// splitPath splits a URL path into non-empty segments.
+func splitPath(path string) []string {
+	var parts []string
+	start := 0
+	for i := 0; i < len(path); i++ {
+		if path[i] == '/' {
+			if i > start {
+				parts = append(parts, path[start:i])
+			}
+			start = i + 1
+		}
+	}
+	if start < len(path) {
+		parts = append(parts, path[start:])
+	}
+	return parts
+}
+
+func truncateLabel(s string) string {
+	if len(s) > 60 {
+		return s[:57] + "..."
+	}
+	return s
 }
 
 // DefaultDataDir returns the default server data directory.

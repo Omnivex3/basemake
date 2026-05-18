@@ -67,3 +67,44 @@ type HealthResponse struct {
 const DefaultPort = 9876
 
 var StartTime = time.Now()
+
+// --- Watch Types ---
+
+// Watch represents a scheduled query monitoring task.
+type Watch struct {
+	ID          int64  `json:"id"`
+	SQL         string `json:"sql"`
+	Label       string `json:"label"`
+	IntervalSec int    `json:"interval_sec"`
+	ThresholdMs int    `json:"threshold_ms"`
+	DSN         string `json:"dsn"`
+	Enabled     bool   `json:"enabled"`
+	EnabledInt  int    `json:"-"`
+	CreatedBy   string `json:"created_by"`
+	LastRunAt   *string `json:"last_run_at,omitempty"`
+	CreatedAt   string `json:"created_at"`
+}
+
+// WatchResult is a single execution result for a watch.
+type WatchResult struct {
+	ID          int64  `json:"id"`
+	WatchID     int64  `json:"watch_id"`
+	DurationMs  int64  `json:"duration_ms"`
+	RowCount    int    `json:"row_count"`
+	ResultHash  string `json:"result_hash,omitempty"`
+	Alert       bool   `json:"alert"`
+	AlertInt    int    `json:"-"`
+	AlertReason string `json:"alert_reason,omitempty"`
+	ErrorMsg    string `json:"error_msg,omitempty"`
+	ExecutedAt  string `json:"executed_at"`
+}
+
+// CreateWatchRequest is the payload for POST /api/watches.
+type CreateWatchRequest struct {
+	SQL         string `json:"sql"`
+	Label       string `json:"label"`
+	IntervalSec int    `json:"interval_sec"`
+	ThresholdMs int    `json:"threshold_ms"`
+	DSN         string `json:"dsn"`
+	CreatedBy   string `json:"created_by"`
+}
