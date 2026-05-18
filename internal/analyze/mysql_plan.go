@@ -14,9 +14,10 @@ type MySQLPlan struct {
 
 // MySQLQueryBlock represents a SELECT query block in MySQL.
 type MySQLQueryBlock struct {
-	SelectID int              `json:"select_id"`
-	CostInfo *MySQLCostInfo   `json:"cost_info,omitempty"`
-	Table    *MySQLTableNode  `json:"table,omitempty"`
+	SelectID   int             `json:"select_id"`
+	CostInfo   *MySQLCostInfo  `json:"cost_info,omitempty"`
+	Table      *MySQLTableNode `json:"table,omitempty"`
+	Subqueries json.RawMessage `json:"subqueries,omitempty"` // attached subqueries (IN, EXISTS, etc.)
 }
 
 // MySQLCostInfo contains cost information for a query block or table.
@@ -45,10 +46,12 @@ type MySQLTableNode struct {
 	IndexCondition       string           `json:"index_condition,omitempty"`
 	UsingIndex           *bool            `json:"using_index,omitempty"`
 	UsingIndexCondition  *bool            `json:"using_index_condition,omitempty"`
-	Materialized         *MySQLTableNode  `json:"materialized_from_subquery,omitempty"`
-	NestedLoop          []*MySQLJoinNode  `json:"nested_loop,omitempty"`
-	HashJoin            []*MySQLJoinNode  `json:"hash_join,omitempty"`
-	UnionResult         *MySQLTableNode   `json:"union_result,omitempty"`
+	// materialized_from_subquery and union_result contain query_block objects
+	// (not table nodes) — stored as raw JSON for now, not deeply analyzed
+	Materialized json.RawMessage `json:"materialized_from_subquery,omitempty"`
+	NestedLoop  []*MySQLJoinNode `json:"nested_loop,omitempty"`
+	HashJoin    []*MySQLJoinNode `json:"hash_join,omitempty"`
+	UnionResult json.RawMessage  `json:"union_result,omitempty"`
 }
 
 // MySQLJoinNode represents one side of a join in MySQL.
@@ -144,13 +147,9 @@ func flattenMySQLTable(table *MySQLTableNode, depth int, report *Report) {
 		}
 	}
 
-	// Handle subqueries
-	if table.Materialized != nil {
-		flattenMySQLTable(table.Materialized, depth+1, report)
-	}
-	if table.UnionResult != nil {
-		flattenMySQLTable(table.UnionResult, depth+1, report)
-	}
+	// Note: materialized_from_subquery and union_result contain query_block
+	// objects (not table nodes) and are not deeply analyzed in v1.
+	// They represent subqueries executed separately — an enhancement for future.
 }
 
 // mysqlAccessTypeToNodeType maps MySQL access types to our internal node types.
