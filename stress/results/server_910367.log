@@ -1,0 +1,8 @@
+2026/05/18 20:21:02 basemake server starting on :9876 (pid=910944, host=hermes)
+2026/05/18 20:21:02   API: http://localhost:9876/api/health
+2026/05/18 20:21:02   Events: http://localhost:9876/api/events
+2026/05/18 20:21:02   Budgets: http://localhost:9876/api/budgets/latest
+2026/05/18 20:21:02   Watches: http://localhost:9876/api/watches
+2026/05/18 20:21:04 [watcher] Starting watch scheduler...
+
+Shutting down...

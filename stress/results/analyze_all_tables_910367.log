@@ -1,0 +1,19 @@
+stress_audit_log (1ms):
+  🟡 Sequential scan on stress_audit_log (1000 rows, 0.4ms)
+  🟡 Row estimate mismatch on stress_audit_log: actual=1000, estimated=100000 (0.0x off)
+
+stress_config (0ms):
+  🟡 Sequential scan on stress_config (1000 rows, 0.3ms)
+
+stress_orders (0ms):
+  🟡 Sequential scan on stress_orders (1000 rows, 0.3ms)
+  🟡 Row estimate mismatch on stress_orders: actual=1000, estimated=2000000 (0.0x off)
+
+stress_products (1ms):
+  🟡 Sequential scan on stress_products (1000 rows, 0.4ms)
+  🟡 Row estimate mismatch on stress_products: actual=1000, estimated=500000 (0.0x off)
+
+stress_users (0ms):
+  🟡 Sequential scan on stress_users (1000 rows, 0.3ms)
+  🟡 Row estimate mismatch on stress_users: actual=1000, estimated=500000 (0.0x off)
+

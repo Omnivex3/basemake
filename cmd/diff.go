@@ -60,7 +60,14 @@ Useful for catching schema drift between environments.
 			// Mode 3: Compare active connection vs cached schema
 			conn, err := db.ActiveConnection()
 			if err != nil {
-				return fmt.Errorf("no active connection — run 'basemake connect' first: %w", err)
+				dsn, loadErr := db.LoadDSN()
+				if loadErr != nil {
+					return fmt.Errorf("no active connection — run 'basemake connect' first: %w", err)
+				}
+				conn, err = db.Connect(dsn)
+				if err != nil {
+					return fmt.Errorf("reconnect: %w", err)
+				}
 			}
 			defer conn.Close()
 

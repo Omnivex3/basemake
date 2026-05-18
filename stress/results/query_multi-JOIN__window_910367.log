@@ -1,0 +1,33 @@
+country | category    | sales | rank
+--------+-------------+-------+-----
+BR      | tools       | 24785 |    1
+BR      | music       | 24716 |    2
+BR      | office      | 24668 |    3
+BR      | clothing    | 24605 |    4
+BR      | sports      | 24535 |    5
+BR      | furniture   | 24527 |    6
+BR      | books       | 24402 |    7
+BR      | food        | 24185 |    8
+BR      | electronics | 12275 |    9
+BR      | toys        | 12236 |   10
+DE      | furniture   | 24936 |    1
+DE      | music       | 24845 |    2
+DE      | sports      | 24755 |    3
+DE      | tools       | 24734 |    4
+DE      | food        | 24649 |    5
+DE      | office      | 24638 |    6
+DE      | books       | 24580 |    7
+DE      | clothing    | 24537 |    8
+DE      | electronics | 12423 |    9
+DE      | toys        | 12157 |   10
+FR      | music       | 24970 |    1
+FR      | food        | 24887 |    2
+FR      | furniture   | 24874 |    3
+FR      | books       | 24852 |    4
+FR      | sports      | 24723 |    5
+FR      | office      | 24636 |    6
+FR      | tools       | 24562 |    7
+FR      | clothing    | 24450 |    8
+FR      | electronics | 12500 |    9
+FR      | toys        | 12203 |   10
+(30 rows)
