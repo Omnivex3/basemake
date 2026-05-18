@@ -7,6 +7,7 @@ import (
 
 	"github.com/DynamicKarabo/basemake/internal/config"
 	"github.com/DynamicKarabo/basemake/internal/db"
+	"github.com/DynamicKarabo/basemake/internal/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -67,17 +68,15 @@ func init() {
 	originalHelp := rootCmd.HelpFunc()
 	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
 		if cmd == rootCmd {
-			fmt.Println(BannerASCII)
+			fmt.Println(tui.ColoriseLogo(BannerASCII))
 			fmt.Println(strings.Repeat("─", 50))
 		}
 		originalHelp(cmd, args)
 	})
 }
+
 func enterInteractiveMode() error {
 	launchedFromInteractive = true
-
-	fmt.Println(BannerASCII)
-	fmt.Println(strings.Repeat("─", 50))
 
 	cfg, _ := config.Load()
 	hasAPIKey := hasConfiguredAPIKey(cfg)
@@ -92,48 +91,15 @@ func enterInteractiveMode() error {
 		}
 	}
 
-	// Compact status
-	dbStatus := "🔴 Not connected"
-	if conn != nil {
-		name := conn.Name()
-		if len(name) > 30 {
-			name = name[:27] + "..."
-		}
-		dbStatus = "🟢 " + name
-	}
-
-	aiStatus := "🔴 No API key"
-	if hasAPIKey {
-		aiStatus = "🟢 " + strings.ToUpper(cfg.AIProvider)
-	} else if cfg != nil && cfg.AIProvider == "ollama" {
-		aiStatus = "🟡 Ollama (local)"
-		hasAPIKey = true
-	}
-
-	fmt.Printf("  %s  ·  %s\n", dbStatus, aiStatus)
-	fmt.Println()
-
-	// First time — run onboarding
+	// First time — run CLI onboarding before TUI
 	if !hasAPIKey && conn == nil {
+		fmt.Println(tui.ColoriseLogo(BannerASCII))
+		fmt.Println()
 		fmt.Println("  👋 Welcome to basemake! Let's get you set up.")
 		fmt.Println()
 		runOnboarding()
 		fmt.Println()
 	}
-
-	fmt.Println("  ╭──────────────────────────────────────────────╮")
-	if conn != nil {
-		name := conn.Name()
-		if len(name) > 28 {
-			name = name[:25] + "..."
-		}
-		fmt.Printf("  │  🤖  basemake  ·  🟢 %-28s│\n", name)
-	} else {
-		fmt.Println("  │  🤖  basemake  ·  🔴 No DB                 │")
-	}
-	fmt.Println("  │  Ask me anything about your data.           │")
-	fmt.Println("  ╰──────────────────────────────────────────────╯")
-	fmt.Println()
 
 	return replCmd.RunE(replCmd, []string{})
 }
@@ -154,4 +120,71 @@ func hasConfiguredAPIKey(cfg *config.Config) bool {
 	default:
 		return os.Getenv("OPENAI_API_KEY") != "" || os.Getenv("ANTHROPIC_API_KEY") != ""
 	}
+}
+
+func getAIProviderLabel() string {
+	cfg, _ := config.Load()
+	provider := os.Getenv("AI_PROVIDER")
+	if provider == "" {
+		provider = cfg.AIProvider
+	}
+	if provider == "" {
+		return "Not configured"
+	}
+	return strings.ToUpper(provider)
+}
+
+func getAIModelName() string {
+	cfg, _ := config.Load()
+	provider := os.Getenv("AI_PROVIDER")
+	if provider == "" {
+		provider = cfg.AIProvider
+	}
+	if provider == "" {
+		return ""
+	}
+
+	switch provider {
+	case "openai":
+		m := os.Getenv("OPENAI_MODEL")
+		if m == "" {
+			m = cfg.OpenAIModel
+		}
+		if m == "" {
+			m = "gpt-4"
+		}
+		return m
+	case "anthropic":
+		m := os.Getenv("ANTHROPIC_MODEL")
+		if m == "" {
+			m = cfg.AnthropicModel
+		}
+		if m == "" {
+			m = "claude-sonnet-4-20250514"
+		}
+		return m
+	case "ollama":
+		m := os.Getenv("OLLAMA_MODEL")
+		if m == "" {
+			m = cfg.OllamaModel
+		}
+		if m == "" {
+			m = "llama3"
+		}
+		return m
+	}
+	return ""
+}
+
+func connectedDBName() string {
+	conn, err := db.ActiveConnection()
+	if err != nil {
+		return ""
+	}
+	return conn.Name()
+}
+
+func isConnected() bool {
+	_, err := db.ActiveConnection()
+	return err == nil
 }

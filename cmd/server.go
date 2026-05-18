@@ -4,9 +4,14 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"runtime"
+	"strings"
 	"syscall"
 
+	"github.com/charmbracelet/lipgloss"
+
 	"github.com/DynamicKarabo/basemake/internal/server"
+	"github.com/DynamicKarabo/basemake/internal/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -41,13 +46,57 @@ var serverStartCmd = &cobra.Command{
 
 		svr := server.NewServer(store, serverPort, getBuildInfo().version)
 
+		// ── Styled startup banner ──
+		fmt.Println()
+		fmt.Println(tui.ColoriseLogo(BannerASCII))
+		fmt.Println()
+
+		info := lipgloss.NewStyle().
+			Foreground(tui.DimText).
+			Render(getBuildInfo().version + "  ·  " + runtime.GOOS + "/" + runtime.GOARCH)
+
+		addrStyle := lipgloss.NewStyle().
+			Foreground(tui.Red).
+			Bold(true)
+		portInfo := addrStyle.Render(fmt.Sprintf("http://localhost:%d", serverPort))
+
+		statusLine := lipgloss.JoinHorizontal(lipgloss.Left,
+			lipgloss.NewStyle().Foreground(tui.Red).Render("◆"),
+			"  ",
+			info,
+			"  │  ",
+			tui.Dot(true, false),
+			" Listening on ",
+			portInfo,
+		)
+		fmt.Println(statusLine)
+		fmt.Println()
+
+		// API endpoints card
+		methodStyle := lipgloss.NewStyle().Foreground(tui.Red)
+		endpoints := []string{
+			"  " + methodStyle.Render("GET  /api/health") + "       " + lipgloss.NewStyle().Foreground(tui.DimText).Render("Health check"),
+			"  " + methodStyle.Render("POST /api/events") + "       " + lipgloss.NewStyle().Foreground(tui.DimText).Render("Push a query event"),
+			"  " + methodStyle.Render("GET  /api/events") + "       " + lipgloss.NewStyle().Foreground(tui.DimText).Render("List recent events"),
+			"  " + methodStyle.Render("POST /api/budgets/sync") + " " + lipgloss.NewStyle().Foreground(tui.DimText).Render("Push budgets"),
+			"  " + methodStyle.Render("GET  /api/budgets/latest") + " " + lipgloss.NewStyle().Foreground(tui.DimText).Render("Latest budgets"),
+			"  " + methodStyle.Render("GET  /api/watches") + "      " + lipgloss.NewStyle().Foreground(tui.DimText).Render("List watches"),
+		}
+		endpointBox := tui.SubBoxStyle.Render(
+			lipgloss.NewStyle().Foreground(tui.Red).Bold(true).Render("  API Endpoints") + "\n" +
+				strings.Join(endpoints, "\n"),
+		)
+		fmt.Println(endpointBox)
+		fmt.Println()
+
 		// Graceful shutdown on SIGINT/SIGTERM
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
 		go func() {
 			<-sigCh
-			fmt.Println("\nShutting down...")
+			fmt.Println()
+			fmt.Println(lipgloss.NewStyle().Foreground(tui.Yellow).Render("  Shutting down..."))
 			store.Close()
 			os.Exit(0)
 		}()
@@ -68,23 +117,23 @@ var serverStatusCmd = &cobra.Command{
 		defer store.Close()
 
 		count, _ := store.EventCount()
-
 		bs, _ := store.LatestBudgets()
 
-		fmt.Printf("basemake server\n")
-		fmt.Printf("  Data dir: %s\n", serverDir)
-		fmt.Printf("  Events recorded: %d\n", count)
-		if bs != nil {
-			fmt.Printf("  Budgets last synced: %s (by %s)\n", bs.CreatedAt, bs.UserName)
-		} else {
-			fmt.Printf("  Budgets: not synced yet\n")
-		}
-		fmt.Printf("\nAPI endpoints:\n")
-		fmt.Printf("  POST /api/events        Push a query event\n")
-		fmt.Printf("  GET  /api/events        List recent events\n")
-		fmt.Printf("  POST /api/budgets/sync  Push budgets to server\n")
-		fmt.Printf("  GET  /api/budgets/latest Get latest budgets\n")
-		fmt.Printf("  GET  /api/health        Health check\n")
+		// Styled status output
+		fmt.Println()
+		box := tui.BoxStyle.Render(strings.Join([]string{
+			lipgloss.NewStyle().Foreground(tui.Red).Bold(true).Render("  basemake server"),
+			"",
+			"    " + tui.Dot(true, false) + " " + lipgloss.NewStyle().Foreground(tui.Text).Render("Data dir: ") + lipgloss.NewStyle().Foreground(tui.White).Render(serverDir),
+			"    " + tui.Dot(true, false) + " " + lipgloss.NewStyle().Foreground(tui.Text).Render(fmt.Sprintf("Events: %d", count)),
+			"",
+			formatBudgetsLine(bs),
+			"",
+			lipgloss.NewStyle().Foreground(tui.DimText).Render("  API Endpoints"),
+			"    " + lipgloss.NewStyle().Foreground(tui.Red).Render("http://localhost:"+fmt.Sprintf("%d", serverPort)+"/api/health"),
+		}, "\n"))
+		fmt.Println(box)
+		fmt.Println()
 
 		return nil
 	},
@@ -101,4 +150,15 @@ func init() {
 	serverStartCmd.Flags().StringVar(&serverDir, "dir", defaultDir, "Data directory for SQLite storage")
 
 	serverStatusCmd.Flags().StringVar(&serverDir, "dir", defaultDir, "Data directory")
+}
+
+func formatBudgetsLine(bs *server.BudgetSnapshot) string {
+	if bs == nil {
+		return "    " + tui.Dot(false, true) + " " + lipgloss.NewStyle().Foreground(tui.DimText).Render("Budgets: not synced yet")
+	}
+	return "    " + tui.Dot(true, false) + " " + lipgloss.NewStyle().Foreground(tui.Text).Render("Budgets synced: ") +
+		lipgloss.NewStyle().Foreground(tui.DimText).Render(bs.CreatedAt) +
+		lipgloss.NewStyle().Foreground(tui.DimText).Render(" (by ") +
+		lipgloss.NewStyle().Foreground(tui.White).Render(bs.UserName) +
+		lipgloss.NewStyle().Foreground(tui.DimText).Render(")")
 }
