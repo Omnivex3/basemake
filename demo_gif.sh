@@ -77,6 +77,4 @@ echo ""
 # ═══════════════ Finish ═══════════════
 sleep 1
 echo ""
-echo "✅ All local. All private. All yours."
-echo "   github.com/DynamicKarabo/basemake"
-echo ""
+echo "✅ Done."
