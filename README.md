@@ -55,71 +55,19 @@ eval "$(dbai completion zsh)"        # zsh
 dbai completion fish | source        # fish
 ```
 
-## Commands
+## Full Documentation
 
-| Command | Description |
-|---------|-------------|
-| `dbai connect <dsn>` | Connect and introspect schema |
-| `dbai query <sql\|question>` | Execute SQL or ask in plain English |
-| `dbai analyze <query>` | Run EXPLAIN ANALYZE with performance insights |
-| `dbai analyze --all` | Analyze all cached tables |
-| `dbai repl` | Interactive shell with AI assistance |
-| `dbai version` | Print version information |
-| `dbai completion <shell>` | Generate shell completion scripts |
+Comprehensive documentation covering every command, flag, config option, driver, and internal detail lives in [`docs/`](docs/README.md).
 
-### Query flags
-
-| Flag | Description |
-|------|-------------|
-| `--dry-run` | Show generated SQL without executing |
-| `--explain` | Show execution plan alongside results |
-| `--json` | Output as JSON array |
-| `--csv` | Output as CSV |
-
-### REPL commands
-
-| Command | Description |
-|---------|-------------|
-| `.help` | Show available commands |
-| `.quit` | Exit the REPL |
-| `.tables` | List all tables |
-| `.schema` | Show full schema |
-| `.connect <dsn>` | Connect to a different database |
-
-## Supported Databases
-
-| Database | Introspect | Query | Explain |
-|----------|:----------:|:-----:|:-------:|
-| PostgreSQL | ✅ | ✅ | ✅ JSON |
-| SQLite | ✅ | ✅ | ✅ |
-| MySQL | ✅ | ✅ | ✅ text |
-| MariaDB | via MySQL driver | | |
-| CockroachDB | via PG driver (use `postgresql://`) | |
-
-## Configuration
-
-Config is stored in `~/.dbai/config.json` and auto-loaded on each command.
-
-```json
-{
-  "default_dsn": "postgres://user:***@localhost/mydb",
-  "output_format": "table",
-  "openai_model": "gpt-4"
-}
-```
-
-| Env var | Purpose |
-|---------|---------|
-| `OPENAI_API_KEY` | AI query generation (required for NL) |
-| `OPENAI_MODEL` | Override the AI model (default: gpt-4) |
-| `DBAI_DSN` | Default connection string (fallback) |
-
-## How It Works
-
-1. **`dbai connect`** introspects your schema and caches it locally
-2. **`dbai query`** sends schema context + your question to an LLM, gets back SQL, executes it
-3. **`dbai analyze`** runs EXPLAIN ANALYZE in JSON format (PostgreSQL), parses the plan tree, and surfaces performance issues
-4. **`dbai repl`** provides an interactive shell with history and dot-commands
+| Document | What's Covered |
+|----------|----------------|
+| [Overview](docs/overview.md) | Architecture, design decisions, data flow, build pipeline |
+| [Commands Reference](docs/commands.md) | All 6 commands: connect, query, analyze, repl, completion, version |
+| [Configuration](docs/configuration.md) | Config file, env vars, defaults, precedence |
+| [Database Drivers](docs/database-drivers.md) | PostgreSQL, MySQL, SQLite internals |
+| [Output Formats](docs/output-formats.md) | Table, JSON, CSV, TSV — every formatting detail |
+| [AI Integration](docs/ai-integration.md) | NL→SQL generation, model selection, API details |
+| [Development Guide](docs/development.md) | Build, test, lint, CI/CD, adding drivers |
 
 ## License
 
