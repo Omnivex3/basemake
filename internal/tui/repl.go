@@ -476,7 +476,7 @@ func (m Model) View() string {
 		b.WriteString("\n  " + m.spinner.View() + " " + ThinkingStyle.Render("Thinking...") + "\n")
 	}
 
-	b.WriteString("\n" + lipgloss.NewStyle().Foreground(DimText).Render(strings.Repeat("─", max(20, m.input.Width+4))) + "\n")
+	b.WriteString("\n" + lipgloss.NewStyle().Foreground(DimText).Render(strings.Repeat("─", min(60, max(20, m.input.Width+4)))) + "\n")
 
 	prompt := UserPromptStyle.Render("  You > ")
 	b.WriteString(prompt + m.input.View())
