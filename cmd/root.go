@@ -5,8 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/DynamicKarabo/basemake/internal/config"
-	"github.com/DynamicKarabo/basemake/internal/db"
 	"github.com/DynamicKarabo/basemake/internal/tui"
 	"github.com/spf13/cobra"
 )
@@ -72,48 +70,8 @@ func init() {
 }
 
 func enterInteractiveMode() error {
-
-	cfg, _ := config.Load()
-	hasAPIKey := hasConfiguredAPIKey(cfg)
-	dsn, dsnErr := db.LoadDSN()
-
-	var conn db.Database
-	if dsnErr == nil && dsn != "" {
-		var err error
-		conn, err = db.Connect(dsn)
-		if err != nil {
-			conn = nil
-		}
-	}
-
-	// First time — run CLI onboarding before TUI
-	if !hasAPIKey && conn == nil {
-		fmt.Println(tui.ColoriseLogo(BannerASCII))
-		fmt.Println()
-		fmt.Println("  👋 Welcome to basemake! Let's get you set up.")
-		fmt.Println()
-		runOnboarding()
-		fmt.Println()
-	}
-
+	// Straight to the charm TUI — no banners, no onboarding, no noise.
+	// DSN loading and connection is handled inside replCmd.
 	return replCmd.RunE(replCmd, []string{})
-}
-
-func hasConfiguredAPIKey(cfg *config.Config) bool {
-	provider := os.Getenv("AI_PROVIDER")
-	if provider == "" {
-		provider = cfg.AIProvider
-	}
-
-	switch provider {
-	case "openai":
-		return os.Getenv("OPENAI_API_KEY") != ""
-	case "anthropic":
-		return os.Getenv("ANTHROPIC_API_KEY") != ""
-	case "ollama":
-		return true
-	default:
-		return os.Getenv("OPENAI_API_KEY") != "" || os.Getenv("ANTHROPIC_API_KEY") != ""
-	}
 }
 

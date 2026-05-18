@@ -9,48 +9,6 @@ import (
 	"github.com/DynamicKarabo/basemake/internal/config"
 )
 
-func runOnboarding() {
-	reader := bufio.NewReader(os.Stdin)
-
-	// ── Step 1: AI Provider ──
-	fmt.Println("  ── Step 1: AI Provider ──")
-	fmt.Println("  I need an AI model to turn your questions into SQL.")
-	fmt.Println()
-	fmt.Println("  Choose a provider:")
-	fmt.Println("    1) OpenAI    (GPT-4, GPT-4o — needs API key)")
-	fmt.Println("    2) Anthropic (Claude Sonnet 4 — needs API key)")
-	fmt.Println("    3) Ollama    (run local, free — needs Ollama running)")
-	fmt.Println("    4) OpenCode  (use your existing API key)")
-	fmt.Println()
-
-	for {
-		fmt.Print("  Pick 1-4 [3]: ")
-		choice, _ := reader.ReadString('\n')
-		choice = strings.TrimSpace(choice)
-		if choice == "" {
-			choice = "3"
-		}
-
-		switch choice {
-		case "1":
-			setupAPIKey(reader, "OPENAI_API_KEY", "openai")
-			return
-		case "2":
-			setupAPIKey(reader, "ANTHROPIC_API_KEY", "anthropic")
-			return
-		case "3":
-			fmt.Println("  ✓ Ollama selected! Make sure it's running on localhost:11434.")
-			saveProvider("ollama")
-			return
-		case "4":
-			setupOpenCode(reader)
-			return
-		default:
-			fmt.Println("  ✗ Pick 1, 2, 3, or 4")
-		}
-	}
-}
-
 func setupAPIKey(reader *bufio.Reader, envVar, provider string) {
 	fmt.Printf("  Paste your %s key: ", strings.ReplaceAll(envVar, "_", " "))
 	key, _ := reader.ReadString('\n')
