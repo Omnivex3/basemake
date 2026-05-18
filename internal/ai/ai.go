@@ -90,7 +90,7 @@ func SelectedProvider() (Provider, error) {
 // QuestionToSQL is the main entry point for NL→SQL generation.
 // It selects the configured provider and calls GenerateSQL.
 // If no API key is set, it returns a placeholder SQL with instructions.
-func QuestionToSQL(ctx context.Context, schemaPrompt, question string) (string, error) {
+func QuestionToSQL(ctx context.Context, dialect, schemaPrompt, question string) (string, error) {
 	provider, err := SelectedProvider()
 	if err == ErrNoKey {
 		return "-- Set OPENAI_API_KEY or ANTHROPIC_API_KEY for AI-powered queries\n" +
@@ -100,23 +100,13 @@ func QuestionToSQL(ctx context.Context, schemaPrompt, question string) (string, 
 		return "", fmt.Errorf("provider: %w", err)
 	}
 
-	systemPrompt := fmt.Sprintf(`You are a SQL expert. Given the following database schema, convert the user's natural language question into a SQL query.
-
-Rules:
-- Generate PostgreSQL-compatible SQL
-- Return ONLY the SQL query — no markdown, no backticks, no explanations
-- Use proper formatting with newlines
-- If the question is ambiguous, make a reasonable assumption and add a comment explaining it
-
-Schema:
-%s`, schemaPrompt)
-
+	systemPrompt := buildPrompt(dialect, schemaPrompt)
 	return provider.GenerateSQL(ctx, systemPrompt, question)
 }
 
 // QuestionToSQLStream is the streaming version of QuestionToSQL.
 // Returns a channel of text fragments for real-time display.
-func QuestionToSQLStream(ctx context.Context, schemaPrompt, question string) (<-chan string, error) {
+func QuestionToSQLStream(ctx context.Context, dialect, schemaPrompt, question string) (<-chan string, error) {
 	provider, err := SelectedProvider()
 	if err == ErrNoKey {
 		ch := make(chan string, 1)
@@ -128,16 +118,20 @@ func QuestionToSQLStream(ctx context.Context, schemaPrompt, question string) (<-
 		return nil, fmt.Errorf("provider: %w", err)
 	}
 
-	systemPrompt := fmt.Sprintf(`You are a SQL expert. Given the following database schema, convert the user's natural language question into a SQL query.
+	systemPrompt := buildPrompt(dialect, schemaPrompt)
+	return provider.GenerateSQLStream(ctx, systemPrompt, question)
+}
+
+// buildPrompt constructs the system prompt with dialect-appropriate rules.
+func buildPrompt(dialect, schema string) string {
+	return fmt.Sprintf(`You are a SQL expert. Given the following database schema, convert the user's natural language question into a SQL query.
 
 Rules:
-- Generate PostgreSQL-compatible SQL
+- Generate %s-compatible SQL
 - Return ONLY the SQL query — no markdown, no backticks, no explanations
 - Use proper formatting with newlines
 - If the question is ambiguous, make a reasonable assumption and add a comment explaining it
 
 Schema:
-%s`, schemaPrompt)
-
-	return provider.GenerateSQLStream(ctx, systemPrompt, question)
+%s`, dialect, schema)
 }

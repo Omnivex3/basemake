@@ -33,6 +33,7 @@ func (r *Rows) Columns() []string {
 // Database defines the interface all supported databases must implement
 type Database interface {
 	Name() string
+	Dialect() string
 	Close() error
 	Introspect(ctx context.Context) (*Schema, error)
 	Query(ctx context.Context, sql string) (*Rows, error)

@@ -33,6 +33,8 @@ func (m *mysqlDB) Name() string {
 	return fmt.Sprintf("MySQL (%s)", maskDSN(m.dsn))
 }
 
+func (m *mysqlDB) Dialect() string { return "MySQL" }
+
 func (m *mysqlDB) Close() error {
 	return m.conn.Close()
 }

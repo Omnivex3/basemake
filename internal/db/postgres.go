@@ -34,6 +34,8 @@ func (p *postgresDB) Name() string {
 	return fmt.Sprintf("PostgreSQL (%s)", maskDSN(p.dsn))
 }
 
+func (p *postgresDB) Dialect() string { return "PostgreSQL" }
+
 func (p *postgresDB) Close() error {
 	return p.conn.Close()
 }

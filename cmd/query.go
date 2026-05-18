@@ -70,10 +70,13 @@ Uses your cached schema to generate accurate queries.
 			// Build prompt with recent history for context compounding
 			prompt := history.BuildPromptWithHistory(s.SchemaForPrompt(), 5)
 
+			// Get dialect from active connection or config
+			dialect := detectDialect()
+
 			if queryNoStream {
 				// Blocking mode — wait for full response
 				fmt.Fprintf(os.Stderr, "🤖 Generating SQL from: %s\n\n", input)
-				sql, err = ai.QuestionToSQL(cmd.Context(), prompt, input)
+				sql, err = ai.QuestionToSQL(cmd.Context(), dialect, prompt, input)
 				if err != nil {
 					return fmt.Errorf("ai: %w", err)
 				}
@@ -81,7 +84,7 @@ Uses your cached schema to generate accurate queries.
 			} else {
 				// Streaming mode — print tokens as they arrive
 				fmt.Fprintf(os.Stderr, "🤖 Generating SQL...\n\n")
-				ch, err := ai.QuestionToSQLStream(cmd.Context(), prompt, input)
+				ch, err := ai.QuestionToSQLStream(cmd.Context(), dialect, prompt, input)
 				if err != nil {
 					return fmt.Errorf("ai: %w", err)
 				}
@@ -239,6 +242,29 @@ func looksLikeSQL(s string) bool {
 		}
 	}
 	return false
+}
+
+// detectDialect tries to determine the database dialect from the active connection,
+// falling back to config or env, then defaulting to PostgreSQL.
+func detectDialect() string {
+	conn, err := db.ActiveConnection()
+	if err == nil {
+		return conn.Dialect()
+	}
+	// Try to infer from DSN scheme
+	dsn, _ := db.LoadDSN()
+	if dsn != "" {
+		if strings.HasPrefix(dsn, "postgres://") || strings.HasPrefix(dsn, "postgresql://") {
+			return "PostgreSQL"
+		}
+		if strings.HasPrefix(dsn, "mysql://") {
+			return "MySQL"
+		}
+		if strings.HasPrefix(dsn, "sqlite:") {
+			return "SQLite"
+		}
+	}
+	return "PostgreSQL"
 }
 
 func init() {

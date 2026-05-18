@@ -56,6 +56,8 @@ func (s *sqliteDB) Name() string {
 	return fmt.Sprintf("SQLite (%s)", s.path)
 }
 
+func (s *sqliteDB) Dialect() string { return "SQLite" }
+
 func (s *sqliteDB) Close() error {
 	return s.conn.Close()
 }
