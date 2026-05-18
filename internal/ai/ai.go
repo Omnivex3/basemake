@@ -16,7 +16,7 @@ func QuestionToSQL(ctx context.Context, schemaPrompt, question string) (string, 
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		// Return a helpful placeholder when no API key is set
-		return fmt.Sprintf("-- Set OPENAI_API_KEY for AI-powered queries\n-- Schema loaded. Run: export OPENAI_API_KEY=\"sk-...\"\nSELECT 1;"), nil
+		return "-- Set OPENAI_API_KEY for AI-powered queries\n-- Schema loaded. Run: export OPENAI_API_KEY=\"sk-...\"\nSELECT 1;", nil
 	}
 
 	systemPrompt := fmt.Sprintf(`You are a SQL expert. Given the following database schema, convert the user's natural language question into a SQL query.
@@ -46,9 +46,9 @@ Schema:
 }
 
 type openAIRequest struct {
-	Model    string            `json:"model"`
-	Messages []openAIMessage   `json:"messages"`
-	Temp     float64           `json:"temperature"`
+	Model    string          `json:"model"`
+	Messages []openAIMessage `json:"messages"`
+	Temp     float64         `json:"temperature"`
 }
 
 type openAIMessage struct {

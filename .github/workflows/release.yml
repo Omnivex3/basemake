@@ -32,7 +32,6 @@ jobs:
         with:
           version: "latest"
           install-go: false
-          min-linters: ""
 
   build:
     runs-on: ubuntu-latest
