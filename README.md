@@ -19,6 +19,7 @@
 - **Multi-dialect** — PostgreSQL, MySQL, SQLite with automatic SQL generation for each
 - **Output formats** — table (default), `--json`, `--csv`
 - **Streaming AI** — watch SQL generate token by token, or use `--no-stream` for instant results
+- **CI/CD gate** — `basemake "query" --check` exits 1 if slow, 2 if dangerous. Drop it in your pipeline.
 - **History compounding** — past queries inform future AI responses for context-aware SQL generation
 - **Config persistence** — set once with `basemake config set`, forget it
 - **Interactive REPL** — `basemake repl` for an AI-assisted SQL shell
@@ -201,6 +202,52 @@ id | name                       | total_revenue
 (5 rows)
 ```
 
+## CI/CD Integration
+
+Use `--check` as a merge gate in your pipeline. Exits 0 (pass), 1 (too slow), or 2 (dangerous query).
+
+### GitHub Actions
+
+```yaml
+name: Query Gate
+on: [pull_request]
+jobs:
+  check-queries:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install basemake
+        run: |
+          curl -sfL https://github.com/DynamicKarabo/dbai/releases/latest/download/basemake-linux-amd64.tar.gz | tar xz
+          sudo mv basemake /usr/local/bin/
+
+      - name: Run migrations
+        run: psql "$DATABASE_URL" -f migrations/001.sql
+
+      - name: Check critical queries
+        run: |
+          basemake connect "$DATABASE_URL"
+          basemake "SELECT * FROM users JOIN orders..." --check --threshold 500ms
+          basemake "UPDATE accounts SET balance = balance + 1" --check --threshold 200ms
+```
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | ✅ Query passed within threshold |
+| `1` | ❌ Query exceeded time threshold |
+| `2` | 🔴 Query has critical performance issues (seq scan on large table, missing index) |
+
 ## Commands
 
 | Command | Description |
@@ -224,6 +271,8 @@ id | name                       | total_revenue
 | `--dry-run` | Generate SQL without executing |
 | `--explain` | Show execution plan alongside results |
 | `--no-stream` | Wait for full AI response (disable streaming) |
+| `--check` | CI gate mode — exit 1 if slow, exit 2 if dangerous |
+| `--threshold <duration>` | Max query time for --check (default: `1s`, e.g. `500ms`, `2s`) |
 
 ## Configuration
 
