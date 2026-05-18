@@ -613,17 +613,6 @@ func sqlPreview(sql string) string {
 		Render("  ─╴" + sql)
 }
 
-func connName(conn db.Database) string {
-	if conn == nil {
-		return ""
-	}
-	n := conn.Name()
-	if len(n) > 28 {
-		n = n[:25] + "..."
-	}
-	return n
-}
-
 func max(a, b int) int {
 	if a > b {
 		return a

@@ -23,10 +23,6 @@ const BannerASCII = `█████                                            
 
 var cfgFile string
 
-// launchedFromInteractive is set to true when the REPL is entered via `basemake` (no args).
-// Suppresses the redundant header that repl.go prints on its own.
-var launchedFromInteractive bool
-
 var rootCmd = &cobra.Command{
 	Use:   "basemake",
 	Short: "AI-powered database CLI — query, analyze, optimize",
@@ -76,7 +72,6 @@ func init() {
 }
 
 func enterInteractiveMode() error {
-	launchedFromInteractive = true
 
 	cfg, _ := config.Load()
 	hasAPIKey := hasConfiguredAPIKey(cfg)
@@ -122,69 +117,3 @@ func hasConfiguredAPIKey(cfg *config.Config) bool {
 	}
 }
 
-func getAIProviderLabel() string {
-	cfg, _ := config.Load()
-	provider := os.Getenv("AI_PROVIDER")
-	if provider == "" {
-		provider = cfg.AIProvider
-	}
-	if provider == "" {
-		return "Not configured"
-	}
-	return strings.ToUpper(provider)
-}
-
-func getAIModelName() string {
-	cfg, _ := config.Load()
-	provider := os.Getenv("AI_PROVIDER")
-	if provider == "" {
-		provider = cfg.AIProvider
-	}
-	if provider == "" {
-		return ""
-	}
-
-	switch provider {
-	case "openai":
-		m := os.Getenv("OPENAI_MODEL")
-		if m == "" {
-			m = cfg.OpenAIModel
-		}
-		if m == "" {
-			m = "gpt-4"
-		}
-		return m
-	case "anthropic":
-		m := os.Getenv("ANTHROPIC_MODEL")
-		if m == "" {
-			m = cfg.AnthropicModel
-		}
-		if m == "" {
-			m = "claude-sonnet-4-20250514"
-		}
-		return m
-	case "ollama":
-		m := os.Getenv("OLLAMA_MODEL")
-		if m == "" {
-			m = cfg.OllamaModel
-		}
-		if m == "" {
-			m = "llama3"
-		}
-		return m
-	}
-	return ""
-}
-
-func connectedDBName() string {
-	conn, err := db.ActiveConnection()
-	if err != nil {
-		return ""
-	}
-	return conn.Name()
-}
-
-func isConnected() bool {
-	_, err := db.ActiveConnection()
-	return err == nil
-}
