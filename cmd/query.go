@@ -7,8 +7,12 @@ import (
 
 	"github.com/DynamicKarabo/dbai/internal/ai"
 	"github.com/DynamicKarabo/dbai/internal/db"
+	"github.com/DynamicKarabo/dbai/internal/display"
 	"github.com/spf13/cobra"
 )
+
+var queryJSON bool
+var queryCSV bool
 
 var queryCmd = &cobra.Command{
 	Use:   "query [question|sql]",
@@ -21,7 +25,19 @@ Uses your cached schema to generate accurate queries.
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		input := args[0]
-	// Find active connection or reconnect
+
+		// Determine output format
+		var format display.Format
+		switch {
+		case queryJSON:
+			format = display.FormatJSON
+		case queryCSV:
+			format = display.FormatCSV
+		default:
+			format = display.FormatTable
+		}
+
+		// Find active connection or reconnect
 		conn, err := db.ActiveConnection()
 		if err != nil {
 			dsn, loadErr := db.LoadDSN()
@@ -60,19 +76,9 @@ Uses your cached schema to generate accurate queries.
 		defer rows.Close()
 
 		cols := rows.Columns()
-		fmt.Fprintf(os.Stderr, "→ %d columns\n", len(cols))
 
-		// Print header
-		for i, c := range cols {
-			if i > 0 {
-				fmt.Print("\t")
-			}
-			fmt.Print(c)
-		}
-		fmt.Println()
-
-		// Print rows
-		rowCount := 0
+		// Collect all rows
+		var resultRows [][]string
 		vals := make([]any, len(cols))
 		ptrs := make([]any, len(cols))
 		for rows.Next() {
@@ -82,28 +88,43 @@ Uses your cached schema to generate accurate queries.
 			if err := rows.Scan(ptrs...); err != nil {
 				return fmt.Errorf("scan: %w", err)
 			}
+			row := make([]string, len(cols))
 			for i, v := range vals {
-				if i > 0 {
-					fmt.Print("\t")
-				}
 				switch val := v.(type) {
 				case []byte:
-					fmt.Print(string(val))
+					row[i] = string(val)
 				case nil:
-					fmt.Print("NULL")
+					row[i] = "NULL"
 				default:
-					fmt.Print(val)
+					row[i] = fmt.Sprint(val)
 				}
 			}
-			fmt.Println()
-			rowCount++
+			resultRows = append(resultRows, row)
 		}
 
+		// Build row count message
 		plural := "rows"
-		if rowCount == 1 {
+		if len(resultRows) == 1 {
 			plural = "row"
 		}
-		fmt.Fprintf(os.Stderr, "\n✓ %d %s\n", rowCount, plural)
+		msg := fmt.Sprintf("(%d %s)", len(resultRows), plural)
+
+		// Print results
+		res := display.Result{
+			Columns: cols,
+			Rows:    resultRows,
+			Message: msg,
+		}
+
+		if err := display.Print(os.Stdout, res, format); err != nil {
+			return fmt.Errorf("print: %w", err)
+		}
+
+		// Row count on stderr for non-table formats
+		if format != display.FormatTable {
+			fmt.Fprintf(os.Stderr, "\n%s\n", msg)
+		}
+
 		return nil
 	},
 }
@@ -129,5 +150,7 @@ func looksLikeSQL(s string) bool {
 }
 
 func init() {
+	queryCmd.Flags().BoolVar(&queryJSON, "json", false, "Output results as JSON")
+	queryCmd.Flags().BoolVar(&queryCSV, "csv", false, "Output results as CSV")
 	queryCmd.Flags().Bool("dry-run", false, "Generate SQL but don't execute")
 }
