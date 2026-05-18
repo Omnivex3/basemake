@@ -140,17 +140,3 @@ func QuestionToSQLStream(ctx context.Context, dialect, schemaPrompt, question st
 	// — pass it directly, no re-wrapping
 	return provider.GenerateSQLStream(ctx, schemaPrompt, question)
 }
-
-// buildPrompt constructs the system prompt with dialect-appropriate rules.
-func buildPrompt(dialect, schema string) string {
-	return fmt.Sprintf(`You are a SQL expert. Given the following database schema, convert the user's natural language question into a SQL query.
-
-Rules:
-- Generate %s-compatible SQL
-- Return ONLY the SQL query — no markdown, no backticks, no explanations
-- Use proper formatting with newlines
-- If the question is ambiguous, make a reasonable assumption and add a comment explaining it
-
-Schema:
-%s`, dialect, schema)
-}
