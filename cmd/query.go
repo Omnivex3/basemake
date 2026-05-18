@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -13,6 +14,8 @@ import (
 
 var queryJSON bool
 var queryCSV bool
+var queryDryRun bool
+var queryExplain bool
 
 var queryCmd = &cobra.Command{
 	Use:   "query [question|sql]",
@@ -21,7 +24,9 @@ var queryCmd = &cobra.Command{
 Uses your cached schema to generate accurate queries.
 
   dbai query "show me users who ordered last month"
-  dbai query "SELECT * FROM users LIMIT 5"`,
+  dbai query "SELECT * FROM users LIMIT 5"
+  dbai query "top 10 products by revenue" --dry-run    # preview SQL
+  dbai query "total sales last quarter" --explain       # show plan + results`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		input := args[0]
@@ -35,19 +40,6 @@ Uses your cached schema to generate accurate queries.
 			format = display.FormatCSV
 		default:
 			format = display.FormatTable
-		}
-
-		// Find active connection or reconnect
-		conn, err := db.ActiveConnection()
-		if err != nil {
-			dsn, loadErr := db.LoadDSN()
-			if loadErr != nil {
-				return fmt.Errorf("no active connection — run 'dbai connect' first: %w", err)
-			}
-			conn, err = db.Connect(dsn)
-			if err != nil {
-				return fmt.Errorf("reconnect: %w", err)
-			}
 		}
 
 		// Determine if input is SQL or natural language
@@ -66,6 +58,43 @@ Uses your cached schema to generate accurate queries.
 				return fmt.Errorf("ai: %w", err)
 			}
 			fmt.Fprintf(os.Stderr, "%s\n\n", sql)
+		}
+
+		// Dry-run: show SQL and exit
+		if queryDryRun {
+			cmd.Println(sql)
+			return nil
+		}
+
+		// Find active connection or reconnect
+		conn, err := db.ActiveConnection()
+		if err != nil {
+			dsn, loadErr := db.LoadDSN()
+			if loadErr != nil {
+				return fmt.Errorf("no active connection — run 'dbai connect' first: %w", err)
+			}
+			conn, err = db.Connect(dsn)
+			if err != nil {
+				return fmt.Errorf("reconnect: %w", err)
+			}
+		}
+		defer conn.Close()
+
+		// Validate AI-generated SQL before execution
+		if isNL && !queryExplain {
+			if err := validateSQL(cmd.Context(), conn, sql); err != nil {
+				return fmt.Errorf("generated SQL is invalid — try rephrasing your question:\n  %s\n  %v", sql, err)
+			}
+		}
+
+		// EXPLAIN mode: show plan then execute
+		if queryExplain {
+			plan, err := conn.Explain(cmd.Context(), sql)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "⚠ EXPLAIN failed: %v\n\n", err)
+			} else {
+				fmt.Fprintf(os.Stderr, "Execution Plan:\n%s\n\n", plan)
+			}
 		}
 
 		// Execute
@@ -129,6 +158,13 @@ Uses your cached schema to generate accurate queries.
 	},
 }
 
+// validateSQL checks if a SQL statement is syntactically valid
+// by running EXPLAIN on it (which validates syntax without executing).
+func validateSQL(ctx context.Context, conn db.Database, sql string) error {
+	_, err := conn.Explain(ctx, sql)
+	return err
+}
+
 func looksLikeSQL(s string) bool {
 	trimmed := ""
 	for _, c := range s {
@@ -152,5 +188,6 @@ func looksLikeSQL(s string) bool {
 func init() {
 	queryCmd.Flags().BoolVar(&queryJSON, "json", false, "Output results as JSON")
 	queryCmd.Flags().BoolVar(&queryCSV, "csv", false, "Output results as CSV")
-	queryCmd.Flags().Bool("dry-run", false, "Generate SQL but don't execute")
+	queryCmd.Flags().BoolVar(&queryDryRun, "dry-run", false, "Generate SQL but don't execute")
+	queryCmd.Flags().BoolVar(&queryExplain, "explain", false, "Show execution plan alongside results")
 }
