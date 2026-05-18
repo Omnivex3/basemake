@@ -16,6 +16,11 @@
 - **Zero data exfiltration** — works with [Ollama](https://ollama.ai) locally or your own API keys
 - **Performance analysis** — `basemake analyze "SELECT * FROM orders"` surfaces slow scans, missing indexes
 - **EXPLAIN mode** — `basemake "top products" --explain` shows execution plan alongside results
+- **CI/CD gate** — `basemake check "query"` exits 0 if fast, 1 if slow, 2 if dangerous. Drop it in your pipeline.
+- **Policy as code** — `basemake budget` defines performance rules that travel with your code
+- **Schema diffing** — `basemake diff` catches schema drift between dev, staging, and prod
+- **Query monitoring** — `basemake watch` schedules queries and alerts on slow-downs or data changes
+- **Team sync** — `basemake server` + `sync` share query history and budgets across your team
 - **Multi-dialect** — PostgreSQL, MySQL, SQLite with automatic SQL generation for each
 - **Output formats** — table (default), `--json`, `--csv`
 - **Streaming AI** — watch SQL generate token by token, or use `--no-stream` for instant results
@@ -259,9 +264,15 @@ jobs:
 | `basemake analyze <query>` | Run EXPLAIN ANALYZE, surface performance issues |
 | `basemake analyze --all` | Analyze all cached tables for issues |
 | `basemake check <sql\|file.sql>` | CI gate — exits 0 (pass), 1 (slow), 2 (dangerous), 3 (error) |
-| `basemake repl` | Interactive SQL shell with AI assistance |
+| `basemake diff` | Schema diff between two databases (live, cached, or file) |
+| `basemake budget` | Database performance policy as code |
+| `basemake watch` | Monitor a query on a schedule, alert on regression |
+| `basemake server` | Start the team sync daemon |
+| `basemake sync push` | Push a query event to the team server |
+| `basemake sync history` | Show team query log |
 | `basemake config show` | View all configuration |
 | `basemake config set <key> <value>` | Persist a config value |
+| `basemake repl` | Interactive SQL shell with AI assistance |
 | `basemake version` | Print version information |
 
 ### Query flags

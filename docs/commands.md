@@ -371,3 +371,276 @@ $ basemake version
 | Modified   | `vcs.modified` setting                     | `yes` (if dirty)    |
 
 The version command uses Go's built-in VCS info embedded at build time (since Go 1.18, enabled by default). No `-ldflags` injection needed.
+
+---
+
+## `basemake check <sql|file.sql>`
+
+CI gate — evaluate a query and exit with a CI-friendly code.
+
+```
+basemake check "SELECT * FROM users JOIN orders ON ..." --threshold 500ms
+basemake check queries/heavy_report.sql --threshold 2s
+basemake check "SELECT * FROM users" --dry-run            # analyze only
+```
+
+### What It Does
+
+1. Loads budgets from `.basemake/budgets.json` (searched from cwd upward)
+2. Auto-applies threshold from budgets if not explicitly set
+3. Runs EXPLAIN ANALYZE for structural check (seq scans, missing indexes)
+4. Applies budget policy rules
+5. Executes the query and times it
+6. Exits with a code
+
+### Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | ✅ Pass — query is fast and safe |
+| `1` | ❌ Slow — execution exceeded time threshold |
+| `2` | 🔴 Dangerous — structural issues found |
+| `3` | ⚠ Error — connection failed or query invalid |
+
+### Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--threshold` | Max query time (e.g. `500ms`, `2s`) | `1s` |
+| `--dry-run` | Analyze only — don't execute query | `false` |
+
+---
+
+## `basemake config <command>`
+
+Manage persistent configuration stored in `~/.basemake/config.json`.
+
+```
+basemake config show
+basemake config set ai_provider ollama
+basemake config set ollama_model llama3
+basemake config set output_format json
+```
+
+### Subcommands
+
+| Command | Description |
+|---------|-------------|
+| `show` | Print all config values |
+| `set <key> <value>` | Persist a config value |
+
+### Supported Keys
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `ai_provider` | `openai` | AI provider: `openai`, `anthropic`, `ollama` |
+| `ollama_model` | `llama3` | Ollama model name |
+| `ollama_base_url` | `http://localhost:11434/v1` | Ollama server URL |
+| `openai_model` | `gpt-4` | OpenAI model |
+| `anthropic_model` | `claude-sonnet-4-20250514` | Anthropic model |
+| `output_format` | `table` | Default output format: `table`, `json`, `csv` |
+
+---
+
+## `basemake budget`
+
+Database performance policy as code. Budgets are stored in `.basemake/budgets.json` and can be checked into version control.
+
+```
+basemake budget init                           # Create template budgets.json
+basemake budget set --table orders --max-seq-rows 1000
+basemake budget set --migration "V*__*.sql" --threshold 5s
+basemake budget list                           # Show all rules
+basemake budget diff                           # Compare with committed version
+```
+
+### What It Does
+
+- Defines performance expectations for tables, migrations, and queries
+- Enforced by `basemake check` automatically (loads budgets from cwd up)
+- Travels with your code in version control
+
+### Rule Types
+
+| Type | Flag | What It Checks |
+|------|------|----------------|
+| Table | `--table` | Max seq scan rows, required indexes |
+| Migration | `--migration <pattern>` | Max execution time for migration files |
+| Query | `--pattern` | Max execution time for matching queries |
+
+### Subcommands
+
+| Command | Description |
+|---------|-------------|
+| `init` | Create a template `.basemake/budgets.json` |
+| `set --table <name>` | Set a budget rule for a specific table |
+| `set --migration <pattern>` | Set a budget for migration files |
+| `list` | Show all active budget rules |
+| `diff` | Show unstaged changes to budgets.json |
+
+### Flags for budget set
+
+| Flag | Description |
+|------|-------------|
+| `--table` | Table name (e.g. `orders`) |
+| `--pattern` | Query pattern glob |
+| `--max-seq-rows` | Max sequential scan rows |
+| `--require-index` | Required index columns (comma-separated) |
+| `--threshold` | Max execution time (e.g. `500ms`) |
+| `--message` | Human-readable policy explanation |
+
+---
+
+## `basemake diff`
+
+Show schema differences between two databases. Detects added/removed tables, columns, indexes, and type changes.
+
+```
+basemake diff                                    # Active connection vs cached schema
+basemake diff --from "postgres://..." --to "postgres://..."  # Two live databases
+basemake diff --from-file schema_a.json --to-file schema_b.json  # Saved schemas
+basemake diff --json                             # JSON output
+```
+
+### What It Detects
+
+| Change | Detected |
+|--------|----------|
+| Table added | ✅ |
+| Table removed | ✅ |
+| Column added | ✅ |
+| Column removed | ✅ |
+| Column type changed | ✅ |
+| Column nullable changed | ✅ |
+| Column PK changed | ✅ |
+| Column default changed | ✅ |
+| Index added | ✅ |
+| Index removed | ✅ |
+
+### Three Modes
+
+| Mode | Usage | Use Case |
+|------|-------|----------|
+| Live vs Cached | `basemake diff` | Baseline after connect, detect drift |
+| Live vs Live | `--from` / `--to` | Dev vs staging, staging vs prod |
+| File vs File | `--from-file` / `--to-file` | Compare saved schema snapshots |
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--from` | Source DSN (e.g. dev database) |
+| `--to` | Target DSN (e.g. staging database) |
+| `--from-file` | Path to source schema JSON file |
+| `--to-file` | Path to target schema JSON file |
+| `--json` | Output as JSON |
+
+---
+
+## `basemake server`
+
+Start or inspect the basemake team daemon. The server stores query history, budget snapshots, and enables team-wide collaboration.
+
+```
+basemake server start              # Start on default port 9876
+basemake server start --port 8080
+basemake server start --dir /data/basemake
+basemake server status             # Show server status + stats
+```
+
+### API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/health` | Health check with version + event count |
+| `POST` | `/api/events` | Push a query event |
+| `GET` | `/api/events` | List recent query events |
+| `POST` | `/api/budgets/sync` | Push budgets to server |
+| `GET` | `/api/budgets/latest` | Get latest budgets |
+| `POST` | `/api/watches` | Create a watch |
+| `GET` | `/api/watches` | List active watches |
+| `DELETE` | `/api/watches/:id` | Delete a watch |
+| `GET` | `/api/watches/:id/results` | Watch execution history |
+
+### Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--port` / `-p` | HTTP port | `9876` |
+| `--dir` | Data directory for SQLite storage | `~/.basemake/server` |
+
+---
+
+## `basemake sync <subcommand>`
+
+Sync data with the basemake team server.
+
+```
+basemake sync push "SELECT * FROM orders" --duration 150ms --user alice
+basemake sync history --limit 20
+basemake sync budget-push
+basemake sync budget-pull
+```
+
+### Subcommands
+
+| Command | Description |
+|---------|-------------|
+| `push <sql>` | Push a query event to the team server |
+| `history` | Show team query log from the server |
+| `budget-push` | Push local budgets to the team server |
+| `budget-pull` | Fetch latest budgets from the team server |
+
+### Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--server` | Server URL | `http://localhost:9876` |
+| `--duration` | Query duration (e.g. `150ms`) | — |
+| `--user` | User name | hostname |
+| `--limit` | Number of events to show | `20` |
+| `--offset` | Pagination offset | `0` |
+
+---
+
+## `basemake watch`
+
+Monitor a query on a schedule and alert when results change or slow down. Runs via the basemake server daemon.
+
+```
+basemake watch add "SELECT COUNT(*) FROM orders" --every 5m
+basemake watch add queries/kpi.sql --every 1h --threshold 2s
+basemake watch list
+basemake watch stop 1
+basemake watch logs 1
+```
+
+### How It Works
+
+1. Registers a watch with the server (`POST /api/watches`)
+2. Server background goroutine polls active watches every 30s
+3. Executes the query, records duration + row count + result hash
+4. Alerts on:
+   - **Slow query** — duration exceeds `--threshold`
+   - **Data changed** — result hash differs from previous run
+   - **Connection error** — database unreachable
+
+### Subcommands
+
+| Command | Description |
+|---------|-------------|
+| `add <sql\|file.sql>` | Add a new watch |
+| `list` | List all active watches |
+| `stop <id>` | Stop and remove a watch |
+| `logs <id>` | Show watch execution history |
+
+### Flags
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--server` | Server URL | `http://localhost:9876` |
+| `--every` | Check interval | `5m` |
+| `--threshold` | Alert if query exceeds duration (e.g. `2s`) | — |
+| `--label` | Human-readable label | SQL first 60 chars |
+| `--user` | User name | hostname |
+| `--dsn` | Database DSN | Active connection |

@@ -7,7 +7,7 @@ Welcome to the comprehensive documentation for **basemake** — the AI-powered d
 | Document | What You'll Find |
 |----------|------------------|
 | [Overview](overview.md) | Architecture, design decisions, data flow, build pipeline |
-| [Commands](commands.md) | Full reference for all 6 commands with every flag and behavior |
+| [Commands](commands.md) | Full reference for all 14 commands with flags and behavior |
 | [Configuration](configuration.md) | Config file format, env vars, defaults, precedence rules |
 | [Database Drivers](database-drivers.md) | PostgreSQL, MySQL, SQLite implementation details |
 | [Output Formats](output-formats.md) | Table, JSON, CSV, TSV formatting rules |
@@ -20,16 +20,30 @@ Welcome to the comprehensive documentation for **basemake** — the AI-powered d
 Usage:
   basemake [command]
 
-Available Commands:
+Understand:
   connect     Connect and introspect a database
-  query       Ask a natural language question about your data
   analyze     Analyze query performance with EXPLAIN ANALYZE
+  diff        Show schema differences between two databases
+  history     Show team query log (via server)
+
+Act:
+  query       Ask a natural language question about your data
   repl        Interactive SQL shell with AI assistance
+  check       CI gate — check query performance, exit with code
+
+Govern:
+  budget      Database performance policy as code
+  watch       Monitor a query on a schedule, alert on regression
+  server      Start the basemake team daemon
+  sync        Sync data with the team server
+
+Infrastructure:
+  config      Manage persistent configuration
   completion  Generate shell completion scripts
   version     Print version information
 
 Flags:
-  -h, --help   Show help for any command
+  -h, --help          Show help for any command
 
 Query Flags:
   --json              Output as JSON
@@ -40,30 +54,30 @@ Query Flags:
 Analyze Flag:
   --all               Analyze all cached tables
 
-REPL Flag:
-  --format <format>   Output format (table, json, csv)
-
 Environment Variables:
-  OPENAI_API_KEY      Required for NL→SQL queries
-  OPENAI_MODEL        Override AI model (default: gpt-4)
-  BASEMAKE_DSN            Default connection string
+  AI_PROVIDER         Provider: openai, anthropic, ollama
+  OPENAI_API_KEY      API key for OpenAI
+  ANTHROPIC_API_KEY   API key for Anthropic
 
 Config File:
   ~/.basemake/config.json
 
 Schema Cache:
   ~/.basemake/schema.json
+
+Server Data:
+  ~/.basemake/server/basemake.db
 ```
 
 ## Stats
 
 | Metric | Value |
 |--------|-------|
-| Commands | 6 |
+| Commands | 14 (3 categories: Understand, Act, Govern) |
 | Database drivers | 3 (PostgreSQL, MySQL, SQLite) |
-| Output formats | 4 (table, JSON, CSV, TSV) |
+| Output formats | 3 (table, JSON, CSV) |
 | Test functions | 29+ |
 | CI build targets | 5 (linux/mac/windows × amd64/arm64) |
 | Go version | 1.25 |
-| Lines of Go | ~2,500 |
-| External deps | 3 (cobra, lib/pq, go-sql-driver/mysql, modernc.org/sqlite) |
+| Lines of Go | ~6,700 |
+| External deps | 4 (cobra, lib/pq, go-sql-driver/mysql, modernc.org/sqlite) |
