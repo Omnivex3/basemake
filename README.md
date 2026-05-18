@@ -1,5 +1,10 @@
 # dbai — AI-powered database CLI
 
+[![Release](https://img.shields.io/github/v/release/DynamicKarabo/dbai?style=flat&label=release)](https://github.com/DynamicKarabo/dbai/releases)
+[![CI](https://github.com/DynamicKarabo/dbai/actions/workflows/release.yml/badge.svg)](https://github.com/DynamicKarabo/dbai/actions/workflows/release.yml)
+[![Go](https://img.shields.io/badge/Go-1.24-00ADD8?style=flat&logo=go)](https://go.dev)
+[![GitHub Downloads](https://img.shields.io/github/downloads/DynamicKarabo/dbai/total?style=flat&label=downloads)](https://github.com/DynamicKarabo/dbai/releases)
+
 Query, analyze, and optimize your databases with natural language.
 
 ```
@@ -23,12 +28,23 @@ Bob     7
 
 ## Install
 
-```bash
-# Via Go
-go install github.com/DynamicKarabo/dbai@latest
+### Binary (Linux)
 
-# Or download binary
+```bash
 curl -sfL https://github.com/DynamicKarabo/dbai/releases/latest/download/dbai-linux-amd64.tar.gz | tar xz
+sudo mv dbai /usr/local/bin/
+```
+
+### Via Go
+
+```bash
+go install github.com/DynamicKarabo/dbai@latest
+```
+
+### macOS (Apple Silicon)
+
+```bash
+curl -sfL https://github.com/DynamicKarabo/dbai/releases/latest/download/dbai-darwin-arm64.tar.gz | tar xz
 sudo mv dbai /usr/local/bin/
 ```
 

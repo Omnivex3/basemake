@@ -1,0 +1,136 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+  packages: read
+
+env:
+  GO_VERSION: "1.24"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Go vet
+        run: go vet ./...
+
+      - name: Staticcheck
+        uses: dominikh/staticcheck-action@v1
+        with:
+          version: "latest"
+          install-go: false
+          min-linters: ""
+
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+        exclude:
+          - goos: windows
+            goarch: arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: go build -ldflags="-s -w" -o dbai-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }} .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbai-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dbai-${{ matrix.goos }}-${{ matrix.goarch }}*
+          retention-days: 1
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [lint, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create archive and checksums
+        run: |
+          mkdir -p release
+          cd artifacts
+
+          for dir in dbai-*; do
+            os_arch="${dir#dbai-}"
+            binary="dbai-${os_arch}"
+
+            # Add .exe for Windows
+            if echo "$os_arch" | grep -q "windows"; then
+              binary="${binary}.exe"
+            fi
+
+            # Rename binary to just "dbai" (or "dbai.exe" for Windows) inside archive
+            if echo "$os_arch" | grep -q "windows"; then
+              cp "$dir/$binary" "../release/dbai.exe"
+              tar czf "../release/dbai-${os_arch}.tar.gz" -C "../release" dbai.exe
+              rm "../release/dbai.exe"
+            else
+              cp "$dir/$binary" "../release/dbai"
+              tar czf "../release/dbai-${os_arch}.tar.gz" -C "../release" dbai
+              rm "../release/dbai"
+            fi
+          done
+
+          cd ../release
+          sha256sum dbai-*.tar.gz > checksums.txt
+          echo "=== Built artifacts ==="
+          ls -lh
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          tag_name: ${{ github.ref }}
+          body: |
+            ## dbai ${{ github.ref_name }}
+
+            ### Install
+
+            ```bash
+            # Linux amd64
+            curl -sfL https://github.com/${{ github.repository }}/releases/latest/download/dbai-linux-amd64.tar.gz | tar xz
+            sudo mv dbai /usr/local/bin/
+
+            # macOS (Intel)
+            curl -sfL https://github.com/${{ github.repository }}/releases/latest/download/dbai-darwin-amd64.tar.gz | tar xz
+            sudo mv dbai /usr/local/bin/
+
+            # macOS (Apple Silicon)
+            curl -sfL https://github.com/${{ github.repository }}/releases/latest/download/dbai-darwin-arm64.tar.gz | tar xz
+            sudo mv dbai /usr/local/bin/
+
+            # Windows (via PowerShell)
+            # curl.exe -LO https://github.com/${{ github.repository }}/releases/latest/download/dbai-windows-amd64.tar.gz
+            ```
+          files: release/*
+          generate_release_notes: true
