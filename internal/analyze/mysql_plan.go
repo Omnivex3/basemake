@@ -196,7 +196,7 @@ func analyzeMySQLIssues(r *Report) {
 		}
 		if strings.HasPrefix(n.NodeType, "Index") || strings.Contains(n.NodeType, "Index") ||
 			n.NodeType == "Range Scan" || n.NodeType == "Ref Lookup" ||
-			n.NodeType == "EQ Ref Lookup" {
+			n.NodeType == "EQ Ref Lookup" || n.NodeType == "Fulltext Search" {
 			r.IndexScans++
 			r.TotalTableScans++
 		}

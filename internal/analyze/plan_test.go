@@ -287,3 +287,447 @@ func TestReportStringFormatting(t *testing.T) {
 		t.Error("missing node types in plan tree output")
 	}
 }
+
+// ──────────────────────────────────────────────
+// MySQL Stress Tests
+// ──────────────────────────────────────────────
+
+// 1. Simple full table scan
+const mysqlTableScan = `{
+  "query_block": { "select_id": 1, "table": {
+    "table_name": "big_logs", "access_type": "ALL",
+    "rows_examined_per_scan": 500000,
+    "rows_produced_per_join": 500000,
+    "filtered": "10.00",
+    "cost_info": { "query_cost": "50000.00" }
+  }}
+}`
+
+func TestMySQL_TableScan(t *testing.T) {
+	r, err := ParsePlan(mysqlTableScan)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if r.SequentialScans != 1 {
+		t.Errorf("SequentialScans = %d, want 1", r.SequentialScans)
+	}
+	if len(r.Nodes) != 1 {
+		t.Fatalf("nodes = %d, want 1", len(r.Nodes))
+	}
+	if r.Nodes[0].NodeType != "Table Scan" {
+		t.Errorf("NodeType = %q, want %q", r.Nodes[0].NodeType, "Table Scan")
+	}
+	if r.Nodes[0].PlanRows != 500000 {
+		t.Errorf("PlanRows = %f, want 500000", r.Nodes[0].PlanRows)
+	}
+	// Should flag this as an issue (>100 rows)
+	found := false
+	for _, iss := range r.Issues {
+		if iss.NodeType == "Table Scan" && iss.TableName == "big_logs" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected issue for table scan on big_logs")
+	}
+}
+
+// 2. All access type mappings
+const mysqlAccessTypes = `{
+  "query_block": { "select_id": 1, "table": {
+    "table_name": "all_types",
+    "access_type": "ALL",
+    "possible_keys": ["idx_a","idx_b","idx_c"],
+    "rows_examined_per_scan": 100,
+    "cost_info": { "query_cost": "10.00" },
+    "nested_loop": [
+      {"table": {"table_name": "t2", "access_type": "ref", "key": "idx_a", "rows_examined_per_scan": 1}},
+      {"table": {"table_name": "t3", "access_type": "eq_ref", "key": "PRIMARY", "rows_examined_per_scan": 1}},
+      {"table": {"table_name": "t4", "access_type": "range", "key": "idx_b", "rows_examined_per_scan": 50}},
+      {"table": {"table_name": "t5", "access_type": "index", "key": "idx_c", "rows_examined_per_scan": 1000}},
+      {"table": {"table_name": "t6", "access_type": "const", "rows_examined_per_scan": 0}},
+      {"table": {"table_name": "t7", "access_type": "system", "rows_examined_per_scan": 1}},
+      {"table": {"table_name": "t8", "access_type": "fulltext", "key": "ft_idx"}}
+    ]
+  }}
+}`
+
+func TestMySQL_AllAccessTypes(t *testing.T) {
+	r, err := ParsePlan(mysqlAccessTypes)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// 1 table scan + 7 joined = 8 nodes
+	if len(r.Nodes) != 8 {
+		t.Fatalf("nodes = %d, want 8", len(r.Nodes))
+	}
+	expected := []struct {
+		idx     int
+		nodeType string
+		table   string
+	}{
+		{0, "Table Scan", "all_types"},
+		{1, "Ref Lookup", "t2"},
+		{2, "EQ Ref Lookup", "t3"},
+		{3, "Range Scan", "t4"},
+		{4, "Index Scan", "t5"},
+		{5, "Const Lookup", "t6"},
+		{6, "System Lookup", "t7"},
+		{7, "Fulltext Search", "t8"},
+	}
+	for _, exp := range expected {
+		n := r.Nodes[exp.idx]
+		if n.NodeType != exp.nodeType {
+			t.Errorf("node[%d].NodeType = %q, want %q", exp.idx, n.NodeType, exp.nodeType)
+		}
+		if n.RelationName != exp.table {
+			t.Errorf("node[%d].RelationName = %q, want %q", exp.idx, n.RelationName, exp.table)
+		}
+	}
+	if r.SequentialScans != 1 {
+		t.Errorf("SequentialScans = %d, want 1", r.SequentialScans)
+	}
+	if r.IndexScans != 5 {
+		t.Errorf("IndexScans = %d, want 5 (ref+eq_ref+range+index+fulltext)", r.IndexScans)
+	}
+}
+
+// 3. Hash join
+const mysqlHashJoin = `{
+  "query_block": { "select_id": 1, "table": {
+    "table_name": "t1", "access_type": "ALL", "rows_examined_per_scan": 1000,
+    "cost_info": { "query_cost": "100.00" },
+    "hash_join": [
+      {"table": {"table_name": "t2", "access_type": "ALL", "rows_examined_per_scan": 500}},
+      {"table": {"table_name": "t3", "access_type": "ref", "key": "idx", "rows_examined_per_scan": 10}}
+    ]
+  }}
+}`
+
+func TestMySQL_HashJoin(t *testing.T) {
+	r, err := ParsePlan(mysqlHashJoin)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(r.Nodes) != 3 {
+		t.Fatalf("nodes = %d, want 3 (t1 + hash children)", len(r.Nodes))
+	}
+	if r.Nodes[0].NodeType != "Table Scan" || r.Nodes[0].RelationName != "t1" {
+		t.Errorf("root node wrong: %s on %s", r.Nodes[0].NodeType, r.Nodes[0].RelationName)
+	}
+}
+
+// 4. No table query (SELECT 1)
+const mysqlNoTable = `{
+  "query_block": { "select_id": 1, "table": {
+    "access_type": null, "table_name": ""
+  }}
+}`
+
+func TestMySQL_NoTable(t *testing.T) {
+	r, err := ParsePlan(mysqlNoTable)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// NULL access_type -> empty string -> "No Table"
+	if len(r.Nodes) != 1 {
+		t.Fatalf("nodes = %d, want 1", len(r.Nodes))
+	}
+	if r.Nodes[0].NodeType != "No Table" {
+		t.Errorf("NodeType = %q, want %q", r.Nodes[0].NodeType, "No Table")
+	}
+}
+
+// 5. Subquery in WHERE (attached_subqueries) — should not crash, should produce sensible output
+const mysqlSubqueryInWhere = `{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "orders",
+      "access_type": "ALL",
+      "rows_examined_per_scan": 10000,
+      "cost_info": { "query_cost": "1000.00" },
+      "attached_condition": "(` + "`orders`.`user_id` in (select `users`.`id` from `users` where `users`.`status` = 'active')" + `)"
+    },
+    "subqueries": [
+      {
+        "query_block": {
+          "select_id": 2,
+          "table": {
+            "table_name": "users",
+            "access_type": "ref",
+            "key": "idx_status",
+            "rows_examined_per_scan": 50,
+            "attached_condition": "(` + "`users`.`status` = 'active')" + `"
+          }
+        }
+      }
+    ]
+  }
+}`
+
+func TestMySQL_SubqueryInWhere(t *testing.T) {
+	r, err := ParsePlan(mysqlSubqueryInWhere)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Should at minimum analyze the outer query
+	if r.SequentialScans != 1 {
+		t.Errorf("SequentialScans = %d, want 1 (orders table scan)", r.SequentialScans)
+	}
+	if r.Nodes[0].RelationName != "orders" {
+		t.Errorf("outer table = %q, want %q", r.Nodes[0].RelationName, "orders")
+	}
+	// subqueries are RawMessage — not analyzed deeply, should not crash
+	_ = r.String()
+}
+
+// 6. Derived table (materialized_from_subquery) — edge case that caught the type mismatch
+const mysqlDerivedTable = `{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "<derived2>",
+      "access_type": "ALL",
+      "rows_examined_per_scan": 0,
+      "materialized_from_subquery": {
+        "query_block": {
+          "select_id": 2,
+          "table": {
+            "table_name": "users",
+            "access_type": "ALL",
+            "rows_examined_per_scan": 5000
+          }
+        }
+      }
+    }
+  }
+}`
+
+func TestMySQL_DerivedTable(t *testing.T) {
+	r, err := ParsePlan(mysqlDerivedTable)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Should not crash. Outer derived table is present, inner is RawMessage
+	if len(r.Nodes) != 1 {
+		t.Fatalf("nodes = %d, want 1 (outer derived table only)", len(r.Nodes))
+	}
+}
+
+// 7. UNION
+const mysqlUnion = `{
+  "query_block": {
+    "select_id": 1,
+    "table": {
+      "table_name": "<union1,2>",
+      "access_type": "ALL",
+      "rows_examined_per_scan": 0,
+      "union_result": {
+        "query_block": {
+          "select_id": 2,
+          "table": {"table_name": "t1", "access_type": "ALL", "rows_examined_per_scan": 100}
+        }
+      }
+    }
+  }
+}`
+
+func TestMySQL_Union(t *testing.T) {
+	r, err := ParsePlan(mysqlUnion)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Should not crash. Union branches are RawMessage, not analyzed
+	if len(r.Nodes) != 1 {
+		t.Fatalf("nodes = %d, want 1 (union wrapper only)", len(r.Nodes))
+	}
+}
+
+// 8. Index merge
+const mysqlIndexMerge = `{
+  "query_block": { "select_id": 1, "table": {
+    "table_name": "t1", "access_type": "index_merge",
+    "key": "intersect(idx_a,idx_b)",
+    "rows_examined_per_scan": 50,
+    "cost_info": { "query_cost": "20.00" }
+  }}
+}`
+
+func TestMySQL_IndexMerge(t *testing.T) {
+	r, err := ParsePlan(mysqlIndexMerge)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if r.Nodes[0].NodeType != "Index Merge" {
+		t.Errorf("NodeType = %q, want %q", r.Nodes[0].NodeType, "Index Merge")
+	}
+	if r.IndexScans != 1 {
+		t.Errorf("IndexScans = %d, want 1", r.IndexScans)
+	}
+}
+
+// 9. Null/missing/empty fields — should not panic
+const mysqlNullFields = `{
+  "query_block": { "select_id": 1, "table": {
+    "table_name": null,
+    "access_type": null,
+    "rows_examined_per_scan": null,
+    "rows_produced_per_join": null,
+    "filtered": null,
+    "cost_info": null,
+    "used_columns": null,
+    "possible_keys": null,
+    "nested_loop": null,
+    "hash_join": null
+  }}
+}`
+
+func TestMySQL_NullFields(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("PANIC on null fields: %v", r)
+		}
+	}()
+	r, err := ParsePlan(mysqlNullFields)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Should produce valid output with an info-level "No Table" issue
+	if len(r.Nodes) != 1 {
+		t.Fatalf("nodes = %d, want 1", len(r.Nodes))
+	}
+	// Should not produce any critical errors
+	for _, iss := range r.Issues {
+		if iss.Severity == "critical" {
+			t.Errorf("unexpected critical issue: %s", iss.Message)
+		}
+	}
+	_ = r.String()
+}
+
+// 10. Empty JSON object — not valid MySQL or PG format
+const mysqlEmptyObj = `{}`
+
+func TestMySQL_EmptyJSON(t *testing.T) {
+	r, err := ParsePlan(mysqlEmptyObj)
+	if err == nil {
+		t.Fatal("expected error for empty object, got nil")
+	}
+	// Should fall through to PG parser which should also fail
+	if r != nil {
+		t.Errorf("expected nil report on error, got %v", r)
+	}
+}
+
+// 11. Missing query_block entirely
+const mysqlNoQueryBlock = `{"some_other_key": 123}`
+
+func TestMySQL_NoQueryBlock(t *testing.T) {
+	r, err := ParsePlan(mysqlNoQueryBlock)
+	if err != nil {
+		// Both parsers should fail — that's fine
+		if r != nil {
+			t.Errorf("expected nil report on error")
+		}
+		return
+	}
+	// If it somehow succeeded, check it's valid
+	if r != nil {
+		_ = r.String()
+	}
+}
+
+// 12. Deeply nested joins (8 levels)
+const mysqlDeepNesting = `{
+  "query_block": { "select_id": 1, "table": {
+    "table_name": "l1", "access_type": "ALL", "rows_examined_per_scan": 200,
+    "nested_loop": [{"table": {
+      "table_name": "l2", "access_type": "ref", "key": "idx", "rows_examined_per_scan": 10,
+      "nested_loop": [{"table": {
+        "table_name": "l3", "access_type": "eq_ref", "key": "PRIMARY", "rows_examined_per_scan": 1,
+        "nested_loop": [{"table": {
+          "table_name": "l4", "access_type": "ref", "key": "idx", "rows_examined_per_scan": 5,
+          "nested_loop": [{"table": {
+            "table_name": "l5", "access_type": "ALL", "rows_examined_per_scan": 500
+          }}]
+        }}]
+      }}]
+    }}]
+  }}
+}`
+
+func TestMySQL_DeepNesting(t *testing.T) {
+	r, err := ParsePlan(mysqlDeepNesting)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(r.Nodes) != 5 {
+		t.Fatalf("nodes = %d, want 5", len(r.Nodes))
+	}
+	// Verify depth increases
+	for i := 1; i < len(r.Nodes); i++ {
+		if r.Nodes[i].Depth <= r.Nodes[i-1].Depth {
+			t.Errorf("node[%d].Depth = %d, should be deeper than node[%d].Depth = %d",
+				i, r.Nodes[i].Depth, i-1, r.Nodes[i-1].Depth)
+		}
+	}
+	// Should flag both table scans (l1 and l5 have >100 rows)
+	scanCount := 0
+	for _, n := range r.Nodes {
+		if n.NodeType == "Table Scan" && n.PlanRows > 100 {
+			scanCount++
+		}
+	}
+	if scanCount != 2 {
+		t.Errorf("table scans with >100 rows = %d, want 2 (l1, l5)", scanCount)
+	}
+}
+
+// 13. Negative/null cost_info
+const mysqlNegativeCost = `{
+  "query_block": { "select_id": 1, "table": {
+    "table_name": "t1", "access_type": "ALL",
+    "rows_examined_per_scan": 10,
+    "cost_info": { "query_cost": "-1.00", "prefix_cost": "-5.00" }
+  }}
+}`
+
+func TestMySQL_NegativeCost(t *testing.T) {
+	r, err := ParsePlan(mysqlNegativeCost)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Negative cost should not produce critical issues
+	for _, iss := range r.Issues {
+		if iss.Severity == "critical" {
+			t.Errorf("unexpected critical issue for negative cost: %s", iss.Message)
+		}
+	}
+}
+
+// 14. Cross-parse: PG plan still works unchanged
+func TestMySQL_CrossParsePGUnchanged(t *testing.T) {
+	r, err := ParsePlan(samplePlan)
+	if err != nil {
+		t.Fatalf("PG plan parsing broke: %v", err)
+	}
+	if r.ExecutionTime != 12.5 {
+		t.Errorf("PG ExecutionTime = %f, want 12.5", r.ExecutionTime)
+	}
+	if len(r.Nodes) != 3 {
+		t.Errorf("PG nodes = %d, want 3", len(r.Nodes))
+	}
+}
+
+// 15. PG plan with verbose output (no regression)
+func TestMySQL_CrossParsePGWithIndex(t *testing.T) {
+	r, err := ParsePlan(samplePlanWithIndex)
+	if err != nil {
+		t.Fatalf("PG plan with index broke: %v", err)
+	}
+	if r.IndexScans != 1 {
+		t.Errorf("PG IndexScans = %d, want 1", r.IndexScans)
+	}
+}
