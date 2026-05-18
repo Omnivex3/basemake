@@ -129,6 +129,7 @@ Uses your cached schema to generate accurate queries.
 		if queryExplain {
 			if isDML(sql) {
 				fmt.Fprintf(os.Stderr, "⚠ Cannot EXPLAIN ANALYZE DML queries — they would actually execute. Use --dry-run to preview the SQL.\n\n")
+				return nil
 			} else {
 				plan, err := conn.Explain(cmd.Context(), sql)
 				if err != nil {

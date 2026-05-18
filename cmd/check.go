@@ -34,7 +34,7 @@ Examples:
   basemake check "SELECT * FROM users JOIN orders ON ..." --threshold 500ms
   basemake check queries/heavy_report.sql --threshold 2s
   basemake check "SELECT * FROM users" --dry-run            # analyze only
-  basemake check "UPDATE accounts SET balance = 0"          # default 1s threshold`,
+  basemake check "SELECT COUNT(*) FROM users"               # default 1s threshold`,
 
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -104,7 +104,9 @@ Examples:
 		// Step 1: Structural check via EXPLAIN ANALYZE
 		hasCritical := false
 		hasWarning := false
-		if planJSON, planErr := conn.ExplainJSON(cmd.Context(), sql); planErr == nil {
+		var planJSON string
+		var planErr error
+		if planJSON, planErr = conn.ExplainJSON(cmd.Context(), sql); planErr == nil {
 			if report, parseErr := analyze.ParsePlan(planJSON); parseErr == nil {
 				for _, issue := range report.Issues {
 					switch issue.Severity {
@@ -125,19 +127,17 @@ Examples:
 			}
 		}
 
-		// Step 1b: Budget policy check
-		if budgetsFile != nil && len(budgetsFile.Rules) > 0 {
+		// Step 1b: Budget policy check — reuse plan from Step 1
+		if budgetsFile != nil && len(budgetsFile.Rules) > 0 && planErr == nil {
 			// Extract scan info from plan analysis
 			var scans []budget.ScanInfo
-			if report, parseErr := conn.ExplainJSON(cmd.Context(), sql); parseErr == nil {
-				if planReport, planErr := analyze.ParsePlan(report); planErr == nil {
-					for _, node := range planReport.Nodes {
-						if node.NodeType == "Seq Scan" && node.RelationName != "" {
-							scans = append(scans, budget.ScanInfo{
-								Table:    node.RelationName,
-								RowCount: int(node.ActualRows),
-							})
-						}
+			if planReport, planErr := analyze.ParsePlan(planJSON); planErr == nil {
+				for _, node := range planReport.Nodes {
+					if node.NodeType == "Seq Scan" && node.RelationName != "" {
+						scans = append(scans, budget.ScanInfo{
+							Table:    node.RelationName,
+							RowCount: int(node.ActualRows),
+						})
 					}
 				}
 			}
@@ -175,8 +175,8 @@ Examples:
 			return nil
 		}
 
-		// Step 3: Validate SQL before execution
-		if _, err := conn.Explain(cmd.Context(), sql); err != nil {
+		// Step 3: Validate SQL before execution (safe — no ANALYZE)
+		if _, err := conn.ExplainNoAnalyze(cmd.Context(), sql); err != nil {
 			fmt.Fprintf(os.Stderr, "⚠ Invalid SQL: %v\n", err)
 			os.Exit(3)
 			return nil

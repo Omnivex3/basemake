@@ -78,6 +78,6 @@ Server Data:
 | Output formats | 3 (table, JSON, CSV) |
 | Test functions | 29+ |
 | CI build targets | 5 (linux/mac/windows × amd64/arm64) |
-| Go version | 1.25 |
+| Go version | 1.26 |
 | Lines of Go | ~6,700 |
 | External deps | 4 (cobra, lib/pq, go-sql-driver/mysql, modernc.org/sqlite) |
