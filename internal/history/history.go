@@ -28,7 +28,7 @@ var db *sql.DB
 
 func dbPath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".dbai", "history.db")
+	return filepath.Join(home, ".basemake", "history.db")
 }
 
 // Init opens or creates the history database.

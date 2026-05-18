@@ -7,11 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DynamicKarabo/dbai/internal/ai"
-	"github.com/DynamicKarabo/dbai/internal/config"
-	"github.com/DynamicKarabo/dbai/internal/db"
-	"github.com/DynamicKarabo/dbai/internal/display"
-	"github.com/DynamicKarabo/dbai/internal/history"
+	"github.com/DynamicKarabo/basemake/internal/ai"
+	"github.com/DynamicKarabo/basemake/internal/config"
+	"github.com/DynamicKarabo/basemake/internal/db"
+	"github.com/DynamicKarabo/basemake/internal/display"
+	"github.com/DynamicKarabo/basemake/internal/history"
 	"github.com/spf13/cobra"
 )
 
@@ -27,10 +27,10 @@ var queryCmd = &cobra.Command{
 	Long: `Translate a plain English question into SQL and run it.
 Uses your cached schema to generate accurate queries.
 
-  dbai query "show me users who ordered last month"
-  dbai query "SELECT * FROM users LIMIT 5"
-  dbai query "top 10 products by revenue" --dry-run    # preview SQL
-  dbai query "total sales last quarter" --explain       # show plan + results`,
+  basemake query "show me users who ordered last month"
+  basemake query "SELECT * FROM users LIMIT 5"
+  basemake query "top 10 products by revenue" --dry-run    # preview SQL
+  basemake query "total sales last quarter" --explain       # show plan + results`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		input := args[0]
@@ -107,7 +107,7 @@ Uses your cached schema to generate accurate queries.
 		if err != nil {
 			dsn, loadErr := db.LoadDSN()
 			if loadErr != nil {
-				return fmt.Errorf("no active connection — run 'dbai connect' first: %w", err)
+				return fmt.Errorf("no active connection — run 'basemake connect' first: %w", err)
 			}
 			conn, err = db.Connect(dsn)
 			if err != nil {

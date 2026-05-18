@@ -1,10 +1,10 @@
-# dbai — AI-Powered Database CLI
+# basemake — AI-Powered Database CLI
 
-**dbai** is a Go CLI tool that lets you query, analyze, and optimize databases using natural language. It bridges the gap between plain English questions and SQL execution — connecting to PostgreSQL, MySQL, and SQLite databases, introspecting their schemas, and translating your questions into optimized queries.
+**basemake** is a Go CLI tool that lets you query, analyze, and optimize databases using natural language. It bridges the gap between plain English questions and SQL execution — connecting to PostgreSQL, MySQL, and SQLite databases, introspecting their schemas, and translating your questions into optimized queries.
 
 ## Architecture
 
-dbai follows a standard Go CLI architecture using the [Cobra](https://github.com/spf13/cobra) framework.
+`basemake follows a standard Go CLI architecture using the [Cobra](https://github.com/spf13/cobra) framework.
 
 ```
 main.go                  Entry point — calls rootCmd.Execute()
@@ -23,7 +23,7 @@ main.go                  Entry point — calls rootCmd.Execute()
     ├── analyze/         PostgreSQL JSON EXPLAIN plan parser & issue detector
     │   ├── plan.go
     │   └── plan_test.go
-    ├── config/          Persistent JSON config (~/.dbai/config.json)
+    ├── config/          Persistent JSON config (~/.basemake/config.json)
     │   ├── config.go
     │   └── config_test.go
     ├── db/              Database abstraction layer with 3 driver implementations
@@ -32,7 +32,7 @@ main.go                  Entry point — calls rootCmd.Execute()
     │   ├── postgres.go   PostgreSQL driver (lib/pq)
     │   ├── mysql.go      MySQL driver (go-sql-driver/mysql)
     │   ├── sqlite.go     SQLite driver (modernc.org/sqlite — pure Go, no CGo)
-    │   ├── cache.go      Schema caching to JSON on disk (~/.dbai/schema.json)
+    │   ├── cache.go      Schema caching to JSON on disk (~/.basemake/schema.json)
     │   ├── config.go     DSN persistence (old format, superseded by config)
     │   ├── errors.go     Sentinel errors (ErrNoConnection, ErrUnsupported)
     │   └── *_test.go     Tests for each driver & schema
@@ -45,7 +45,7 @@ main.go                  Entry point — calls rootCmd.Execute()
 
 ### Why Go 1.25?
 
-Go gives us a single static binary with zero runtime dependencies. No Python venv, no Node.js, no JVM. Download and run. The 1.25 toolchain provides `debug.ReadBuildInfo()` for VCS commit embedding and modern generics (though dbai doesn't use generics — the type complexity didn't justify it).
+Go gives us a single static binary with zero runtime dependencies. No Python venv, no Node.js, no JVM. Download and run. The 1.25 toolchain provides `debug.ReadBuildInfo()` for VCS commit embedding and modern generics (though basemake doesn't use generics — the type complexity didn't justify it).
 
 ### Why Cobra?
 
@@ -91,10 +91,10 @@ API keys and database credentials are **never** stored in config files:
 
 ### Auto-Reconnect
 
-Commands that need a database connection don't require the user to explicitly reconnect. If no active connection exists, dbai attempts to reconnect using either:
-1. The `DBAI_DSN` environment variable
-2. The `default_dsn` from `~/.dbai/config.json`
-3. The legacy DSN cache (`~/.dbai/dsn.txt` — deprecated)
+Commands that need a database connection don't require the user to explicitly reconnect. If no active connection exists, basemake attempts to reconnect using either:
+1. The `BASEMAKE_DSN` environment variable
+2. The `default_dsn` from `~/.basemake/config.json`
+3. The legacy DSN cache (`~/.basemake/dsn.txt` — deprecated)
 
 ## Data Flow
 

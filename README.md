@@ -1,18 +1,18 @@
-# dbai — AI-powered database CLI
+# basemake — AI-powered database CLI
 
-[![Release](https://img.shields.io/github/v/release/DynamicKarabo/dbai?style=flat&label=release)](https://github.com/DynamicKarabo/dbai/releases)
-[![CI](https://github.com/DynamicKarabo/dbai/actions/workflows/release.yml/badge.svg)](https://github.com/DynamicKarabo/dbai/actions/workflows/release.yml)
+[![Release](https://img.shields.io/github/v/release/DynamicKarabo/basemake?style=flat&label=release)](https://github.com/DynamicKarabo/basemake/releases)
+[![CI](https://github.com/DynamicKarabo/basemake/actions/workflows/release.yml/badge.svg)](https://github.com/DynamicKarabo/basemake/actions/workflows/release.yml)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat&logo=go)](https://go.dev)
-[![GitHub Downloads](https://img.shields.io/github/downloads/DynamicKarabo/dbai/total?style=flat&label=downloads)](https://github.com/DynamicKarabo/dbai/releases)
+[![GitHub Downloads](https://img.shields.io/github/downloads/DynamicKarabo/basemake/total?style=flat&label=downloads)](https://github.com/DynamicKarabo/basemake/releases)
 
 Query, analyze, and optimize your databases with natural language.
 
 ```
-$ dbai connect postgres://user:***@localhost:5432/mydb
+$ basemake connect postgres://user:***@localhost:5432/mydb
 ✓ Connected to PostgreSQL
   Schema loaded: 23 tables, 147 columns, 12 indexes
 
-$ dbai query "show me users who ordered last month"
+$ basemake query "show me users who ordered last month"
   SELECT u.name, COUNT(o.id) as orders
   FROM users u JOIN orders o ON u.id = o.user_id
   WHERE o.created_at > now() - interval '30 days'
@@ -24,7 +24,7 @@ $ dbai query "show me users who ordered last month"
   2 | Bob
 (2 rows)
 
-$ dbai analyze "SELECT * FROM orders WHERE created_at > now()"
+$ basemake analyze "SELECT * FROM orders WHERE created_at > now()"
 Execution Time: 12.50 ms
 
 Issues:
@@ -37,22 +37,23 @@ Issues:
 ### Binary (Linux)
 
 ```bash
-curl -sfL https://github.com/DynamicKarabo/dbai/releases/latest/download/dbai-linux-amd64.tar.gz | tar xz
-sudo mv dbai /usr/local/bin/
+curl -sfL https://github.com/DynamicKarabo/basemake/releases/latest/download/basemake-linux-amd64.tar.gz | tar xz
+sudo mv basemake /usr/local/bin/-linux-amd64.tar.gz | tar xz
+sudo mv basemake /usr/local/bin/
 ```
 
 ### Via Go
 
 ```bash
-go install github.com/DynamicKarabo/dbai@latest
+go install github.com/DynamicKarabo/basemake@latest
 ```
 
 ### Shell completion
 
 ```bash
-eval "$(dbai completion bash)"       # bash
-eval "$(dbai completion zsh)"        # zsh
-dbai completion fish | source        # fish
+eval "$(basemake completion bash)"       # bash
+eval "$(basemake completion zsh)"        # zsh
+`basemake completion fish | source        # fish
 ```
 
 ## Full Documentation

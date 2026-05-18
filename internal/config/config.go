@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 )
 
-// Config holds persistent configuration for dbai
+// Config holds persistent configuration for basemake
 type Config struct {
 	DefaultDSN      string `json:"default_dsn,omitempty"`
 	OutputFormat    string `json:"output_format,omitempty"`
@@ -30,7 +30,7 @@ func DefaultConfig() *Config {
 
 func configDir() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".dbai")
+	return filepath.Join(home, ".basemake")
 }
 
 func configPath() string {

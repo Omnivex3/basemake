@@ -1,17 +1,17 @@
 # Configuration
 
-dbai uses a layered configuration system with clear precedence rules.
+`basemake uses a layered configuration system with clear precedence rules.
 
 ## Configuration Layers (Highest to Lowest Priority)
 
 1. **CLI flags** — `--json`, `--csv`, `--dry-run`, `--explain`, `--all`, `--format`
-2. **Environment variables** — `OPENAI_API_KEY`, `OPENAI_MODEL`, `DBAI_DSN`
-3. **Config file** — `~/.dbai/config.json`
+2. **Environment variables** — `OPENAI_API_KEY`, `OPENAI_MODEL`, `BASEMAKE_DSN`
+3. **Config file** — `~/.basemake/config.json`
 4. **Global defaults** — Hardcoded fallbacks
 
 ## Config File
 
-Location: `~/.dbai/config.json`
+Location: `~/.basemake/config.json`
 
 ### Format
 
@@ -28,7 +28,7 @@ Location: `~/.dbai/config.json`
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `default_dsn` | string | `""` | Default connection string — used by `dbai query`, `dbai analyze`, and `dbai repl` when no active connection exists |
+| `default_dsn` | string | `""` | Default connection string — used by `basemake query`, `basemake analyze`, and `basemake repl` when no active connection exists |
 | `output_format` | string | `"table"` | Default output format. Valid values: `"table"`, `"json"`, `"csv"`. |
 | `ai_provider` | string | `"openai"` | AI provider for NL→SQL. Valid values: `"openai"`, `"anthropic"`. |
 | `openai_model` | string | `"gpt-4"` | OpenAI model for NL→SQL generation |
@@ -40,8 +40,8 @@ Location: `~/.dbai/config.json`
 
 - **Created**: Automatically on first `config.Load()` — no, actually the config file is NOT auto-created. It's only written when you manually create it. `Load()` returns defaults if the file doesn't exist.
 - **Read**: Every command invocation loads the file from disk
-- **Written**: Only programmatically via `config.Save()` — there's no `dbai config set` command (you edit the JSON directly)
-- **Deleted**: Remove `~/.dbai/config.json` to reset to defaults
+- **Written**: Only programmatically via `config.Save()` — there's no `basemake config set` command (you edit the JSON directly)
+- **Deleted**: Remove `~/.basemake/config.json` to reset to defaults
 
 ### Code Details
 
@@ -56,10 +56,10 @@ type Config struct {
 }
 ```
 
-- `Load()` reads `~/.dbai/config.json`, returns `DefaultConfig()` if file doesn't exist
+- `Load()` reads `~/.basemake/config.json`, returns `DefaultConfig()` if file doesn't exist
 - `DefaultConfig()` returns: `{OutputFormat: "table", OpenAIModel: "gpt-4"}`
-- `Save()` creates `~/.dbai/` with 0755, writes with 0644, uses `json.MarshalIndent`
-- Config directory: `$HOME/.dbai/`
+- `Save()` creates `~/.basemake/` with 0755, writes with 0644, uses `json.MarshalIndent`
+- Config directory: `$HOME/.basemake/`
 
 ## Environment Variables
 
@@ -70,7 +70,7 @@ type Config struct {
 | `ANTHROPIC_API_KEY` | For Anthropic NL queries | `""` | Anthropic API key. Required when `ai_provider` is `"anthropic"`. |
 | `ANTHROPIC_MODEL` | No | `"claude-sonnet-4-20250514"` | Overrides the Anthropic model. Takes precedence over `anthropic_model` in config. |
 | `AI_PROVIDER` | No | `"openai"` | AI provider: `"openai"` or `"anthropic"`. Takes precedence over `ai_provider` config. |
-| `DBAI_DSN` | No | `""` | Default connection string fallback. |
+| `BASEMAKE_DSN` | No | `""` | Default connection string fallback. |
 
 ### OPENAI_API_KEY — No Key Behavior
 
@@ -115,26 +115,26 @@ Applied in `cmd/query.go` and `cmd/repl.go`:
 
 ## DSN Persistence (Legacy)
 
-Before the config file existed, dbai used `~/.dbai/dsn.txt` to persist the last-used DSN. This is still supported as a fallback:
+Before the config file existed, basemake used `~/.basemake/dsn.txt` to persist the last-used DSN. This is still supported as a fallback:
 
-- Location: `~/.dbai/dsn.txt`
+- Location: `~/.basemake/dsn.txt`
 - Format: Raw DSN string (one line)
 - Written by: `db connect` command
 - Read by: `db.LoadDSN()` — used when `ActiveConnection()` returns `ErrNoConnection`
-- Priority: Below `DBAI_DSN` env var and `default_dsn` config field
+- Priority: Below `BASEMAKE_DSN` env var and `default_dsn` config field
 
 ## Schema Cache
 
-- Location: `~/.dbai/schema.json`
-- Written by: `dbai connect` (on successful introspection)
-- Read by: `dbai query` (for NL→SQL), `dbai analyze --all`
+- Location: `~/.basemake/schema.json`
+- Written by: `basemake connect` (on successful introspection)
+- Read by: `basemake query` (for NL→SQL), `basemake analyze --all`
 - Format: Full JSON schema dump (see Schema types in db.go)
-- Cleared by: Running `dbai connect` to a different database
+- Cleared by: Running `basemake connect` to a different database
 - Not auto-expired: Schema is assumed stable between connections
 
 ## Known Limitations
 
-- No `dbai config set` command — you edit the JSON directly
+- No `basemake config set` command — you edit the JSON directly
 3. **No streaming config** — streaming is always on by default and can only be disabled per-command with `--no-stream`. No config-level toggle.
 4. **No per-profile configs** — switching between databases requires re-editing the file
 5. **Output format config doesn't support TSV** (only code-level constant)

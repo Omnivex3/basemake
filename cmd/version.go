@@ -16,7 +16,7 @@ var versionCmd = &cobra.Command{
 	Short: "Print version information",
 	Run: func(cmd *cobra.Command, args []string) {
 		info := getBuildInfo()
-		cmd.Printf("dbai %s\n", info.version)
+		cmd.Printf("basemake %s\n", info.version)
 		cmd.Printf("  Go version: %s\n", info.goVersion)
 		cmd.Printf("  Platform: %s/%s\n", info.os, info.arch)
 		if info.revision != "" {

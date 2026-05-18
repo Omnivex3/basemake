@@ -1,6 +1,6 @@
 # Database Drivers
 
-dbai supports 3 database engines through a common `Database` interface. Each driver is a self-contained implementation in the `internal/db` package.
+`basemake supports 3 database engines through a common `Database` interface. Each driver is a self-contained implementation in the `internal/db` package.
 
 ## Database Interface
 
@@ -36,7 +36,7 @@ func detectDriver(dsn string) (driverConnector, error) {
 
 ### Active Connection Pattern
 
-dbai maintains a global active connection (`var active Database` in `db.go`). Commands check this before attempting a new connection:
+`basemake maintains a global active connection (`var active Database` in `db.go`). Commands check this before attempting a new connection:
 
 ```go
 func ActiveConnection() (Database, error) {
@@ -48,10 +48,10 @@ func ActiveConnection() (Database, error) {
 ```
 
 When a command needs a connection but none is active, it falls back to:
-1. `DBAI_DSN` env var → `db.Connect(dsn)`
+1. `BASEMAKE_DSN` env var → `db.Connect(dsn)`
 2. `config.DefaultDSN` → `db.Connect(dsn)`
 3. `db.LoadDSN()` (legacy file) → `db.Connect(dsn)`
-4. Error: "no active connection — run 'dbai connect' first"
+4. Error: "no active connection — run 'basemake connect' first"
 
 ---
 
@@ -333,9 +333,9 @@ func (s *Schema) SchemaForPrompt() string  // Compact text for AI prompt
 
 ## Schema Cache
 
-- Written to `/root/.dbai/schema.json` (or `$HOME/.dbai/schema.json`)
+- Written to `/root/.basemake/schema.json` (or `$HOME/.basemake/schema.json`)
 - Used by NL→SQL generation and `analyze --all`
-- Cleared and re-fetched on each `dbai connect`
+- Cleared and re-fetched on each `basemake connect`
 
 ## Rows Type
 

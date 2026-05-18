@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/DynamicKarabo/dbai/internal/analyze"
-	"github.com/DynamicKarabo/dbai/internal/db"
+	"github.com/DynamicKarabo/basemake/internal/analyze"
+	"github.com/DynamicKarabo/basemake/internal/db"
 	"github.com/spf13/cobra"
 )
 
@@ -19,15 +19,15 @@ var analyzeCmd = &cobra.Command{
 	Long: `Run EXPLAIN ANALYZE on a query and surface performance insights.
 Detects sequential scans, missing indexes, row estimate mismatches, and slow nodes.
 
-  dbai analyze "SELECT * FROM orders WHERE created_at > now() - interval '30 days'"
-  dbai analyze --all`,
+  basemake analyze "SELECT * FROM orders WHERE created_at > now() - interval '30 days'"
+  basemake analyze --all`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conn, err := db.ActiveConnection()
 		if err != nil {
 			dsn, loadErr := db.LoadDSN()
 			if loadErr != nil {
-				return fmt.Errorf("no active connection — run 'dbai connect' first: %w", err)
+				return fmt.Errorf("no active connection — run 'basemake connect' first: %w", err)
 			}
 			conn, err = db.Connect(dsn)
 			if err != nil {
@@ -84,7 +84,7 @@ func analyzeQuery(ctx context.Context, conn db.Database, query string) error {
 func runAnalyzeAll(ctx context.Context, conn db.Database) error {
 	schema, err := db.LoadSchema()
 	if err != nil {
-		return fmt.Errorf("no cached schema — run 'dbai connect' first: %w", err)
+		return fmt.Errorf("no cached schema — run 'basemake connect' first: %w", err)
 	}
 
 	fmt.Fprintf(os.Stderr, "Analyzing all tables in %s...\n\n", schema.DBName)

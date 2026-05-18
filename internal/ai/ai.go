@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/DynamicKarabo/dbai/internal/config"
+	"github.com/DynamicKarabo/basemake/internal/config"
 )
 
 // Provider generates SQL from natural language questions.

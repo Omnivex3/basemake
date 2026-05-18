@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/DynamicKarabo/dbai/internal/db"
+	"github.com/DynamicKarabo/basemake/internal/db"
 	"github.com/spf13/cobra"
 )
 
@@ -14,8 +14,8 @@ var connectCmd = &cobra.Command{
 	Long: `Connect to a database and cache its schema locally.
 Supports PostgreSQL and MySQL connection strings.
 
-  dbai connect postgres://user:pass@localhost:5432/mydb
-  dbai connect mysql://user:pass@localhost:3306/mydb`,
+  basemake connect postgres://user:pass@localhost:5432/mydb
+  basemake connect mysql://user:pass@localhost:3306/mydb`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dsn := args[0]

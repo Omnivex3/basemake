@@ -10,11 +10,11 @@
 
 ```bash
 # Clone
-git clone https://github.com/DynamicKarabo/dbai.git
-cd dbai
+git clone https://github.com/DynamicKarabo/basemake.git
+cd basemake
 
 # Build
-go build -o dbai .
+go build -o basemake .
 
 # Test
 go test -v -count=1 ./...
@@ -148,21 +148,21 @@ linters:
 ### Development Build
 
 ```bash
-go build -o dbai .
+go build -o basemake .
 ```
 
 ### Stripped Build (smaller binary)
 
 ```bash
-go build -ldflags="-s -w" -o dbai .
+go build -ldflags="-s -w" -o basemake .
 ```
 
 ### Cross-Compilation
 
 ```bash
-GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dbai-linux-amd64 .
-GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dbai-darwin-arm64 .
-GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dbai-windows-amd64.exe .
+GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o basemake-linux-amd64 .
+GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o basemake-darwin-arm64 .
+GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o basemake-windows-amd64.exe .
 ```
 
 ## CI/CD Pipeline
@@ -192,7 +192,7 @@ The GitHub Actions workflow (`.github/workflows/release.yml`) has 4 jobs:
 - Runs only on tag push (`v*`)
 - Needs: lint + test + build
 - Downloads all artifacts
-- Creates `.tar.gz` archives with a clean binary name (`dbai` not `dbai-linux-amd64`)
+- Creates `.tar.gz` archives with a clean binary name (`basemake` not `basemake-linux-amd64`)
 - Generates SHA256 `checksums.txt`
 - Publishes GitHub Release via `softprops/action-gh-release`
 - Auto-generates release notes from commits
@@ -234,8 +234,8 @@ env:
 Go 1.18+ automatically embeds VCS information into the binary:
 
 ```
-$ dbai version
-dbai dev
+$ basemake version
+`basemake dev
   Go version: go1.25.0
   Platform: linux/amd64
   Commit: 4692dc5
@@ -319,8 +319,8 @@ func (m *myDB) ExplainJSON(ctx context.Context, query string) (string, error) { 
 
 1. **Zero runtime deps** beyond Go standard library + database drivers
 2. **No CGo** — cross-compilation must work without a C compiler
-3. **Config in `~/.dbai/`** — follows XDG convention for CLI tools
-4. **Secrets in env vars only** — API keys never written to disk by dbai
+3. **Config in `~/.basemake/`** — follows XDG convention for CLI tools
+4. **Secrets in env vars only** — API keys never written to disk by basemake
 5. **Stderr for info, stdout for data** — following Unix pipeline philosophy
 6. **Single binary** — no runtime, no interpreter, no VM needed
 

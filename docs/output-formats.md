@@ -1,6 +1,6 @@
 # Output Formats
 
-dbai supports 4 output formats for query results. The format is selected via CLI flags, config file, or defaults to table.
+`basemake supports 4 output formats for query results. The format is selected via CLI flags, config file, or defaults to table.
 
 ## Format Types
 

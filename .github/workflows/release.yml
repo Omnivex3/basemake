@@ -64,13 +64,13 @@ jobs:
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
-        run: go build -ldflags="-s -w" -o dbai-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }} .
+        run: go build -ldflags="-s -w" -o basemake-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goos == 'windows' && '.exe' || '' }} .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: dbai-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: dbai-${{ matrix.goos }}-${{ matrix.goarch }}*
+          name: basemake-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: basemake-${{ matrix.goos }}-${{ matrix.goarch }}*
           retention-days: 1
 
   release:
@@ -90,29 +90,29 @@ jobs:
           mkdir -p release
           cd artifacts
 
-          for dir in dbai-*; do
-            os_arch="${dir#dbai-}"
-            binary="dbai-${os_arch}"
+          for dir in basemake-*; do
+            os_arch="${dir#basemake-}"
+            binary="basemake-${os_arch}"
 
             # Add .exe for Windows
             if echo "$os_arch" | grep -q "windows"; then
               binary="${binary}.exe"
             fi
 
-            # Rename binary to just "dbai" (or "dbai.exe" for Windows) inside archive
+            # Rename binary to just "basemake" (or "dbai.exe" for Windows) inside archive
             if echo "$os_arch" | grep -q "windows"; then
               cp "$dir/$binary" "../release/dbai.exe"
-              tar czf "../release/dbai-${os_arch}.tar.gz" -C "../release" dbai.exe
+              tar czf "../release/basemake-${os_arch}.tar.gz" -C "../release" dbai.exe
               rm "../release/dbai.exe"
             else
               cp "$dir/$binary" "../release/dbai"
-              tar czf "../release/dbai-${os_arch}.tar.gz" -C "../release" dbai
+              tar czf "../release/basemake-${os_arch}.tar.gz" -C "../release" dbai
               rm "../release/dbai"
             fi
           done
 
           cd ../release
-          sha256sum dbai-*.tar.gz > checksums.txt
+          sha256sum basemake-*.tar.gz > checksums.txt
           echo "=== Built artifacts ==="
           ls -lh
 
@@ -128,19 +128,19 @@ jobs:
 
             ```bash
             # Linux amd64
-            curl -sfL https://github.com/${{ github.repository }}/releases/latest/download/dbai-linux-amd64.tar.gz | tar xz
-            sudo mv dbai /usr/local/bin/
+            curl -sfL https://github.com/${{ github.repository }}/releases/latest/download/basemake-linux-amd64.tar.gz | tar xz
+            sudo mv basemake /usr/local/bin/
 
             # macOS (Intel)
-            curl -sfL https://github.com/${{ github.repository }}/releases/latest/download/dbai-darwin-amd64.tar.gz | tar xz
-            sudo mv dbai /usr/local/bin/
+            curl -sfL https://github.com/${{ github.repository }}/releases/latest/download/basemake-darwin-amd64.tar.gz | tar xz
+            sudo mv basemake /usr/local/bin/
 
             # macOS (Apple Silicon)
-            curl -sfL https://github.com/${{ github.repository }}/releases/latest/download/dbai-darwin-arm64.tar.gz | tar xz
-            sudo mv dbai /usr/local/bin/
+            curl -sfL https://github.com/${{ github.repository }}/releases/latest/download/basemake-darwin-arm64.tar.gz | tar xz
+            sudo mv basemake /usr/local/bin/
 
             # Windows (via PowerShell)
-            # curl.exe -LO https://github.com/${{ github.repository }}/releases/latest/download/dbai-windows-amd64.tar.gz
+            # curl.exe -LO https://github.com/${{ github.repository }}/releases/latest/download/basemake-windows-amd64.tar.gz
             ```
           files: release/*
           generate_release_notes: true

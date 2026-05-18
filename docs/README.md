@@ -1,6 +1,6 @@
-# dbai Documentation
+# basemake Documentation
 
-Welcome to the comprehensive documentation for **dbai** — the AI-powered database CLI.
+Welcome to the comprehensive documentation for **basemake** — the AI-powered database CLI.
 
 ## Quick Navigation
 
@@ -18,7 +18,7 @@ Welcome to the comprehensive documentation for **dbai** — the AI-powered datab
 
 ```
 Usage:
-  dbai [command]
+  basemake [command]
 
 Available Commands:
   connect     Connect and introspect a database
@@ -46,13 +46,13 @@ REPL Flag:
 Environment Variables:
   OPENAI_API_KEY      Required for NL→SQL queries
   OPENAI_MODEL        Override AI model (default: gpt-4)
-  DBAI_DSN            Default connection string
+  BASEMAKE_DSN            Default connection string
 
 Config File:
-  ~/.dbai/config.json
+  ~/.basemake/config.json
 
 Schema Cache:
-  ~/.dbai/schema.json
+  ~/.basemake/schema.json
 ```
 
 ## Stats

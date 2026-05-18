@@ -10,14 +10,14 @@ import (
 var cfgFile string
 
 var rootCmd = &cobra.Command{
-	Use:   "dbai",
+	Use:   "basemake",
 	Short: "AI-powered database CLI — query, analyze, optimize",
-	Long: `dbai connects to your database, learns your schema,
+	Long: `basemake connects to your database, learns your schema,
 and lets you ask questions in plain English.
 
-  dbai connect postgres://user:pass@localhost:5432/mydb
-  dbai "show me users who ordered last month"
-  dbai --explain "why is this query slow?"`,
+  basemake connect postgres://user:pass@localhost:5432/mydb
+  basemake "show me users who ordered last month"
+  basemake --explain "why is this query slow?"`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }
@@ -30,7 +30,7 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default $HOME/.dbai/config.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default $HOME/.basemake/config.yaml)")
 	rootCmd.AddCommand(connectCmd)
 	rootCmd.AddCommand(queryCmd)
 	rootCmd.AddCommand(analyzeCmd)

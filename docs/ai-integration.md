@@ -1,6 +1,6 @@
 # AI Integration
 
-The AI integration allows dbai to translate natural language questions into SQL queries using configurable LLM providers.
+The AI integration allows basemake to translate natural language questions into SQL queries using configurable LLM providers.
 
 ## Supported Providers
 
@@ -14,7 +14,7 @@ The AI integration allows dbai to translate natural language questions into SQL 
 Provider selection follows this precedence:
 
 1. `AI_PROVIDER` environment variable (`"openai"` or `"anthropic"`)
-2. `ai_provider` field in `~/.dbai/config.json`
+2. `ai_provider` field in `~/.basemake/config.json`
 3. Default: `"openai"`
 
 Selected via `ai.SelectedProvider()`:
@@ -183,7 +183,7 @@ func callOpenAI(ctx context.Context, apiKey, system, user string) (string, error
 
 Resolution order:
 1. `OPENAI_MODEL` environment variable
-2. `openai_model` in `~/.dbai/config.json`
+2. `openai_model` in `~/.basemake/config.json`
 3. Hardcoded default: `"gpt-4"`
 
 ## Response Cleaning
@@ -222,7 +222,7 @@ func QuestionToSQL(ctx context.Context, schemaPrompt, question string) (string, 
 }
 ```
 
-This lets `dbai query` work without an API key (it executes `SELECT 1` and displays the result). The instructional comments in the SQL are visible in dry-run mode.
+This lets `basemake query` work without an API key (it executes `SELECT 1` and displays the result). The instructional comments in the SQL are visible in dry-run mode.
 
 ## Query Validation
 
@@ -242,7 +242,7 @@ This provides a clear feedback loop: if the AI hallucinated bad SQL, the user se
 
 By default, NL→SQL generation streams tokens to stderr as they arrive from the LLM. This makes the tool feel instant — the user sees SQL appearing token by token instead of waiting for a full response.
 
-Streaming is enabled by default for both `dbai query` and `dbai repl`. Disable with `--no-stream`.
+Streaming is enabled by default for both `basemake query` and `basemake repl`. Disable with `--no-stream`.
 
 ### Streaming Implementation
 
@@ -277,7 +277,7 @@ When no API key is set and streaming is requested, a one-element channel is retu
 
 ## Context Compounding via Query History
 
-When generating SQL, dbai prepends recent natural language queries and their generated SQL to the system prompt. This creates a compounding context effect — the AI learns from past Q&A patterns.
+When generating SQL, basemake prepends recent natural language queries and their generated SQL to the system prompt. This creates a compounding context effect — the AI learns from past Q&A patterns.
 
 ### How It Works
 
@@ -301,7 +301,7 @@ Schema:
 ### Configuration
 
 - History depth: 5 recent NL→SQL pairs (hardcoded in both `cmd/query.go` and `cmd/repl.go`)
-- History stored in `~/.dbai/history.db` (SQLite)
+- History stored in `~/.basemake/history.db` (SQLite)
 - Only NATURAL LANGUAGE queries are included in the context (raw SQL inputs are excluded)
 - Set `AI_PROVIDER` env var or `ai_provider` config to switch between OpenAI and Anthropic
 

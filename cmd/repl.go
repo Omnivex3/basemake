@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DynamicKarabo/dbai/internal/ai"
-	"github.com/DynamicKarabo/dbai/internal/config"
-	"github.com/DynamicKarabo/dbai/internal/db"
-	"github.com/DynamicKarabo/dbai/internal/display"
-	"github.com/DynamicKarabo/dbai/internal/history"
+	"github.com/DynamicKarabo/basemake/internal/ai"
+	"github.com/DynamicKarabo/basemake/internal/config"
+	"github.com/DynamicKarabo/basemake/internal/db"
+	"github.com/DynamicKarabo/basemake/internal/display"
+	"github.com/DynamicKarabo/basemake/internal/history"
 	"github.com/spf13/cobra"
 )
 
@@ -75,7 +75,7 @@ All other input is treated as SQL or natural language questions.`,
 			}
 		}
 
-		fmt.Fprintf(os.Stderr, "dbai REPL — type .help for commands, .quit to exit\n")
+		fmt.Fprintf(os.Stderr, "basemake REPL — type .help for commands, .quit to exit\n")
 		if conn != nil {
 			fmt.Fprintf(os.Stderr, "Connected: %s\n", conn.Name())
 		} else {
@@ -84,7 +84,7 @@ All other input is treated as SQL or natural language questions.`,
 		fmt.Fprintln(os.Stderr)
 
 		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("dbai> ")
+		fmt.Print("basemake> ")
 
 		for scanner.Scan() {
 			line := strings.TrimSpace(scanner.Text())
@@ -122,7 +122,7 @@ All other input is treated as SQL or natural language questions.`,
 				}
 			}
 
-			fmt.Print("dbai> ")
+			fmt.Print("basemake> ")
 		}
 
 		return scanner.Err()

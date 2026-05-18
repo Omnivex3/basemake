@@ -8,7 +8,7 @@ import (
 
 func configPath() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".dbai", "config")
+	return filepath.Join(home, ".basemake", "config")
 }
 
 // SaveDSN persists the active DSN for subsequent commands
@@ -24,7 +24,7 @@ func SaveDSN(dsn string) error {
 func LoadDSN() (string, error) {
 	data, err := os.ReadFile(configPath())
 	if err != nil {
-		return "", fmt.Errorf("no saved connection — run 'dbai connect' first")
+		return "", fmt.Errorf("no saved connection — run 'basemake connect' first")
 	}
 	return string(data), nil
 }

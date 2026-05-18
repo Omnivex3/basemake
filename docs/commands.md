@@ -1,6 +1,6 @@
 # Command Reference
 
-dbai has 6 commands, each registered as a Cobra command on the root command.
+`basemake has 6 commands, each registered as a Cobra command on the root command.
 
 ## Global Behavior
 
@@ -8,19 +8,19 @@ dbai has 6 commands, each registered as a Cobra command on the root command.
 - All output goes to stdout; informational messages go to stderr
 - Exit code 0 = success, non-zero = error (specific codes depend on the error)
 - AI features require `OPENAI_API_KEY` environment variable
-- Config is loaded from `~/.dbai/config.json` on every command invocation
+- Config is loaded from `~/.basemake/config.json` on every command invocation
 
 ---
 
-## `dbai connect <dsn>`
+## `basemake connect <dsn>`
 
 Connect to a database and introspect its schema.
 
 ```
-dbai connect postgres://user:pass@localhost:5432/mydb
-dbai connect mysql:user:pass@tcp(localhost:3306)/mydb
-dbai connect sqlite:/path/to/database.db
-dbai connect sqlite:///path/to/database.db
+`basemake connect postgres://user:pass@localhost:5432/mydb
+`basemake connect mysql:user:pass@tcp(localhost:3306)/mydb
+`basemake connect sqlite:/path/to/database.db
+`basemake connect sqlite:///path/to/database.db
 ```
 
 ### DSN Formats
@@ -39,7 +39,7 @@ dbai connect sqlite:///path/to/database.db
 2. Opens a connection (TCP for PG/MySQL, file for SQLite)
 3. Pings the database to verify connectivity
 4. Introspects the schema (tables, columns, types, PKs, nullability, defaults, indexes)
-5. Caches the schema to `~/.dbai/schema.json`
+5. Caches the schema to `~/.basemake/schema.json`
 6. Persists the DSN for automatic reconnection
 7. Sets this connection as "active" for subsequent commands
 
@@ -70,17 +70,17 @@ dbai connect sqlite:///path/to/database.db
 
 ---
 
-## `dbai query [question|sql]`
+## `basemake query [question|sql]`
 
 Execute a SQL query or translate a natural language question into SQL and run it.
 
 ```
-dbai query "SELECT * FROM users LIMIT 5"
-dbai query "show me users who ordered last month"
-dbai query "top 10 products by revenue" --dry-run
-dbai query "total sales last quarter" --explain
-dbai query "recent orders" --json
-dbai query "recent orders" --csv
+`basemake query "SELECT * FROM users LIMIT 5"
+`basemake query "show me users who ordered last month"
+`basemake query "top 10 products by revenue" --dry-run
+`basemake query "total sales last quarter" --explain
+`basemake query "recent orders" --json
+`basemake query "recent orders" --csv
 ```
 
 ### Argument Detection
@@ -96,7 +96,7 @@ The `looksLikeSQL()` function determines whether input is raw SQL or natural lan
 
 ### Natural Language → SQL Flow
 
-1. Load cached schema from `~/.dbai/schema.json`
+1. Load cached schema from `~/.basemake/schema.json`
 2. If no schema cached or OPENAI_API_KEY not set, returns a placeholder SQL:
    ```sql
    -- Set OPENAI_API_KEY for AI-powered queries
@@ -158,13 +158,13 @@ Error: generated SQL is invalid — try rephrasing your question:
 
 ---
 
-## `dbai analyze [query]`
+## `basemake analyze [query]`
 
-Run EXPLAIN ANALYZE on a query and surface performance issues. This is dbai's most powerful feature for PostgreSQL databases.
+Run EXPLAIN ANALYZE on a query and surface performance issues. This is basemake's most powerful feature for PostgreSQL databases.
 
 ```
-dbai analyze "SELECT * FROM orders WHERE created_at > now() - interval '30 days'"
-dbai analyze --all
+`basemake analyze "SELECT * FROM orders WHERE created_at > now() - interval '30 days'"
+`basemake analyze --all
 ```
 
 ### How It Works
@@ -255,13 +255,13 @@ orders (12.50ms):
 
 ---
 
-## `dbai repl`
+## `basemake repl`
 
 Interactive database shell with AI-powered query assistance.
 
 ```
-dbai repl
-dbai repl --format json
+`basemake repl
+`basemake repl --format json
 ```
 
 ### Dot Commands
@@ -278,15 +278,15 @@ dbai repl --format json
 ### How It Works
 
 1. On start: loads config, tries active connection or `default_dsn` from config
-2. Displays a prompt: `dbai> `
+2. Displays a prompt: `basemake> `
 3. Reads input line-by-line via `bufio.Scanner`
 4. Empty lines are skipped
 5. Dot-commands are handled directly
-6. Everything else goes through the same NL→SQL pipeline as `dbai query`
+6. Everything else goes through the same NL→SQL pipeline as `basemake query`
 
 ### REPL Query Flow
 
-Same as `dbai query`:
+Same as `basemake query`:
 1. `looksLikeSQL()` check → NL or SQL
 2. NL → load schema → AI call → generate SQL → execute
 3. SQL → execute directly
@@ -295,7 +295,7 @@ Same as `dbai query`:
 ### Auto-Connect
 
 The REPL tries to connect automatically on startup:
-1. Active connection (from a previous `dbai connect`)
+1. Active connection (from a previous `basemake connect`)
 2. `default_dsn` from config file
 3. Legacy DSN cache
 4. If nothing works → starts disconnected with guidance message
@@ -303,33 +303,33 @@ The REPL tries to connect automatically on startup:
 ### Format Flag
 
 ```
-dbai repl --format json
-dbai repl --format csv
+`basemake repl --format json
+`basemake repl --format csv
 ```
 
 Sets the output format for the entire REPL session. Can also be set via config file.
 
 ---
 
-## `dbai completion <shell>`
+## `basemake completion <shell>`
 
 Generate shell completion scripts for bash, zsh, fish, or powershell.
 
 ```
-source <(dbai completion bash)         # Bash (current session)
-source <(dbai completion zsh)          # Zsh (current session)
-dbai completion fish | source          # Fish (current session)
-dbai completion powershell | Out-String | Invoke-Expression  # PowerShell
+source <(basemake completion bash)         # Bash (current session)
+source <(basemake completion zsh)          # Zsh (current session)
+`basemake completion fish | source          # Fish (current session)
+`basemake completion powershell | Out-String | Invoke-Expression  # PowerShell
 ```
 
 ### Persisting Completions
 
 ```bash
 # Bash — add to ~/.bashrc
-source <(dbai completion bash)
+source <(basemake completion bash)
 
 # Or system-wide
-dbai completion bash > /etc/bash_completion.d/dbai
+`basemake completion bash > /etc/bash_completion.d/basemake
 ```
 
 ### Supported Shells
@@ -347,13 +347,13 @@ Unsupported shells return: `unsupported shell: <name> (use bash, zsh, fish, or p
 
 ---
 
-## `dbai version`
+## `basemake version`
 
 Print version and build information.
 
 ```
-$ dbai version
-dbai dev
+$ basemake version
+`basemake dev
   Go version: go1.25.0
   Platform: linux/amd64
   Commit: 4692dc5

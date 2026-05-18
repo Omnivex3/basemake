@@ -34,7 +34,7 @@ func TestSaveAndLoad(t *testing.T) {
 	}
 
 	// Verify file exists
-	cfgFile := filepath.Join(tmp, ".dbai", "config.json")
+	cfgFile := filepath.Join(tmp, ".basemake", "config.json")
 	if _, err := os.Stat(cfgFile); os.IsNotExist(err) {
 		t.Fatalf("config file not created at %s", cfgFile)
 	}

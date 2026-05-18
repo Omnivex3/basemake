@@ -1,28 +1,28 @@
-# dbai v0.2.0 — Multi-Provider, Streaming, History
+# basemake v0.2.0 — Multi-Provider, Streaming, History
 
-This release fundamentally upgrades dbai's AI layer from a single-vendor blocking call to a pluggable, streaming, context-aware engine.
+This release fundamentally upgrades basemake's AI layer from a single-vendor blocking call to a pluggable, streaming, context-aware engine.
 
 ## Multi-Provider AI
 
-dbai now supports **OpenAI** and **Anthropic** — bring your own key, pick your provider.
+basemake now supports **OpenAI** and **Anthropic** — bring your own key, pick your provider.
 
 ### Usage
 
 ```bash
 # OpenAI (default)
 export OPENAI_API_KEY=sk-...
-dbai query "show me top users"
+basemake query "show me top users"
 
 # Anthropic
 export AI_PROVIDER=anthropic
 export ANTHROPIC_API_KEY=sk-ant-...
-dbai query "show me top users"
+basemake query "show me top users"
 ```
 
 ### Provider Selection Precedence
 
 1. `AI_PROVIDER` environment variable
-2. `ai_provider` field in `~/.dbai/config.json`
+2. `ai_provider` field in `~/.basemake/config.json`
 3. Default: `"openai"`
 
 ### Configuration
@@ -67,10 +67,10 @@ NL→SQL generation now streams **token by token** to stderr as it arrives from 
 
 ### Default Behavior
 
-Streaming is **on by default** for both `dbai query` and `dbai repl`. The generated SQL appears in real-time, then the full text is validated and executed.
+Streaming is **on by default** for both `basemake query` and `basemake repl`. The generated SQL appears in real-time, then the full text is validated and executed.
 
 ```
-$ dbai query "show me users who ordered last month"
+$ basemake query "show me users who ordered last month"
 🤖 Generating SQL...
 
 SELECT   ← appears instantly, then more tokens follow
@@ -91,7 +91,7 @@ ORDER BY orders DESC;
 ### Disable Streaming
 
 ```bash
-dbai query "complex analytics" --no-stream
+basemake query "complex analytics" --no-stream
 ```
 
 ### Streaming Implementation
@@ -111,7 +111,7 @@ Every query execution is recorded in a local SQLite database with timing, row co
 
 ### Storage
 
-- **Location**: `~/.dbai/history.db`
+- **Location**: `~/.basemake/history.db`
 - **Engine**: SQLite (via `modernc.org/sqlite`, pure Go, no CGo)
 - **WAL mode**: Enabled for concurrent reads
 
@@ -134,7 +134,7 @@ CREATE TABLE query_history (
 
 ### Context Compounding
 
-When generating SQL from natural language, dbai prepends the **5 most recent NL query pairs** to the AI's system prompt. This means:
+When generating SQL from natural language, basemake prepends the **5 most recent NL query pairs** to the AI's system prompt. This means:
 
 1. First query: "show me users" → `SELECT * FROM users`
 2. Second query: "only their names" → AI sees the first Q&A pair, understands you're still in the same context, generates `SELECT name FROM users`
@@ -144,8 +144,8 @@ The effect compounds across a session — the AI builds understanding of your sc
 ### REPL History Command
 
 ```bash
-dbai repl
-dbai> .history
+basemake repl
+basemake> .history
 14:32:05 NL  [Anthropic]  show me users who ordered last month
 14:28:12 SQL              SELECT * FROM orders LIMIT 5
 ```

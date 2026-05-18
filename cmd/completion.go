@@ -13,24 +13,24 @@ func init() {
 var completionCmd = &cobra.Command{
 	Use:   "completion [bash|zsh|fish|powershell]",
 	Short: "Generate shell completion scripts",
-	Long: `Generate shell completion script for dbai.
+	Long: `Generate shell completion script for basemake.
 
 To enable completions in your current shell:
 
   bash:
-    source <(dbai completion bash)
+    source <(basemake completion bash)
 
   zsh:
-    source <(dbai completion zsh)
+    source <(basemake completion zsh)
 
   fish:
-    dbai completion fish | source
+    basemake completion fish | source
 
   powershell:
-    dbai completion powershell | Out-String | Invoke-Expression
+    basemake completion powershell | Out-String | Invoke-Expression
 
 To persist across sessions (bash):
-    dbai completion bash > /etc/bash_completion.d/dbai`,
+    basemake completion bash > /etc/bash_completion.d/basemake`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var err error

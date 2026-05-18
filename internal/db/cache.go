@@ -58,7 +58,7 @@ func (s *Schema) SchemaForPrompt() string {
 
 func cacheDir() string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".dbai")
+	return filepath.Join(home, ".basemake")
 }
 
 func cachePath() string {
@@ -88,7 +88,7 @@ func SaveSchema(s *Schema) error {
 func LoadSchema() (*Schema, error) {
 	data, err := os.ReadFile(cachePath())
 	if err != nil {
-		return nil, fmt.Errorf("no cached schema — run 'dbai connect' first: %w", err)
+		return nil, fmt.Errorf("no cached schema — run 'basemake connect' first: %w", err)
 	}
 
 	var s Schema

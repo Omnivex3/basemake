@@ -20,8 +20,8 @@ func TestVersionCommand(t *testing.T) {
 	}
 
 	output := stdout.String()
-	if !strings.Contains(output, "dbai") {
-		t.Errorf("expected 'dbai' in output, got: %s", output)
+	if !strings.Contains(output, "basemake") {
+		t.Errorf("expected .basemake. in output, got: %s", output)
 	}
 	if !strings.Contains(output, "Go version") {
 		t.Errorf("expected 'Go version' in output, got: %s", output)

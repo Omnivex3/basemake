@@ -131,7 +131,7 @@ func TestSaveAndLoadSchema(t *testing.T) {
 	}
 
 	// Verify file exists
-	cacheFile := filepath.Join(tmp, ".dbai", "schema.json")
+	cacheFile := filepath.Join(tmp, ".basemake", "schema.json")
 	if _, err := os.Stat(cacheFile); os.IsNotExist(err) {
 		t.Fatalf("cache file not created at %s", cacheFile)
 	}
