@@ -39,6 +39,9 @@ type Database interface {
 	Query(ctx context.Context, sql string) (*Rows, error)
 	Explain(ctx context.Context, sql string) (string, error)
 	ExplainJSON(ctx context.Context, sql string) (string, error)
+	// ExplainNoAnalyze returns the query plan without executing the query.
+	// Safe for all query types including DML — just plans, never runs.
+	ExplainNoAnalyze(ctx context.Context, sql string) (string, error)
 }
 
 // Schema holds database metadata populated by Introspect

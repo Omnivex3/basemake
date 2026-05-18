@@ -256,3 +256,7 @@ func (s *sqliteDB) ExplainJSON(ctx context.Context, query string) (string, error
 	}
 	return plan, nil
 }
+
+func (s *sqliteDB) ExplainNoAnalyze(ctx context.Context, query string) (string, error) {
+	return s.Explain(ctx, query)
+}

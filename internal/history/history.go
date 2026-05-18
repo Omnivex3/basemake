@@ -95,7 +95,9 @@ func Record(e Entry) error {
 // Used to prepend recent query patterns to AI prompts.
 func Recent(limit int) ([]Entry, error) {
 	if db == nil {
-		return nil, nil
+		if err := Init(); err != nil {
+			return nil, nil
+		}
 	}
 
 	rows, err := db.Query(
@@ -133,7 +135,9 @@ func Recent(limit int) ([]Entry, error) {
 // List returns the most recent N entries regardless of type.
 func List(limit int) ([]Entry, error) {
 	if db == nil {
-		return nil, nil
+		if err := Init(); err != nil {
+			return nil, nil
+		}
 	}
 
 	rows, err := db.Query(

@@ -127,11 +127,15 @@ Uses your cached schema to generate accurate queries.
 
 		// EXPLAIN mode: show plan then execute
 		if queryExplain {
-			plan, err := conn.Explain(cmd.Context(), sql)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "⚠ EXPLAIN failed: %v\n\n", err)
+			if isDML(sql) {
+				fmt.Fprintf(os.Stderr, "⚠ Cannot EXPLAIN ANALYZE DML queries — they would actually execute. Use --dry-run to preview the SQL.\n\n")
 			} else {
-				fmt.Fprintf(os.Stderr, "Execution Plan:\n%s\n\n", plan)
+				plan, err := conn.Explain(cmd.Context(), sql)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "⚠ EXPLAIN failed: %v\n\n", err)
+				} else {
+					fmt.Fprintf(os.Stderr, "Execution Plan:\n%s\n\n", plan)
+				}
 			}
 		}
 
@@ -219,7 +223,7 @@ Uses your cached schema to generate accurate queries.
 // validateSQL checks if a SQL statement is syntactically valid
 // by running EXPLAIN on it (which validates syntax without executing).
 func validateSQL(ctx context.Context, conn db.Database, sql string) error {
-	_, err := conn.Explain(ctx, sql)
+	_, err := conn.ExplainNoAnalyze(ctx, sql)
 	return err
 }
 
@@ -236,6 +240,20 @@ func looksLikeSQL(s string) bool {
 	upper := strings.ToUpper(trimmed)
 	keywords := []string{"SELECT", "WITH", "EXPLAIN", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", "TRUNCATE"}
 	for _, kw := range keywords {
+		if len(upper) >= len(kw) && upper[:len(kw)] == kw {
+			return true
+		}
+	}
+	return false
+}
+
+// isDML returns true if the query is a data modification statement.
+// Used to reject dangerous queries in check and explain flows.
+func isDML(s string) bool {
+	trimmed := strings.TrimSpace(s)
+	upper := strings.ToUpper(trimmed)
+	dmlKeywords := []string{"INSERT ", "UPDATE ", "DELETE ", "TRUNCATE ", "MERGE ", "DROP ", "ALTER ", "CREATE "}
+	for _, kw := range dmlKeywords {
 		if len(upper) >= len(kw) && upper[:len(kw)] == kw {
 			return true
 		}

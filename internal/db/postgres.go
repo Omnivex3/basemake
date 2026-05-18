@@ -164,9 +164,12 @@ func (p *postgresDB) Query(ctx context.Context, sql string) (*Rows, error) {
 	return &Rows{rows: rows, cols: cols}, nil
 }
 // Explain runs EXPLAIN ANALYZE and returns the raw plan text
+// SAFETY: For DML queries (INSERT/UPDATE/DELETE), wraps in BEGIN/ROLLBACK
+// to prevent actual data modification.
 func (p *postgresDB) Explain(ctx context.Context, query string) (string, error) {
 	var plan string
-	err := p.conn.QueryRowContext(ctx, "EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) "+query).Scan(&plan)
+	safeQuery := p.safeExplainSQL(query)
+	err := p.conn.QueryRowContext(ctx, "EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT) "+safeQuery).Scan(&plan)
 	if err != nil {
 		return "", fmt.Errorf("postgres explain: %w", err)
 	}
@@ -174,13 +177,38 @@ func (p *postgresDB) Explain(ctx context.Context, query string) (string, error) 
 }
 
 // ExplainJSON runs EXPLAIN ANALYZE with JSON format for structured analysis
+// SAFETY: For DML queries, wraps in BEGIN/ROLLBACK.
 func (p *postgresDB) ExplainJSON(ctx context.Context, query string) (string, error) {
 	var plan string
-	err := p.conn.QueryRowContext(ctx, "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) "+query).Scan(&plan)
+	safeQuery := p.safeExplainSQL(query)
+	err := p.conn.QueryRowContext(ctx, "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) "+safeQuery).Scan(&plan)
 	if err != nil {
 		return "", fmt.Errorf("postgres explain json: %w", err)
 	}
 	return plan, nil
+}
+
+// ExplainNoAnalyze returns the plan without executing the query.
+// Uses EXPLAIN (FORMAT JSON) without ANALYZE — safe for all query types.
+func (p *postgresDB) ExplainNoAnalyze(ctx context.Context, query string) (string, error) {
+	var plan string
+	err := p.conn.QueryRowContext(ctx, "EXPLAIN (FORMAT JSON) "+query).Scan(&plan)
+	if err != nil {
+		return "", fmt.Errorf("postgres explain: %w", err)
+	}
+	return plan, nil
+}
+
+// safeExplainSQL wraps DML queries in a transaction that gets rolled back,
+// preventing actual data modification during EXPLAIN ANALYZE.
+func (p *postgresDB) safeExplainSQL(query string) string {
+	upper := strings.TrimSpace(strings.ToUpper(query))
+	for _, prefix := range []string{"INSERT", "UPDATE", "DELETE", "MERGE", "TRUNCATE"} {
+		if strings.HasPrefix(upper, prefix) {
+			return "BEGIN; " + query + "; ROLLBACK;"
+		}
+	}
+	return query
 }
 
 func maskDSN(dsn string) string {

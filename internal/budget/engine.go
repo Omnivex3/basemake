@@ -39,6 +39,17 @@ func EvaluateCheck(sql string, scans []ScanInfo, bf *BudgetFile) *EvaluationRepo
 					}
 					break
 				}
+				// Check require_index: if the table is being seq scanned
+				// and requires an index, the index is missing or unused
+				if len(rule.RequireIndex) > 0 {
+					result.Passed = false
+					result.Message = rule.Message
+					if result.Message == "" {
+						result.Message = fmt.Sprintf("Table %s requires index on %v but sequential scan detected",
+							scan.Table, rule.RequireIndex)
+					}
+					break
+				}
 			}
 			// If rule exists but no matching scan, it passes
 			if result.Passed {

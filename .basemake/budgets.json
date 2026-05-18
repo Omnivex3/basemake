@@ -12,6 +12,13 @@
       "pattern": "V*__*.sql",
       "threshold": "5s",
       "message": "Migrations must complete in under 5s"
+    },
+    {
+      "type": "table",
+      "table": "stress_orders",
+      "require_index": [
+        "user_id"
+      ]
     }
   ]
 }

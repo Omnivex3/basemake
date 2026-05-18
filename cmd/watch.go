@@ -42,7 +42,8 @@ Runs via the basemake server daemon. Add a watch with:
 			return cmd.Help()
 		}
 
-		return nil
+		// Proxy to watch add
+		return watchAddCmd.RunE(watchAddCmd, args)
 	},
 }
 

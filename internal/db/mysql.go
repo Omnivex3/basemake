@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -13,7 +15,33 @@ type mysqlDriver struct{}
 func (d *mysqlDriver) Scheme() string { return "mysql" }
 
 func (d *mysqlDriver) Connect(dsn string) (Database, error) {
-	conn, err := sql.Open("mysql", dsn)
+	nativeDSN := dsn
+
+	// Convert mysql://user:pass@host:3306/db to user:pass@tcp(host:3306)/db
+	if strings.HasPrefix(dsn, "mysql://") {
+		parsed, err := url.Parse(dsn)
+		if err == nil {
+			user := ""
+			if parsed.User != nil {
+				user = parsed.User.String()
+			}
+			host := parsed.Host // includes port if present
+			if host == "" {
+				host = "127.0.0.1:3306"
+			} else if !strings.Contains(host, ":") {
+				host = host + ":3306"
+			}
+			dbName := strings.TrimPrefix(parsed.Path, "/")
+			params := parsed.RawQuery
+
+			nativeDSN = fmt.Sprintf("%s@tcp(%s)/%s", user, host, dbName)
+			if params != "" {
+				nativeDSN += "?" + params
+			}
+		}
+	}
+
+	conn, err := sql.Open("mysql", nativeDSN)
 	if err != nil {
 		return nil, fmt.Errorf("mysql open: %w", err)
 	}
@@ -164,4 +192,13 @@ func (m *mysqlDB) Explain(ctx context.Context, query string) (string, error) {
 // ExplainJSON returns an error — MySQL doesn't support JSON format EXPLAIN
 func (m *mysqlDB) ExplainJSON(ctx context.Context, query string) (string, error) {
 	return "", fmt.Errorf("mysql explain json: MySQL does not support JSON format EXPLAIN")
+}
+
+func (m *mysqlDB) ExplainNoAnalyze(ctx context.Context, query string) (string, error) {
+	var plan string
+	err := m.conn.QueryRowContext(ctx, "EXPLAIN FORMAT=JSON " + query).Scan(&plan)
+	if err != nil {
+		return "", fmt.Errorf("mysql explain: %w", err)
+	}
+	return plan, nil
 }

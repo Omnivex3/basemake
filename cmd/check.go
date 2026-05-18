@@ -94,6 +94,13 @@ Examples:
 		}
 		defer conn.Close()
 
+		// Reject DML queries — EXPLAIN ANALYZE would actually execute them
+		if isDML(sql) {
+			fmt.Fprintf(os.Stderr, "🔴 DML queries (INSERT/UPDATE/DELETE) are not allowed in check — they would actually execute via EXPLAIN ANALYZE\n")
+			os.Exit(2)
+			return nil
+		}
+
 		// Step 1: Structural check via EXPLAIN ANALYZE
 		hasCritical := false
 		hasWarning := false

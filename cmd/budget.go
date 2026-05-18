@@ -74,7 +74,7 @@ var budgetSetCmd = &cobra.Command{
 	Example: `  basemake budget set --table orders --max-seq-rows 1000
   basemake budget set --table users --require-index email,status
   basemake budget set --migration "V*__*.sql" --threshold 5s
-  basemake budget set --query "SELECT * FROM" --max-rows 10000`,
+  basemake budget set --query "SELECT * FROM" --threshold 1s`,
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dir, err := findBudgetsRoot()
