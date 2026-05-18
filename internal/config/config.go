@@ -16,15 +16,19 @@ type Config struct {
 	OpenAIBaseURL   string `json:"openai_base_url,omitempty"`
 	AnthropicModel  string `json:"anthropic_model,omitempty"`
 	AnthropicBaseURL string `json:"anthropic_base_url,omitempty"`
+	OllamaModel     string `json:"ollama_model,omitempty"`
+	OllamaBaseURL   string `json:"ollama_base_url,omitempty"`
 }
 
 // DefaultConfig returns a config with sensible defaults
 func DefaultConfig() *Config {
 	return &Config{
-		OutputFormat:   "table",
-		AIProvider:     "openai",
-		OpenAIModel:    "gpt-4",
-		AnthropicModel: "claude-sonnet-4-20250514",
+		OutputFormat:    "table",
+		AIProvider:      "openai",
+		OpenAIModel:     "gpt-4",
+		AnthropicModel:  "claude-sonnet-4-20250514",
+		OllamaModel:     "llama3",
+		OllamaBaseURL:   "http://localhost:11434/v1",
 	}
 }
 

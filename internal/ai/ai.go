@@ -82,8 +82,25 @@ func SelectedProvider() (Provider, error) {
 		}
 		return &anthropicProvider{apiKey: apiKey, model: model, baseURL: baseURL}, nil
 
+	case "ollama":
+		model := os.Getenv("OLLAMA_MODEL")
+		if model == "" {
+			model = cfg.OllamaModel
+		}
+		if model == "" {
+			model = "llama3"
+		}
+		baseURL := os.Getenv("OLLAMA_BASE_URL")
+		if baseURL == "" {
+			baseURL = cfg.OllamaBaseURL
+		}
+		if baseURL == "" {
+			baseURL = "http://localhost:11434/v1"
+		}
+		return &ollamaProvider{model: model, baseURL: baseURL}, nil
+
 	default:
-		return nil, fmt.Errorf("unsupported AI provider: %s (use 'openai' or 'anthropic')", provider)
+		return nil, fmt.Errorf("unsupported AI provider: %s (use 'openai', 'anthropic', or 'ollama')", provider)
 	}
 }
 
