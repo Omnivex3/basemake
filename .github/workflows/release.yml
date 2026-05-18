@@ -99,15 +99,15 @@ jobs:
               binary="${binary}.exe"
             fi
 
-            # Rename binary to just "basemake" (or "dbai.exe" for Windows) inside archive
+            # Rename binary to just "basemake" (or "basemake.exe" for Windows) inside archive
             if echo "$os_arch" | grep -q "windows"; then
-              cp "$dir/$binary" "../release/dbai.exe"
-              tar czf "../release/basemake-${os_arch}.tar.gz" -C "../release" dbai.exe
-              rm "../release/dbai.exe"
+              cp "$dir/$binary" "../release/basemake.exe"
+              tar czf "../release/basemake-${os_arch}.tar.gz" -C "../release" basemake.exe
+              rm "../release/basemake.exe"
             else
-              cp "$dir/$binary" "../release/dbai"
-              tar czf "../release/basemake-${os_arch}.tar.gz" -C "../release" dbai
-              rm "../release/dbai"
+              cp "$dir/$binary" "../release/basemake"
+              tar czf "../release/basemake-${os_arch}.tar.gz" -C "../release" basemake
+              rm "../release/basemake"
             fi
           done
 
@@ -122,7 +122,7 @@ jobs:
           name: ${{ github.ref_name }}
           tag_name: ${{ github.ref }}
           body: |
-            ## dbai ${{ github.ref_name }}
+            ## basemake ${{ github.ref_name }}
 
             ### Install
 

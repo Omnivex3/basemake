@@ -5,40 +5,61 @@
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat&logo=go)](https://go.dev)
 [![GitHub Downloads](https://img.shields.io/github/downloads/DynamicKarabo/basemake/total?style=flat&label=downloads)](https://github.com/DynamicKarabo/basemake/releases)
 
-Query, analyze, and optimize your databases with natural language.
+> **All local. All private. All yours.**  
+> Talk to your database in plain English. Queries, performance analysis, and insights — no data leaves your machine.
 
+![basemake demo](basemake-demo.gif)
+
+## Features
+
+- **Natural language queries** — `basemake "show me users who signed up last week"` → SQL → results
+- **Zero data exfiltration** — works with [Ollama](https://ollama.ai) locally or your own API keys
+- **Performance analysis** — `basemake analyze "SELECT * FROM orders"` surfaces slow scans, missing indexes
+- **EXPLAIN mode** — `basemake "top products" --explain` shows execution plan alongside results
+- **Multi-dialect** — PostgreSQL, MySQL, SQLite with automatic SQL generation for each
+- **Output formats** — table (default), `--json`, `--csv`
+- **Streaming AI** — watch SQL generate token by token, or use `--no-stream` for instant results
+- **History compounding** — past queries inform future AI responses for context-aware SQL generation
+- **Config persistence** — set once with `basemake config set`, forget it
+- **Interactive REPL** — `basemake repl` for an AI-assisted SQL shell
+
+## Quick Start
+
+```bash
+# Connect to any database
+basemake connect postgres://user:password@localhost:5432/mydb
+
+# Ask questions in plain English
+basemake "show me users who signed up last week"
+
+# Analyze query performance
+basemake analyze "SELECT * FROM orders WHERE status = 'pending'"
+
+# See execution plans alongside results
+basemake "top 5 products by revenue" --explain
+
+# Output as JSON or CSV
+basemake "recent orders" --json
+basemake "slow queries from yesterday" --csv
 ```
-$ basemake connect postgres://user:***@localhost:5432/mydb
-✓ Connected to PostgreSQL
-  Schema loaded: 23 tables, 147 columns, 12 indexes
 
-$ basemake query "show me users who ordered last month"
-  SELECT u.name, COUNT(o.id) as orders
-  FROM users u JOIN orders o ON u.id = o.user_id
-  WHERE o.created_at > now() - interval '30 days'
-  GROUP BY u.id ORDER BY orders DESC;
-
- id | name
-----+-------
-  1 | Alice
-  2 | Bob
-(2 rows)
-
-$ basemake analyze "SELECT * FROM orders WHERE created_at > now()"
-Execution Time: 12.50 ms
-
-Issues:
-🟡 Seq scan on orders (8000 rows) → Consider adding an index
-🟡 Row estimate mismatch → Update statistics
-```
+That's it. Two commands to go from zero to querying with AI.
 
 ## Install
 
-### Binary (Linux)
+### Binary (Linux / macOS)
 
 ```bash
+# Linux amd64
 curl -sfL https://github.com/DynamicKarabo/basemake/releases/latest/download/basemake-linux-amd64.tar.gz | tar xz
-sudo mv basemake /usr/local/bin/-linux-amd64.tar.gz | tar xz
+sudo mv basemake /usr/local/bin/
+
+# macOS (Apple Silicon)
+curl -sfL https://github.com/DynamicKarabo/basemake/releases/latest/download/basemake-darwin-arm64.tar.gz | tar xz
+sudo mv basemake /usr/local/bin/
+
+# macOS (Intel)
+curl -sfL https://github.com/DynamicKarabo/basemake/releases/latest/download/basemake-darwin-amd64.tar.gz | tar xz
 sudo mv basemake /usr/local/bin/
 ```
 
@@ -48,27 +69,215 @@ sudo mv basemake /usr/local/bin/
 go install github.com/DynamicKarabo/basemake@latest
 ```
 
-### Shell completion
+### Docker
+
+```bash
+docker pull ghcr.io/dynamickarabo/basemake:latest
+docker run --rm ghcr.io/dynamickarabo/basemake --help
+```
+
+## AI Providers
+
+basemake works with three AI providers. Choose the one that fits your workflow.
+
+### Ollama (Local — recommended)
+
+Zero API costs, zero data leaves your machine. Requires [Ollama](https://ollama.ai) running locally.
+
+```bash
+basemake config set ai_provider ollama
+basemake config set ollama_model llama3
+basemake "show me users who signed up last week"
+```
+
+### OpenAI
+
+```bash
+export OPENAI_API_KEY="sk-..."
+basemake config set ai_provider openai
+basemake "show me users who signed up last week"
+```
+
+### Anthropic
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+basemake config set ai_provider anthropic
+basemake "show me users who signed up last week"
+```
+
+## Examples
+
+### Connect and introspect
+
+```bash
+$ basemake connect postgres://user:***@localhost:5433/demodb
+✓ Connected to PostgreSQL (***@localhost:5433/demodb)
+  Schema loaded: 3 tables, 19 columns, 10 indexes
+
+orders (7 columns, 5 indexes)
+  ├─ id integer [PK]
+  ├─ user_id integer nullable
+  ├─ product_id integer nullable
+  ├─ quantity integer
+  ├─ total numeric
+  ├─ status character varying nullable
+  ├─ ordered_at timestamp without time zone nullable
+products (6 columns, 2 indexes)
+  ├─ id integer [PK]
+  ├─ name character varying
+  ├─ price numeric
+  ...
+users (6 columns, 3 indexes)
+  ├─ id integer [PK]
+  ├─ name character varying
+  ├─ email character varying
+  ...
+```
+
+### Natural language → SQL → results
+
+```bash
+$ basemake "show me users who signed up last week"
+
+SELECT *
+FROM users
+WHERE created_at >= NOW() - INTERVAL '1 week';
+
+id | name          | email             | plan       | country
+---+---------------+---------------+------------+--------
+ 1 | Alice Mokoena | alice@example.com | pro        | ZA
+ 2 | Bob Smith     | bob@example.com   | free       | US
+ 3 | Carol Ndlovu  | carol@example.com | pro        | ZA
+ 4 | Dave Patel    | dave@example.com  | enterprise | IN
+(4 rows)
+```
+
+### Performance analysis
+
+```bash
+$ basemake analyze "SELECT * FROM orders WHERE status = 'delivered'"
+Running EXPLAIN ANALYZE...
+Analysis completed in 3ms
+
+Execution Time: 0.13 ms
+Planning Time: 0.73 ms
+
+Scan Summary:
+  Sequential Scans: 0
+  Index Scans: 1
+  Heaviest Node: Bitmap Heap Scan on orders (0.0ms)
+
+Plan Tree:
+Bitmap Heap Scan on orders (0.0ms, 8 rows)
+  Bitmap Index Scan (0.0ms, 8 rows)
+```
+
+### Execution plans with results
+
+```bash
+$ basemake "top 5 products by revenue" --explain
+
+SELECT
+    p.id,
+    p.name,
+    SUM(o.quantity * o.total) AS total_revenue
+FROM orders o
+JOIN products p ON o.product_id = p.id
+GROUP BY p.id, p.name
+ORDER BY total_revenue DESC
+LIMIT 5;
+
+Execution Plan:
+Limit  (cost=41.22..41.24 rows=5 width=454) (actual time=0.268..0.274 rows=5 loops=1)
+
+id | name                       | total_revenue
+---+----------------------------+--------------
+ 5 | Ergonomic Chair            |       2399.96
+10 | Notebook Set               |       1873.75
+ 4 | Standing Desk              |        799.98
+ 8 | Noise Canceling Headphones |        499.98
+ 1 | Wireless Mouse             |        389.87
+(5 rows)
+```
+
+## Commands
+
+| Command | Description |
+|---------|-------------|
+| `basemake connect <dsn>` | Connect to a database, introspect schema, cache locally |
+| `basemake query <question\|sql>` | Ask a question or run raw SQL |
+| `basemake <question>` | Shorthand — same as `query` |
+| `basemake analyze <query>` | Run EXPLAIN ANALYZE, surface performance issues |
+| `basemake analyze --all` | Analyze all cached tables for issues |
+| `basemake repl` | Interactive SQL shell with AI assistance |
+| `basemake config show` | View all configuration |
+| `basemake config set <key> <value>` | Persist a config value |
+| `basemake version` | Print version information |
+
+### Query flags
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output results as JSON |
+| `--csv` | Output results as CSV |
+| `--dry-run` | Generate SQL without executing |
+| `--explain` | Show execution plan alongside results |
+| `--no-stream` | Wait for full AI response (disable streaming) |
+
+## Configuration
+
+Config is stored in `~/.basemake/config.json`. Manage it with `basemake config` commands:
+
+```bash
+basemake config set ai_provider ollama
+basemake config set ollama_model llama3
+basemake config set output_format json
+basemake config show
+```
+
+Environment variables override config values:
+
+| Variable | Purpose |
+|----------|---------|
+| `AI_PROVIDER` | Provider: `openai`, `anthropic`, `ollama` |
+| `OPENAI_API_KEY` | API key for OpenAI |
+| `ANTHROPIC_API_KEY` | API key for Anthropic |
+| `OPENAI_MODEL` | Model override (default: `gpt-4`) |
+| `ANTHROPIC_MODEL` | Model override (default: `claude-sonnet-4-20250514`) |
+| `OLLAMA_MODEL` | Model override (default: `llama3`) |
+| `OLLAMA_BASE_URL` | Ollama server URL (default: `http://localhost:11434/v1`) |
+
+## Shell Completion
 
 ```bash
 eval "$(basemake completion bash)"       # bash
 eval "$(basemake completion zsh)"        # zsh
-`basemake completion fish | source        # fish
+basemake completion fish | source        # fish
+basemake completion powershell | Out-String | Invoke-Expression  # PowerShell
 ```
 
-## Full Documentation
+## Supported Databases
 
-Comprehensive documentation covering every command, flag, config option, driver, and internal detail lives in [`docs/`](docs/README.md).
+| Database | Driver | Connection String |
+|----------|--------|-------------------|
+| PostgreSQL | `lib/pq` | `postgres://user:pass@host:5432/dbname` |
+| MySQL | `go-sql-driver/mysql` | `mysql://user:pass@host:3306/dbname` |
+| SQLite | `modernc.org/sqlite` | `sqlite:/path/to/file.db` (coming soon) |
 
-| Document | What's Covered |
-|----------|----------------|
-| [Overview](docs/overview.md) | Architecture, design decisions, data flow, build pipeline |
-| [Commands Reference](docs/commands.md) | All 6 commands: connect, query, analyze, repl, completion, version |
-| [Configuration](docs/configuration.md) | Config file, env vars, defaults, precedence |
-| [Database Drivers](docs/database-drivers.md) | PostgreSQL, MySQL, SQLite internals |
-| [Output Formats](docs/output-formats.md) | Table, JSON, CSV, TSV — every formatting detail |
-| [AI Integration](docs/ai-integration.md) | NL→SQL generation, model selection, API details |
-| [Development Guide](docs/development.md) | Build, test, lint, CI/CD, adding drivers |
+## Documentation
+
+Comprehensive documentation for every feature, command, and configuration option lives in [`docs/`](docs/README.md).
+
+| Document | Covers |
+|----------|--------|
+| [Overview](docs/overview.md) | Architecture, design decisions, data flow |
+| [Commands](docs/commands.md) | Full reference for all commands |
+| [Configuration](docs/configuration.md) | Config file, env vars, precedence |
+| [Drivers](docs/database-drivers.md) | PostgreSQL, MySQL, SQLite internals |
+| [Output Formats](docs/output-formats.md) | Table, JSON, CSV formatting rules |
+| [AI Integration](docs/ai-integration.md) | NL→SQL, model selection, API details |
+| [Development](docs/development.md) | Build, test, CI/CD, contributing |
 
 ## License
 
