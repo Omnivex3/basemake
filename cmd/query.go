@@ -75,7 +75,7 @@ Uses your cached schema to generate accurate queries.
 			if queryNoStream {
 				// Blocking mode — wait for full response
 				fmt.Fprintf(os.Stderr, "🤖 Generating SQL from: %s\n\n", input)
-				sql, err = ai.QuestionToSQL(cmd.Context(), dialect, prompt, input)
+				sql, err = ai.QuestionToSQL(cmd.Context(), prompt, input)
 				if err != nil {
 					return fmt.Errorf("ai: %w", err)
 				}
@@ -83,7 +83,7 @@ Uses your cached schema to generate accurate queries.
 			} else {
 				// Streaming mode — print tokens as they arrive
 				fmt.Fprintf(os.Stderr, "🤖 Generating SQL...\n\n")
-				ch, err := ai.QuestionToSQLStream(cmd.Context(), dialect, prompt, input)
+				ch, err := ai.QuestionToSQLStream(cmd.Context(), prompt, input)
 				if err != nil {
 					return fmt.Errorf("ai: %w", err)
 				}

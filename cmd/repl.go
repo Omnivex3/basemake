@@ -204,7 +204,7 @@ func executeREPLQuery(conn db.Database, input string, format display.Format) err
 		}
 
 		fmt.Fprintf(os.Stderr, "🤖 Generating SQL...\n")
-		ch, err := ai.QuestionToSQLStream(context.Background(), dialect, prompt, input)
+		ch, err := ai.QuestionToSQLStream(context.Background(), prompt, input)
 		if err != nil {
 			return fmt.Errorf("ai: %w", err)
 		}

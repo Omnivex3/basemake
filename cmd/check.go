@@ -106,8 +106,9 @@ Examples:
 		hasWarning := false
 		var planJSON string
 		var planErr error
+		var report *analyze.Report
 		if planJSON, planErr = conn.ExplainJSON(cmd.Context(), sql); planErr == nil {
-			if report, parseErr := analyze.ParsePlan(planJSON); parseErr == nil {
+			if report, err = analyze.ParsePlan(planJSON); err == nil {
 				for _, issue := range report.Issues {
 					switch issue.Severity {
 					case "critical":
@@ -127,12 +128,11 @@ Examples:
 			}
 		}
 
-		// Step 1b: Budget policy check — reuse plan from Step 1
-		if budgetsFile != nil && len(budgetsFile.Rules) > 0 && planErr == nil {
+		// Step 1b: Budget policy check — reuse report from Step 1
+		if budgetsFile != nil && len(budgetsFile.Rules) > 0 && report != nil {
 			// Extract scan info from plan analysis
 			var scans []budget.ScanInfo
-			if planReport, planErr := analyze.ParsePlan(planJSON); planErr == nil {
-				for _, node := range planReport.Nodes {
+			for _, node := range report.Nodes {
 				if (node.NodeType == "Seq Scan" || node.NodeType == "Table Scan") && node.RelationName != "" {
 					rowCount := int(node.ActualRows)
 					if rowCount == 0 {
@@ -143,7 +143,6 @@ Examples:
 						RowCount: rowCount,
 					})
 				}
-			}
 			}
 
 			budgetReport := budget.EvaluateCheck(sql, scans, budgetsFile)

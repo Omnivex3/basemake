@@ -1,18 +1,14 @@
 package server
 
 import (
+	"context"
 	"crypto/sha256"
-	"database/sql"
 	"fmt"
 	"log"
-	"net/url"
-	"os"
-	"strings"
+
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"    // MySQL driver for watch queries
-	_ "github.com/lib/pq"                 // PostgreSQL driver for watch queries
-	_ "modernc.org/sqlite"                // SQLite driver
+	"github.com/DynamicKarabo/basemake/internal/db"
 )
 
 // scheduleWatches runs in a background goroutine, polling active watches
@@ -83,7 +79,7 @@ func (s *Server) executeWatch(w *Watch) {
 	dsn := w.DSN
 	if dsn == "" {
 		// Use the DSN from the active connection stored in config
-		dsn = loadDSNFromStore(s.store)
+		dsn, _ = db.LoadDSN()
 	}
 
 	if dsn == "" {
@@ -91,8 +87,8 @@ func (s *Server) executeWatch(w *Watch) {
 		return
 	}
 
-	// Open connection and execute query
-	db, err := openDB(dsn)
+	// Open connection and execute query using centralized internal/db
+	conn, err := db.Connect(dsn)
 	if err != nil {
 		errorMsg = fmt.Sprintf("connect: %v", err)
 		alert = true
@@ -101,9 +97,9 @@ func (s *Server) executeWatch(w *Watch) {
 		s.recordWatchResult(w.ID, durationMs, rowCount, resultHash, alert, alertReason, errorMsg)
 		return
 	}
-	defer db.Close()
+	defer conn.Close()
 
-	rows, err := db.Query(w.SQL)
+	rows, err := conn.Query(context.Background(), w.SQL)
 	if err != nil {
 		errorMsg = fmt.Sprintf("query: %v", err)
 		alert = true
@@ -115,7 +111,7 @@ func (s *Server) executeWatch(w *Watch) {
 	defer rows.Close()
 
 	// Read rows to count and hash
-	cols, _ := rows.Columns()
+	cols := rows.Columns()
 	rowCount = 0
 	hasher := sha256.New()
 	scanBuf := make([]interface{}, len(cols))
@@ -196,53 +192,3 @@ func (s *Server) recordWatchResult(watchID int64, durationMs int64, rowCount int
 	}
 }
 
-// openDB opens a database connection based on DSN prefix.
-// For mysql:// DSNs, converts to go-sql-driver native format (user:pass@tcp(host:port)/db).
-func openDB(dsn string) (*sql.DB, error) {
-	// Convert mysql:// to native go-sql-driver format
-	if strings.HasPrefix(dsn, "mysql://") {
-		nativeDSN := dsn
-		parsed, err := url.Parse(dsn)
-		if err == nil {
-			user := ""
-			if parsed.User != nil {
-				user = parsed.User.String()
-			}
-			host := parsed.Host
-			if host == "" {
-				host = "127.0.0.1:3306"
-			} else if !strings.Contains(host, ":") {
-				host = host + ":3306"
-			}
-			dbName := strings.TrimPrefix(parsed.Path, "/")
-			params := parsed.RawQuery
-			nativeDSN = fmt.Sprintf("%s@tcp(%s)/%s", user, host, dbName)
-			if params != "" {
-				nativeDSN += "?" + params
-			}
-		}
-		return sql.Open("mysql", nativeDSN)
-	}
-
-	switch {
-	case strings.HasPrefix(dsn, "postgres://") || strings.HasPrefix(dsn, "postgresql://"):
-		return sql.Open("postgres", dsn)
-	case strings.HasPrefix(dsn, "sqlite:") || strings.HasPrefix(dsn, "sqlite://"):
-		return sql.Open("sqlite", strings.TrimPrefix(dsn, "sqlite://"))
-	default:
-		return sql.Open("postgres", dsn)
-	}
-}
-
-// loadDSNFromStore reads the DSN config file.
-func loadDSNFromStore(store *Store) string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
-	data, err := os.ReadFile(home + "/.basemake/config")
-	if err != nil {
-		return ""
-	}
-	return string(data)
-}

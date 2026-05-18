@@ -107,7 +107,7 @@ func SelectedProvider() (Provider, error) {
 // QuestionToSQL is the main entry point for NL→SQL generation.
 // It selects the configured provider and calls GenerateSQL.
 // If no API key is set, it returns a placeholder SQL with instructions.
-func QuestionToSQL(ctx context.Context, dialect, schemaPrompt, question string) (string, error) {
+func QuestionToSQL(ctx context.Context, systemPrompt, question string) (string, error) {
 	provider, err := SelectedProvider()
 	if err == ErrNoKey {
 		return "-- Set OPENAI_API_KEY or ANTHROPIC_API_KEY for AI-powered queries\n" +
@@ -117,14 +117,14 @@ func QuestionToSQL(ctx context.Context, dialect, schemaPrompt, question string) 
 		return "", fmt.Errorf("provider: %w", err)
 	}
 
-	// schemaPrompt is already a full system prompt from BuildPromptWithHistory
+	// systemPrompt is already a full system prompt from BuildPromptWithHistory
 	// — pass it directly, no re-wrapping
-	return provider.GenerateSQL(ctx, schemaPrompt, question)
+	return provider.GenerateSQL(ctx, systemPrompt, question)
 }
 
 // QuestionToSQLStream is the streaming version of QuestionToSQL.
 // Returns a channel of text fragments for real-time display.
-func QuestionToSQLStream(ctx context.Context, dialect, schemaPrompt, question string) (<-chan string, error) {
+func QuestionToSQLStream(ctx context.Context, systemPrompt, question string) (<-chan string, error) {
 	provider, err := SelectedProvider()
 	if err == ErrNoKey {
 		ch := make(chan string, 1)
@@ -136,7 +136,7 @@ func QuestionToSQLStream(ctx context.Context, dialect, schemaPrompt, question st
 		return nil, fmt.Errorf("provider: %w", err)
 	}
 
-	// schemaPrompt is already a full system prompt from BuildPromptWithHistory
+	// systemPrompt is already a full system prompt from BuildPromptWithHistory
 	// — pass it directly, no re-wrapping
-	return provider.GenerateSQLStream(ctx, schemaPrompt, question)
+	return provider.GenerateSQLStream(ctx, systemPrompt, question)
 }

@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// --- PostgreSQL Structures ---
+
 // RawPlan represents the top-level PostgreSQL EXPLAIN JSON structure
 type RawPlan struct {
 	Plan          RawNode  `json:"Plan"`
@@ -32,6 +34,8 @@ type RawNode struct {
 	IndexName     string    `json:"Index Name"`
 	Plans         []RawNode `json:"Plans"`
 }
+
+// --- Unified Structures ---
 
 // FlatNode is a flattened plan node with depth and path info
 type FlatNode struct {
@@ -61,6 +65,7 @@ type Issue struct {
 // Report is the complete analysis result
 type Report struct {
 	Query               string
+	Dialect             string
 	PlanningTime        float64
 	ExecutionTime       float64
 	TotalCost           float64
@@ -83,41 +88,36 @@ func ParsePlan(jsonPlan string) (*Report, error) {
 	// Auto-detect: MySQL uses a single JSON object starting with { containing "query_block"
 	// PG uses an array [...] at the top level — even if "query_block" appears in data
 	if len(trimmed) > 0 && trimmed[0] == '{' && strings.Contains(trimmed, `"query_block"`) {
-		return ParsePlanMySQL(jsonPlan)
+		return parseMySQLPlan(jsonPlan)
 	}
 
 	// Default: PostgreSQL format (array of plan objects)
-	return ParsePlanPostgres(jsonPlan)
+	return parsePostgresPlan(jsonPlan)
 }
 
-// ParsePlanPostgres parses a PostgreSQL JSON EXPLAIN string into a Report.
-func ParsePlanPostgres(jsonPlan string) (*Report, error) {
+func parsePostgresPlan(jsonPlan string) (*Report, error) {
 	var raw []RawPlan
 	if err := json.Unmarshal([]byte(jsonPlan), &raw); err != nil {
-		return nil, fmt.Errorf("parse plan json: %w", err)
+		return nil, fmt.Errorf("parse postgres plan json: %w", err)
 	}
 	if len(raw) == 0 {
-		return nil, fmt.Errorf("empty plan result")
+		return nil, fmt.Errorf("empty postgres plan result")
 	}
 
 	top := raw[0]
 	report := &Report{
+		Dialect:       "PostgreSQL",
 		PlanningTime:  top.PlanningTime,
 		ExecutionTime: top.ExecutionTime,
 		TotalCost:     top.Plan.TotalCost,
 	}
 
-	// Flatten plan tree
-	flattenNode(&top.Plan, 0, report)
-
-	// Analyze
+	flattenPostgresNode(&top.Plan, 0, report)
 	analyzeIssues(report)
-
 	return report, nil
 }
 
-// flattenNode recursively walks the plan tree and appends flattened nodes
-func flattenNode(node *RawNode, depth int, report *Report) {
+func flattenPostgresNode(node *RawNode, depth int, report *Report) {
 	fn := FlatNode{
 		Depth:        depth,
 		NodeType:     node.NodeType,
@@ -135,7 +135,70 @@ func flattenNode(node *RawNode, depth int, report *Report) {
 	report.Nodes = append(report.Nodes, fn)
 
 	for i := range node.Plans {
-		flattenNode(&node.Plans[i], depth+1, report)
+		flattenPostgresNode(&node.Plans[i], depth+1, report)
+	}
+}
+
+func parseMySQLPlan(jsonPlan string) (*Report, error) {
+	var raw interface{}
+	if err := json.Unmarshal([]byte(jsonPlan), &raw); err != nil {
+		return nil, fmt.Errorf("parse mysql plan json: %w", err)
+	}
+
+	report := &Report{
+		Dialect: "MySQL",
+	}
+
+	flattenMySQLNode(raw, 0, report)
+	analyzeIssues(report)
+	return report, nil
+}
+
+func flattenMySQLNode(val interface{}, depth int, report *Report) {
+	m, ok := val.(map[string]interface{})
+	if !ok {
+		if arr, ok := val.([]interface{}); ok {
+			for _, item := range arr {
+				flattenMySQLNode(item, depth, report)
+			}
+		}
+		return
+	}
+
+	// In MySQL JSON EXPLAIN, a "table" or "query_block" represents a node
+	if table, ok := m["table"].(map[string]interface{}); ok {
+		name, _ := table["table_name"].(string)
+		access, _ := table["access_type"].(string)
+		rows, _ := table["rows_examined_per_scan"].(float64)
+
+		nodeType := access
+		if access == "ALL" {
+			nodeType = "Seq Scan"
+		} else if access == "index" || access == "range" || access == "ref" || access == "eq_ref" {
+			nodeType = "Index Scan"
+		}
+
+		report.Nodes = append(report.Nodes, FlatNode{
+			Depth:        depth,
+			NodeType:     nodeType,
+			RelationName: name,
+			PlanRows:     rows,
+			ActualRows:   rows, // MySQL non-analyze JSON only has estimates
+		})
+	}
+
+	// Recurse into other potential blocks
+	for _, k := range []string{"query_block", "nested_loop", "union_result", "table"} {
+		if v, ok := m[k]; ok && k != "table" {
+			flattenMySQLNode(v, depth+1, report)
+		}
+	}
+
+	// Generic recursion for subqueries
+	if sub, ok := m["subqueries"].([]interface{}); ok {
+		for _, item := range sub {
+			flattenMySQLNode(item, depth+1, report)
+		}
 	}
 }
 
@@ -159,18 +222,20 @@ func analyzeIssues(r *Report) {
 		}
 
 		// 1. Sequential scans on tables with rows (potential missing index)
-		if n.NodeType == "Seq Scan" && n.RelationName != "" && n.ActualRows > 100 {
+		// For MySQL, ActualRows is used as the row estimate since timing isn't available in JSON.
+		rowThreshold := 100.0
+		if n.NodeType == "Seq Scan" && n.RelationName != "" && n.PlanRows > rowThreshold {
 			r.Issues = append(r.Issues, Issue{
 				Severity:  "warning",
 				NodeType:  n.NodeType,
 				TableName: n.RelationName,
-				Message:   fmt.Sprintf("Sequential scan on %s (%d rows, %.1fms)", n.RelationName, int(n.ActualRows), n.ActualTotal),
+				Message:   fmt.Sprintf("Sequential scan on %s (%d estimated rows)", n.RelationName, int(n.PlanRows)),
 				Suggestion: fmt.Sprintf("Consider adding an index on %s for columns used in WHERE or JOIN conditions", n.RelationName),
 			})
 		}
 
-		// 2. Row estimate mismatch (accual vs estimated off by 10x+)
-		if n.ActualRows > 0 && n.PlanRows > 0 {
+		// 2. Row estimate mismatch (PostgreSQL only — MySQL JSON doesn't have actuals)
+		if r.Dialect == "PostgreSQL" && n.ActualRows > 0 && n.PlanRows > 0 {
 			ratio := n.ActualRows / n.PlanRows
 			if ratio > 10 || ratio < 0.1 {
 				r.HasRowMismatch = true
@@ -187,8 +252,8 @@ func analyzeIssues(r *Report) {
 			}
 		}
 
-		// 3. Expensive filters (sequential scan with filter)
-		if n.NodeType == "Seq Scan" && n.Filter != "" && n.ActualTotal > 1.0 {
+		// 3. Expensive filters (PostgreSQL only — MySQL JSON timing not available)
+		if r.Dialect == "PostgreSQL" && n.NodeType == "Seq Scan" && n.Filter != "" && n.ActualTotal > 1.0 {
 			r.Issues = append(r.Issues, Issue{
 				Severity:  "info",
 				NodeType:  n.NodeType,
@@ -199,18 +264,18 @@ func analyzeIssues(r *Report) {
 		}
 
 		// 4. Nested Loop with many rows (potential missing index)
-		if strings.Contains(n.NodeType, "Nested Loop") && n.ActualRows > 1000 {
+		if strings.Contains(n.NodeType, "Nested Loop") && n.PlanRows > 1000 {
 			r.Issues = append(r.Issues, Issue{
 				Severity:  "info",
 				NodeType:  n.NodeType,
 				TableName: n.RelationName,
-				Message:   fmt.Sprintf("Nested Loop with %d rows — may benefit from index on inner table", int(n.ActualRows)),
+				Message:   fmt.Sprintf("Nested Loop with %d rows — may benefit from index on inner table", int(n.PlanRows)),
 				Suggestion: "Ensure inner table has an index on the join column",
 			})
 		}
 
-		// 5. Slow individual node (>100ms)
-		if n.ActualTotal > 100 && n.NodeType != "" {
+		// 5. Slow individual node (PostgreSQL only — MySQL JSON timing not available)
+		if r.Dialect == "PostgreSQL" && n.ActualTotal > 100 && n.NodeType != "" {
 			r.Issues = append(r.Issues, Issue{
 				Severity:  "critical",
 				NodeType:  n.NodeType,
@@ -234,8 +299,12 @@ func (n FlatNode) RelationNameOr(fallback string) string {
 func (r *Report) String() string {
 	var b strings.Builder
 
-	fmt.Fprintf(&b, "Execution Time: %.2f ms\n", r.ExecutionTime)
-	fmt.Fprintf(&b, "Planning Time: %.2f ms\n\n", r.PlanningTime)
+	if r.Dialect == "PostgreSQL" {
+		fmt.Fprintf(&b, "Execution Time: %.2f ms\n", r.ExecutionTime)
+		fmt.Fprintf(&b, "Planning Time: %.2f ms\n\n", r.PlanningTime)
+	} else {
+		fmt.Fprintf(&b, "Dialect: %s\n\n", r.Dialect)
+	}
 
 	// Summary
 	fmt.Fprintf(&b, "Scan Summary:\n")
@@ -256,7 +325,11 @@ func (r *Report) String() string {
 		if table != "" {
 			table = " on " + table
 		}
-		fmt.Fprintf(&b, "%s%s%s (%.1fms, %d rows)\n", indent, n.NodeType, table, n.ActualTotal, int(n.ActualRows))
+		if r.Dialect == "PostgreSQL" {
+			fmt.Fprintf(&b, "%s%s%s (%.1fms, %d rows)\n", indent, n.NodeType, table, n.ActualTotal, int(n.ActualRows))
+		} else {
+			fmt.Fprintf(&b, "%s%s%s (%d estimated rows)\n", indent, n.NodeType, table, int(n.PlanRows))
+		}
 	}
 
 	// Issues

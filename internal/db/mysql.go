@@ -189,8 +189,10 @@ func (m *mysqlDB) Explain(ctx context.Context, query string) (string, error) {
 	return plan, nil
 }
 
-// ExplainJSON runs EXPLAIN FORMAT=JSON and returns the plan as a JSON string.
+// ExplainJSON runs EXPLAIN FORMAT=JSON for structured analysis.
 // MySQL supports FORMAT=JSON since 5.6.
+// Note: MySQL's EXPLAIN FORMAT=JSON does not currently support ANALYZE (timing),
+// so actual execution metrics will be zero.
 func (m *mysqlDB) ExplainJSON(ctx context.Context, query string) (string, error) {
 	var plan string
 	err := m.conn.QueryRowContext(ctx, "EXPLAIN FORMAT=JSON "+query).Scan(&plan)
