@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/DynamicKarabo/basemake/internal/analyze"
+	"github.com/DynamicKarabo/basemake/internal/budget"
 	"github.com/DynamicKarabo/basemake/internal/db"
 	"github.com/spf13/cobra"
 )
@@ -47,12 +48,32 @@ Examples:
 			return nil
 		}
 
-		// Parse threshold
-		threshold, err := time.ParseDuration(checkThreshold)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "⚠ Invalid threshold: %v\n", err)
-			os.Exit(3)
-			return nil
+		// Load budgets from .basemake/budgets.json (searched from cwd upward)
+		cwd, _ := os.Getwd()
+		budgetsFile, _ := budget.LoadBudgets(cwd)
+
+		// Auto-apply threshold from budgets if not explicitly set
+		var threshold time.Duration
+		explicitThreshold := cmd.Flags().Changed("threshold")
+		if explicitThreshold {
+			threshold, err = time.ParseDuration(checkThreshold)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "⚠ Invalid threshold: %v\n", err)
+				os.Exit(3)
+				return nil
+			}
+		} else if budgetsFile != nil {
+			budgetThreshold := budget.EffectiveThreshold(sql, input, budgetsFile)
+			if budgetThreshold != "" {
+				threshold, err = time.ParseDuration(budgetThreshold)
+				if err != nil {
+					threshold = time.Second // fallback
+				}
+			} else {
+				threshold = time.Second // default
+			}
+		} else {
+			threshold = time.Second // default
 		}
 
 		// Get database connection
@@ -92,6 +113,41 @@ Examples:
 						if issue.Suggestion != "" {
 							fmt.Fprintf(os.Stderr, "   Suggestion: %s\n", issue.Suggestion)
 						}
+					}
+				}
+			}
+		}
+
+		// Step 1b: Budget policy check
+		if budgetsFile != nil && len(budgetsFile.Rules) > 0 {
+			// Extract scan info from plan analysis
+			var scans []budget.ScanInfo
+			if report, parseErr := conn.ExplainJSON(cmd.Context(), sql); parseErr == nil {
+				if planReport, planErr := analyze.ParsePlan(report); planErr == nil {
+					for _, node := range planReport.Nodes {
+						if node.NodeType == "Seq Scan" && node.RelationName != "" {
+							scans = append(scans, budget.ScanInfo{
+								Table:    node.RelationName,
+								RowCount: int(node.ActualRows),
+							})
+						}
+					}
+				}
+			}
+
+			budgetReport := budget.EvaluateCheck(sql, scans, budgetsFile)
+			if budgetReport != nil && len(budgetReport.Results) > 0 {
+				for _, vr := range budgetReport.Results {
+					if vr.Passed {
+						continue
+					}
+					hasCritical = true
+					fmt.Fprintf(os.Stderr, "🔴 [policy] %s\n", vr.Message)
+					if vr.Rule.MaxSeqRows > 0 {
+						fmt.Fprintf(os.Stderr, "   Rule: max_seq_rows=%d (reduce scan size or add an index)\n", vr.Rule.MaxSeqRows)
+					}
+					if len(vr.Rule.RequireIndex) > 0 {
+						fmt.Fprintf(os.Stderr, "   Rule: require_index on %v\n", vr.Rule.RequireIndex)
 					}
 				}
 			}

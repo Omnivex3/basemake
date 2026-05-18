@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "type": "table",
+      "table": "*",
+      "max_seq_rows": 1000,
+      "message": "Add an index for large table scans"
+    },
+    {
+      "type": "table",
+      "table": "orders",
+      "max_seq_rows": 100,
+      "message": "Orders table must use index scans — this table powers the revenue dashboard"
+    },
+    {
+      "type": "migration",
+      "pattern": "V*__*.sql",
+      "threshold": "5s",
+      "message": "Migrations must complete in under 5s"
+    }
+  ]
+}
