@@ -165,52 +165,102 @@ func flattenMySQLNode(val interface{}, depth int, report *Report) {
 		return
 	}
 
-	// In MySQL JSON EXPLAIN, a "table" or "query_block" represents a node
+	// Extract cost from query_block level
+	if costInfo, ok := m["cost_info"].(map[string]interface{}); ok {
+		if costStr, ok := costInfo["query_cost"].(string); ok {
+			var cost float64
+			if _, err := fmt.Sscanf(costStr, "%f", &cost); err == nil {
+				report.TotalCost = cost
+			}
+		}
+	}
+
+	// In MySQL JSON EXPLAIN, a "table" represents a plan node
 	if table, ok := m["table"].(map[string]interface{}); ok {
 		name, _ := table["table_name"].(string)
 		access, _ := table["access_type"].(string)
 		rows, _ := table["rows_examined_per_scan"].(float64)
 
 		nodeType := access
-		if access == "ALL" {
-			nodeType = "Seq Scan"
-		} else if access == "index" || access == "range" || access == "ref" || access == "eq_ref" {
-			nodeType = "Index Scan"
+		if nodeType == "" && name == "" {
+			nodeType = "No Table"
 		}
+		switch access {
+		case "ALL":
+			nodeType = "Table Scan"
+		case "ref":
+			nodeType = "Ref Lookup"
+		case "eq_ref":
+			nodeType = "EQ Ref Lookup"
+		case "range":
+			nodeType = "Range Scan"
+		case "index":
+			nodeType = "Index Scan"
+		case "const":
+			nodeType = "Const Lookup"
+		case "system":
+			nodeType = "System Lookup"
+		case "fulltext":
+			nodeType = "Fulltext Search"
+		case "index_merge":
+			nodeType = "Index Merge"
+		case "unique_subquery":
+			nodeType = "Unique Subquery"
+		case "index_subquery":
+			nodeType = "Index Subquery"
+		}
+
+		condition, _ := table["attached_condition"].(string)
 
 		report.Nodes = append(report.Nodes, FlatNode{
 			Depth:        depth,
 			NodeType:     nodeType,
 			RelationName: name,
 			PlanRows:     rows,
-			ActualRows:   rows, // MySQL non-analyze JSON only has estimates
+			ActualRows:   rows,
+			Filter:       condition,
 		})
+
+		// Recurse into table's children (only real child table containers)
+		// nested_loop and hash_join contain physical child tables
+		// materialized_from_subquery and union_result contain opaque query_block objects
+		for _, k := range []string{"nested_loop", "hash_join"} {
+			if v, ok := table[k]; ok {
+				flattenMySQLNode(v, depth+1, report)
+			}
+		}
 	}
 
-	// Recurse into other potential blocks
-	for _, k := range []string{"query_block", "nested_loop", "union_result", "table"} {
-		if v, ok := m[k]; ok && k != "table" {
+	// Recurse into container blocks
+	// query_block is a wrapper — same depth
+	// nested_loop and union_result are child containers — increment depth
+	for _, k := range []string{"query_block"} {
+		if v, ok := m[k]; ok {
+			flattenMySQLNode(v, depth, report)
+		}
+	}
+	for _, k := range []string{"nested_loop", "union_result"} {
+		if v, ok := m[k]; ok {
 			flattenMySQLNode(v, depth+1, report)
 		}
 	}
 
-	// Generic recursion for subqueries
-	if sub, ok := m["subqueries"].([]interface{}); ok {
-		for _, item := range sub {
-			flattenMySQLNode(item, depth+1, report)
-		}
-	}
+	// DO NOT recurse into subqueries, materialized_from_subquery, or union_result
+	// They contain opaque query_block objects that shouldn't be flattened as individual plan nodes
 }
 
 // analyzeIssues walks the flattened plan and detects performance issues
 func analyzeIssues(r *Report) {
 	for _, n := range r.Nodes {
 		// Track scan types
-		if n.NodeType == "Seq Scan" {
+		if n.NodeType == "Seq Scan" || n.NodeType == "Table Scan" {
 			r.SequentialScans++
 			r.TotalTableScans++
 		}
-		if strings.HasPrefix(n.NodeType, "Index") || strings.Contains(n.NodeType, "Index") {
+		if strings.HasPrefix(n.NodeType, "Index") || strings.Contains(n.NodeType, "Index") ||
+			n.NodeType == "Ref Lookup" || n.NodeType == "EQ Ref Lookup" ||
+			n.NodeType == "Range Scan" || n.NodeType == "Fulltext Search" ||
+			n.NodeType == "Unique Subquery" || n.NodeType == "Index Subquery" {
 			r.IndexScans++
 			r.TotalTableScans++
 		}
@@ -224,7 +274,7 @@ func analyzeIssues(r *Report) {
 		// 1. Sequential scans on tables with rows (potential missing index)
 		// For MySQL, ActualRows is used as the row estimate since timing isn't available in JSON.
 		rowThreshold := 100.0
-		if n.NodeType == "Seq Scan" && n.RelationName != "" && n.PlanRows > rowThreshold {
+		if (n.NodeType == "Seq Scan" || n.NodeType == "Table Scan") && n.RelationName != "" && n.PlanRows > rowThreshold {
 			r.Issues = append(r.Issues, Issue{
 				Severity:  "warning",
 				NodeType:  n.NodeType,
