@@ -2,7 +2,7 @@
 # Multi-stage build — produces a ~15MB Alpine image with basemake
 
 # ── Stage 1: Build ──────────────────────────────────────────────
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 RUN apk add --no-cache ca-certificates git
 
