@@ -14,11 +14,14 @@ COPY . .
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o /basemake .
 
 # ── Stage 2: Runtime ────────────────────────────────────────────
-FROM alpine:latest
+FROM alpine:3.21
 
 RUN apk add --no-cache ca-certificates
 
 COPY --from=builder /basemake /usr/local/bin/basemake
+
+RUN adduser -D basemake
+USER basemake
 
 ENTRYPOINT ["basemake"]
 CMD ["--help"]

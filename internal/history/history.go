@@ -167,14 +167,6 @@ func List(limit int) ([]Entry, error) {
 	return entries, nil
 }
 
-// Close closes the history database.
-func Close() error {
-	if db != nil {
-		return db.Close()
-	}
-	return nil
-}
-
 // BuildPromptWithHistory appends recent query history context to a system prompt.
 func BuildPromptWithHistory(schemaPrompt string, historyDepth int, dialect ...string) string {
 	dbDialect := "PostgreSQL" // default

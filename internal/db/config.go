@@ -17,7 +17,7 @@ func SaveDSN(dsn string) error {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("create config dir: %w", err)
 	}
-	return os.WriteFile(configPath(), []byte(dsn), 0644)
+	return os.WriteFile(configPath(), []byte(dsn), 0600)
 }
 
 // LoadDSN reads the saved DSN

@@ -281,19 +281,6 @@ func (s *Store) GetWatch(id int64) (*Watch, error) {
 	return &w, nil
 }
 
-// UpdateWatchEnabled enables or disables a watch.
-func (s *Store) UpdateWatchEnabled(id int64, enabled bool) error {
-	result, err := s.db.Exec(`UPDATE watches SET enabled = ? WHERE id = ?`, boolToInt(enabled), id)
-	if err != nil {
-		return fmt.Errorf("update watch: %w", err)
-	}
-	n, _ := result.RowsAffected()
-	if n == 0 {
-		return fmt.Errorf("watch %d not found", id)
-	}
-	return nil
-}
-
 // DeleteWatch removes a watch and its results.
 func (s *Store) DeleteWatch(id int64) error {
 	_, err := s.db.Exec(`DELETE FROM watch_results WHERE watch_id = ?`, id)

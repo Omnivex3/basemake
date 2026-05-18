@@ -64,7 +64,15 @@ func (s *Server) Start() error {
 	// Start watch scheduler in background
 	go s.scheduleWatches()
 
-	return http.ListenAndServe(addr, mux)
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           mux,
+		ReadHeaderTimeout: 30 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
+	return srv.ListenAndServe()
 }
 
 // --- Handlers ---

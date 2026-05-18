@@ -60,12 +60,6 @@ func findBudgetsDir(dir string) (string, error) {
 	}
 }
 
-// BudgetsDirExists checks if the .basemake directory exists at the given path.
-func BudgetsDirExists(dir string) bool {
-	info, err := os.Stat(filepath.Join(dir, budgetsDir))
-	return err == nil && info.IsDir()
-}
-
 // EnsureBudgetsDir creates .basemake/ if it doesn't exist and returns its path.
 func EnsureBudgetsDir(dir string) (string, error) {
 	p := filepath.Join(dir, budgetsDir)
