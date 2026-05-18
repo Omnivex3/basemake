@@ -120,8 +120,7 @@ func enterInteractiveMode() error {
 		runOnboarding()
 		fmt.Println()
 
-		// Reload state after onboarding
-		conn, _ = db.ActiveConnection()
+		// Reload state after onboarding — REPL will connect on its own
 	}
 
 	// Drop into REPL

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/DynamicKarabo/basemake/internal/config"
-	"github.com/DynamicKarabo/basemake/internal/db"
 )
 
 func runOnboarding() {
@@ -172,60 +171,11 @@ func loadAPIKeysFromEnv() {
 	if data, err := os.ReadFile(envPath); err == nil {
 		for _, line := range strings.Split(string(data), "\n") {
 			parts := strings.SplitN(strings.TrimSpace(line), "=", 2)
-			if len(parts) == 2 && strings.HasPrefix(parts[0], "OPENAI") || strings.HasPrefix(parts[0], "ANTHROPIC") || parts[0] == "AI_PROVIDER" {
+			if len(parts) == 2 && (strings.HasPrefix(parts[0], "OPENAI") || strings.HasPrefix(parts[0], "ANTHROPIC") || parts[0] == "AI_PROVIDER") {
 				if os.Getenv(parts[0]) == "" {
 					os.Setenv(parts[0], parts[1])
 				}
 			}
 		}
-	}
-}
-
-// tryConnectDB tries connecting to a DSN, prompting if none saved.
-func tryConnectDB(reader *bufio.Reader) db.Database {
-	dsn, err := db.LoadDSN()
-	if err == nil && dsn != "" {
-		conn, err := db.Connect(dsn)
-		if err == nil {
-			return conn
-		}
-	}
-
-	fmt.Println()
-	fmt.Println("  ── Step 2: Database ──")
-	fmt.Println("  Connect to your database so I can learn your schema.")
-	fmt.Println()
-	fmt.Println("  Examples:")
-	fmt.Println("    postgres://user:pass@localhost:5432/mydb")
-	fmt.Println("    mysql://user:pass@localhost:3306/mydb")
-	fmt.Println()
-
-	for {
-		fmt.Print("  Connection string (or press Enter to skip): ")
-		dsn, _ := reader.ReadString('\n')
-		dsn = strings.TrimSpace(dsn)
-		if dsn == "" {
-			fmt.Println("  ⚠ Skipping DB connection. Use .connect <dsn> in the REPL.")
-			return nil
-		}
-
-		conn, err := db.Connect(dsn)
-		if err != nil {
-			fmt.Printf("  ✗ Connection failed: %v\n", err)
-			fmt.Println("  Try again or press Enter to skip.")
-			continue
-		}
-
-		// Introspect to cache schema
-		schema, err := conn.Introspect(nil)
-		if err != nil {
-			fmt.Printf("  ⚠ Connected but schema load failed: %v\n", err)
-		} else {
-			schema.Save()
-		}
-
-		db.SaveDSN(dsn)
-		fmt.Printf("  ✓ Connected to %s (%d tables)\n", conn.Name(), len(schema.Tables))
-		return conn
 	}
 }
