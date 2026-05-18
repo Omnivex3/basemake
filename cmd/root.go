@@ -3,11 +3,19 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 var cfgFile string
+
+// BannerASCII is the launch art shown when basemake runs without arguments.
+const BannerASCII = `    ____  ___   _____ ________  ______    __ __ ______
+   / __ )/   | / ___// ____/  |/  /   |  / //_// ____/
+  / __  / /| | \__ \/ __/ / /|_/ / /| | / ,<  / __/
+ / /_/ / ___ |___/ / /___/ /  / / ___ |/ /| |/ /___
+/_____/_/  |_/____/_____/_/  /_/_/  |_/_/ |_/_____/`
 
 var rootCmd = &cobra.Command{
 	Use:   "basemake",
@@ -20,11 +28,7 @@ and lets you ask questions in plain English.
   basemake analyze "SELECT * FROM orders WHERE ..."`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	// Accept arbitrary args so `basemake "show me users"` works.
-	// These are forwarded to the query command via RunE.
-	Args: cobra.ArbitraryArgs,
-	// Forward positional args to the query command
-	// so `basemake "show me users"` works as advertised.
+	Args:          cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) > 0 {
 			return queryCmd.RunE(cmd, args)
@@ -45,4 +49,16 @@ func init() {
 	rootCmd.AddCommand(connectCmd)
 	rootCmd.AddCommand(queryCmd)
 	rootCmd.AddCommand(analyzeCmd)
+}
+
+// Custom help template that prepends the ASCII banner
+func init() {
+	originalHelp := rootCmd.HelpFunc()
+	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
+		if cmd == rootCmd {
+			fmt.Println(BannerASCII)
+			fmt.Println(strings.Repeat("─", 50))
+		}
+		originalHelp(cmd, args)
+	})
 }
