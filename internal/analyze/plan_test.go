@@ -176,6 +176,95 @@ func TestInvalidJSON(t *testing.T) {
 	}
 }
 
+const sampleMySQLPlan = `{
+  "query_block": {
+    "select_id": 1,
+    "cost_info": {
+      "query_cost": "105.00"
+    },
+    "table": {
+      "table_name": "users",
+      "access_type": "ALL",
+      "possible_keys": ["idx_status"],
+      "key": "idx_status",
+      "key_length": "2",
+      "used_key_parts": ["status"],
+      "rows_examined_per_scan": 500,
+      "rows_produced_per_join": 250,
+      "filtered": "50.00",
+      "cost_info": {
+        "read_cost": "5.00",
+        "eval_cost": "25.00",
+        "prefix_cost": "30.00",
+        "data_read_per_join": "8K"
+      },
+      "used_columns": ["id", "name", "email", "status"],
+      "attached_condition": "(` + "`users`.`status` = 'active'" + `)",
+      "nested_loop": [
+        {
+          "table": {
+            "table_name": "orders",
+            "access_type": "ref",
+            "possible_keys": ["idx_user_id", "idx_created"],
+            "key": "idx_user_id",
+            "key_length": "4",
+            "rows_examined_per_scan": 10,
+            "rows_produced_per_join": 250,
+            "filtered": "100.00",
+            "using_index_condition": true,
+            "attached_condition": "(` + "`orders`.`user_id` = `users`.`id`" + `)"
+          }
+        }
+      ]
+    }
+  }
+}`
+
+func TestParsePlanMySQL(t *testing.T) {
+	report, err := ParsePlan(sampleMySQLPlan)
+	if err != nil {
+		t.Fatalf("ParsePlan MySQL: %v", err)
+	}
+
+	if report.TotalCost != 105.0 {
+		t.Errorf("TotalCost = %f, want 105.0", report.TotalCost)
+	}
+
+	if len(report.Nodes) != 2 {
+		t.Fatalf("got %d nodes, want 2 (table scan + ref lookup)", len(report.Nodes))
+	}
+
+	if report.Nodes[0].NodeType != "Table Scan" {
+		t.Errorf("node[0].NodeType = %q, want %q", report.Nodes[0].NodeType, "Table Scan")
+	}
+	if report.Nodes[0].RelationName != "users" {
+		t.Errorf("node[0].RelationName = %q, want %q", report.Nodes[0].RelationName, "users")
+	}
+
+	if report.Nodes[1].NodeType != "Ref Lookup" {
+		t.Errorf("node[1].NodeType = %q, want %q", report.Nodes[1].NodeType, "Ref Lookup")
+	}
+	if report.Nodes[1].RelationName != "orders" {
+		t.Errorf("node[1].RelationName = %q, want %q", report.Nodes[1].RelationName, "orders")
+	}
+
+	// Should detect the full table scan as an issue
+	if report.SequentialScans != 1 {
+		t.Errorf("SequentialScans = %d, want 1", report.SequentialScans)
+	}
+
+	hasTableScanIssue := false
+	for _, iss := range report.Issues {
+		if iss.NodeType == "Table Scan" && iss.TableName == "users" {
+			hasTableScanIssue = true
+			break
+		}
+	}
+	if !hasTableScanIssue {
+		t.Error("expected table scan issue for users (high row count)")
+	}
+}
+
 func TestReportStringFormatting(t *testing.T) {
 	report, err := ParsePlan(samplePlan)
 	if err != nil {

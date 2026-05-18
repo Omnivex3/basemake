@@ -75,8 +75,22 @@ type Report struct {
 	HeaviestNodeTime    float64
 }
 
-// ParsePlan parses a PostgreSQL JSON EXPLAIN string into a Report
+// ParsePlan parses a JSON EXPLAIN string into a Report.
+// Auto-detects PostgreSQL vs MySQL format based on JSON structure.
 func ParsePlan(jsonPlan string) (*Report, error) {
+	trimmed := strings.TrimSpace(jsonPlan)
+
+	// Auto-detect: MySQL uses "query_block" at the root, PG uses an array with "Plan"
+	if strings.Contains(trimmed, `"query_block"`) {
+		return ParsePlanMySQL(jsonPlan)
+	}
+
+	// Default: PostgreSQL format (array of plan objects)
+	return ParsePlanPostgres(jsonPlan)
+}
+
+// ParsePlanPostgres parses a PostgreSQL JSON EXPLAIN string into a Report.
+func ParsePlanPostgres(jsonPlan string) (*Report, error) {
 	var raw []RawPlan
 	if err := json.Unmarshal([]byte(jsonPlan), &raw); err != nil {
 		return nil, fmt.Errorf("parse plan json: %w", err)

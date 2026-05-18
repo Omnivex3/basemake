@@ -133,7 +133,7 @@ Examples:
 			var scans []budget.ScanInfo
 			if planReport, planErr := analyze.ParsePlan(planJSON); planErr == nil {
 				for _, node := range planReport.Nodes {
-					if node.NodeType == "Seq Scan" && node.RelationName != "" {
+				if (node.NodeType == "Seq Scan" || node.NodeType == "Table Scan") && node.RelationName != "" {
 						scans = append(scans, budget.ScanInfo{
 							Table:    node.RelationName,
 							RowCount: int(node.ActualRows),
