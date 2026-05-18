@@ -63,5 +63,5 @@ echo ""
 sleep 1
 echo ""
 echo "✅ All local. All private. All yours."
-echo "   github.com/DynamicKarabo/dbai"
+echo "   github.com/DynamicKarabo/basemake"
 echo ""

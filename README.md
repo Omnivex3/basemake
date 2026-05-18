@@ -1,9 +1,9 @@
 # basemake — AI-powered database CLI
 
-[![Release](https://img.shields.io/github/v/release/DynamicKarabo/dbai?style=flat&label=release)](https://github.com/DynamicKarabo/dbai/releases)
-[![CI](https://github.com/DynamicKarabo/dbai/actions/workflows/release.yml/badge.svg)](https://github.com/DynamicKarabo/dbai/actions/workflows/release.yml)
+[![Release](https://img.shields.io/github/v/release/DynamicKarabo/basemake?style=flat&label=release)](https://github.com/DynamicKarabo/basemake/releases)
+[![CI](https://github.com/DynamicKarabo/basemake/actions/workflows/release.yml/badge.svg)](https://github.com/DynamicKarabo/basemake/actions/workflows/release.yml)
 [![Go](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat&logo=go)](https://go.dev)
-[![GitHub Downloads](https://img.shields.io/github/downloads/DynamicKarabo/dbai/total?style=flat&label=downloads)](https://github.com/DynamicKarabo/dbai/releases)
+[![GitHub Downloads](https://img.shields.io/github/downloads/DynamicKarabo/basemake/total?style=flat&label=downloads)](https://github.com/DynamicKarabo/basemake/releases)
 
 > **All local. All private. All yours.**  
 > Talk to your database in plain English. Queries, performance analysis, and insights — no data leaves your machine.
@@ -52,15 +52,15 @@ That's it. Two commands to go from zero to querying with AI.
 
 ```bash
 # Linux amd64
-curl -sfL https://github.com/DynamicKarabo/dbai/releases/latest/download/basemake-linux-amd64.tar.gz | tar xz
+curl -sfL https://github.com/DynamicKarabo/basemake/releases/latest/download/basemake-linux-amd64.tar.gz | tar xz
 sudo mv basemake /usr/local/bin/
 
 # macOS (Apple Silicon)
-curl -sfL https://github.com/DynamicKarabo/dbai/releases/latest/download/basemake-darwin-arm64.tar.gz | tar xz
+curl -sfL https://github.com/DynamicKarabo/basemake/releases/latest/download/basemake-darwin-arm64.tar.gz | tar xz
 sudo mv basemake /usr/local/bin/
 
 # macOS (Intel)
-curl -sfL https://github.com/DynamicKarabo/dbai/releases/latest/download/basemake-darwin-amd64.tar.gz | tar xz
+curl -sfL https://github.com/DynamicKarabo/basemake/releases/latest/download/basemake-darwin-amd64.tar.gz | tar xz
 sudo mv basemake /usr/local/bin/
 ```
 
@@ -227,7 +227,7 @@ jobs:
 
       - name: Install basemake
         run: |
-          curl -sfL https://github.com/DynamicKarabo/dbai/releases/latest/download/basemake-linux-amd64.tar.gz | tar xz
+          curl -sfL https://github.com/DynamicKarabo/basemake/releases/latest/download/basemake-linux-amd64.tar.gz | tar xz
           sudo mv basemake /usr/local/bin/
 
       - name: Run migrations
