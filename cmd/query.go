@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/DynamicKarabo/dbai/internal/ai"
+	"github.com/DynamicKarabo/dbai/internal/config"
 	"github.com/DynamicKarabo/dbai/internal/db"
 	"github.com/DynamicKarabo/dbai/internal/display"
 	"github.com/spf13/cobra"
@@ -31,12 +32,23 @@ Uses your cached schema to generate accurate queries.
 	RunE: func(cmd *cobra.Command, args []string) error {
 		input := args[0]
 
+		// Load config for defaults
+		cfg, cfgErr := config.Load()
+		if cfgErr != nil {
+			fmt.Fprintf(os.Stderr, "⚠ Could not load config: %v\n", cfgErr)
+			cfg = config.DefaultConfig()
+		}
+
 		// Determine output format
 		var format display.Format
 		switch {
 		case queryJSON:
 			format = display.FormatJSON
 		case queryCSV:
+			format = display.FormatCSV
+		case cfg.OutputFormat == "json":
+			format = display.FormatJSON
+		case cfg.OutputFormat == "csv":
 			format = display.FormatCSV
 		default:
 			format = display.FormatTable

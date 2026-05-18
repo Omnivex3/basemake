@@ -8,7 +8,7 @@
 Query, analyze, and optimize your databases with natural language.
 
 ```
-$ dbai connect postgres://user:pass@localhost:5432/mydb
+$ dbai connect postgres://user:***@localhost:5432/mydb
 ✓ Connected to PostgreSQL
   Schema loaded: 23 tables, 147 columns, 12 indexes
 
@@ -18,12 +18,18 @@ $ dbai query "show me users who ordered last month"
   WHERE o.created_at > now() - interval '30 days'
   GROUP BY u.id ORDER BY orders DESC;
 
-→ 2 columns
-name    orders
-Alice   12
-Bob     7
+ id | name
+----+-------
+  1 | Alice
+  2 | Bob
+(2 rows)
 
-✓ 2 rows
+$ dbai analyze "SELECT * FROM orders WHERE created_at > now()"
+Execution Time: 12.50 ms
+
+Issues:
+🟡 Seq scan on orders (8000 rows) → Consider adding an index
+🟡 Row estimate mismatch → Update statistics
 ```
 
 ## Install
@@ -41,55 +47,79 @@ sudo mv dbai /usr/local/bin/
 go install github.com/DynamicKarabo/dbai@latest
 ```
 
-### macOS (Apple Silicon)
+### Shell completion
 
 ```bash
-curl -sfL https://github.com/DynamicKarabo/dbai/releases/latest/download/dbai-darwin-arm64.tar.gz | tar xz
-sudo mv dbai /usr/local/bin/
+eval "$(dbai completion bash)"       # bash
+eval "$(dbai completion zsh)"        # zsh
+dbai completion fish | source        # fish
 ```
 
-## Usage
+## Commands
 
-```bash
-# Connect and cache schema
-dbai connect postgres://user:pass@localhost:5432/mydb
+| Command | Description |
+|---------|-------------|
+| `dbai connect <dsn>` | Connect and introspect schema |
+| `dbai query <sql\|question>` | Execute SQL or ask in plain English |
+| `dbai analyze <query>` | Run EXPLAIN ANALYZE with performance insights |
+| `dbai analyze --all` | Analyze all cached tables |
+| `dbai repl` | Interactive shell with AI assistance |
+| `dbai version` | Print version information |
+| `dbai completion <shell>` | Generate shell completion scripts |
 
-# Ask questions in plain English
-export OPENAI_API_KEY="sk-..."
-dbai query "top 10 products by revenue this month"
+### Query flags
 
-# Run raw SQL
-dbai query "SELECT * FROM users LIMIT 5"
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Show generated SQL without executing |
+| `--explain` | Show execution plan alongside results |
+| `--json` | Output as JSON array |
+| `--csv` | Output as CSV |
 
-# Analyze query performance
-dbai analyze "SELECT * FROM orders WHERE created_at > now() - interval '30 days'"
+### REPL commands
 
-# Output as JSON
-dbai query "SELECT count(*) FROM users" --json
-```
+| Command | Description |
+|---------|-------------|
+| `.help` | Show available commands |
+| `.quit` | Exit the REPL |
+| `.tables` | List all tables |
+| `.schema` | Show full schema |
+| `.connect <dsn>` | Connect to a different database |
 
 ## Supported Databases
 
 | Database | Introspect | Query | Explain |
 |----------|:----------:|:-----:|:-------:|
-| **PostgreSQL** | ✅ | ✅ | ✅ JSON |
-| **SQLite** | ✅ | ✅ | ✅ |
-| **MySQL** | ✅ | ✅ | ✅ text |
+| PostgreSQL | ✅ | ✅ | ✅ JSON |
+| SQLite | ✅ | ✅ | ✅ |
+| MySQL | ✅ | ✅ | ✅ text |
 | MariaDB | via MySQL driver | | |
-| CockroachDB | via PostgreSQL driver (use `postgresql://`) |
+| CockroachDB | via PG driver (use `postgresql://`) | |
 
 ## Configuration
 
+Config is stored in `~/.dbai/config.json` and auto-loaded on each command.
+
+```json
+{
+  "default_dsn": "postgres://user:***@localhost/mydb",
+  "output_format": "table",
+  "openai_model": "gpt-4"
+}
+```
+
 | Env var | Purpose |
 |---------|---------|
-| `OPENAI_API_KEY` | AI query generation |
-| `DBAI_DSN` | Default connection string |
+| `OPENAI_API_KEY` | AI query generation (required for NL) |
+| `OPENAI_MODEL` | Override the AI model (default: gpt-4) |
+| `DBAI_DSN` | Default connection string (fallback) |
 
 ## How It Works
 
-1. **`dbai connect`** introspects your schema and caches it locally (~/.dbai/schema.json)
+1. **`dbai connect`** introspects your schema and caches it locally
 2. **`dbai query`** sends schema context + your question to an LLM, gets back SQL, executes it
-3. **`dbai analyze`** runs EXPLAIN ANALYZE and surfaces performance insights
+3. **`dbai analyze`** runs EXPLAIN ANALYZE in JSON format (PostgreSQL), parses the plan tree, and surfaces performance issues
+4. **`dbai repl`** provides an interactive shell with history and dot-commands
 
 ## License
 

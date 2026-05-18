@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/DynamicKarabo/dbai/internal/config"
 )
 
 // QuestionToSQL converts a natural language question to SQL using OpenAI
@@ -68,8 +70,20 @@ type openAIResponse struct {
 }
 
 func callOpenAI(ctx context.Context, apiKey, system, user string) (string, error) {
+	// Load model from config, fall back to env var, then default
+	model := os.Getenv("OPENAI_MODEL")
+	if model == "" {
+		cfg, err := config.Load()
+		if err == nil && cfg.OpenAIModel != "" {
+			model = cfg.OpenAIModel
+		}
+	}
+	if model == "" {
+		model = "gpt-4"
+	}
+
 	body := openAIRequest{
-		Model: "gpt-4",
+		Model: model,
 		Messages: []openAIMessage{
 			{Role: "system", Content: system},
 			{Role: "user", Content: user},
