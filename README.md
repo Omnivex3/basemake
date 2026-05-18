@@ -19,7 +19,7 @@
 - **Multi-dialect** — PostgreSQL, MySQL, SQLite with automatic SQL generation for each
 - **Output formats** — table (default), `--json`, `--csv`
 - **Streaming AI** — watch SQL generate token by token, or use `--no-stream` for instant results
-- **CI/CD gate** — `basemake "query" --check` exits 1 if slow, 2 if dangerous. Drop it in your pipeline.
+- **CI/CD gate** — `basemake check "query"` exits 0 if fast, 1 if slow, 2 if dangerous. Drop it in your pipeline.
 - **History compounding** — past queries inform future AI responses for context-aware SQL generation
 - **Config persistence** — set once with `basemake config set`, forget it
 - **Interactive REPL** — `basemake repl` for an AI-assisted SQL shell
@@ -204,7 +204,7 @@ id | name                       | total_revenue
 
 ## CI/CD Integration
 
-Use `--check` as a merge gate in your pipeline. Exits 0 (pass), 1 (too slow), or 2 (dangerous query).
+Use `basemake check` as a merge gate in your pipeline. Reads SQL inline or from a file, runs EXPLAIN + execution timing, and exits with a predictable code.
 
 ### GitHub Actions
 
@@ -233,20 +233,21 @@ jobs:
       - name: Run migrations
         run: psql "$DATABASE_URL" -f migrations/001.sql
 
-      - name: Check critical queries
+      - name: Check queries
         run: |
           basemake connect "$DATABASE_URL"
-          basemake "SELECT * FROM users JOIN orders..." --check --threshold 500ms
-          basemake "UPDATE accounts SET balance = balance + 1" --check --threshold 200ms
+          basemake check queries/report.sql --threshold 500ms
+          basemake check queries/update.sql --threshold 200ms --dry-run
 ```
 
 ### Exit codes
 
 | Code | Meaning |
 |------|---------|
-| `0` | ✅ Query passed within threshold |
-| `1` | ❌ Query exceeded time threshold |
-| `2` | 🔴 Query has critical performance issues (seq scan on large table, missing index) |
+| `0` | ✅ Pass — query is fast and safe |
+| `1` | ❌ Slow — execution exceeded time threshold |
+| `2` | 🔴 Dangerous — structural issues (seq scan on large table, missing index) |
+| `3` | ⚠ Error — connection failed or query invalid |
 
 ## Commands
 
@@ -257,6 +258,7 @@ jobs:
 | `basemake <question>` | Shorthand — same as `query` |
 | `basemake analyze <query>` | Run EXPLAIN ANALYZE, surface performance issues |
 | `basemake analyze --all` | Analyze all cached tables for issues |
+| `basemake check <sql\|file.sql>` | CI gate — exits 0 (pass), 1 (slow), 2 (dangerous), 3 (error) |
 | `basemake repl` | Interactive SQL shell with AI assistance |
 | `basemake config show` | View all configuration |
 | `basemake config set <key> <value>` | Persist a config value |
@@ -271,8 +273,13 @@ jobs:
 | `--dry-run` | Generate SQL without executing |
 | `--explain` | Show execution plan alongside results |
 | `--no-stream` | Wait for full AI response (disable streaming) |
-| `--check` | CI gate mode — exit 1 if slow, exit 2 if dangerous |
-| `--threshold <duration>` | Max query time for --check (default: `1s`, e.g. `500ms`, `2s`) |
+
+### Check flags
+
+| Flag | Description |
+|------|-------------|
+| `--threshold <duration>` | Max query time (default: `1s`, e.g. `500ms`, `2s`) |
+| `--dry-run` | Analyze only — don't execute the query |
 
 ## Configuration
 

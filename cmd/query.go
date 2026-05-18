@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/DynamicKarabo/basemake/internal/ai"
-	"github.com/DynamicKarabo/basemake/internal/analyze"
 	"github.com/DynamicKarabo/basemake/internal/config"
 	"github.com/DynamicKarabo/basemake/internal/db"
 	"github.com/DynamicKarabo/basemake/internal/display"
@@ -21,8 +20,6 @@ var queryCSV bool
 var queryDryRun bool
 var queryExplain bool
 var queryNoStream bool
-var queryCheck bool
-var queryThreshold string
 
 var queryCmd = &cobra.Command{
 	Use:   "query [question|sql]",
@@ -33,9 +30,7 @@ Uses your cached schema to generate accurate queries.
   basemake query "show me users who ordered last month"
   basemake query "SELECT * FROM users LIMIT 5"
   basemake query "top 10 products by revenue" --dry-run    # preview SQL
-  basemake query "total sales last quarter" --explain       # show plan + results
-  basemake query "SELECT * FROM users" --check              # CI gate, exits 1 if slow
-  basemake query "big join" --check --threshold 200ms       # fail if over 200ms`,
+  basemake query "total sales last quarter" --explain       # show plan + results`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		input := args[0]
@@ -217,41 +212,6 @@ Uses your cached schema to generate accurate queries.
 			fmt.Fprintf(os.Stderr, "\n%s\n", msg)
 		}
 
-		// --check: CI/CD gate mode
-		if queryCheck {
-			threshold, err := time.ParseDuration(queryThreshold)
-			if err != nil {
-				return fmt.Errorf("invalid threshold: %w", err)
-			}
-
-			actual := time.Duration(elapsed * float64(time.Millisecond))
-
-			// Check for plan issues (missing indexes, seq scans)
-			hasCritical := false
-			if planJSON, planErr := conn.ExplainJSON(cmd.Context(), sql); planErr == nil {
-				if report, parseErr := analyze.ParsePlan(planJSON); parseErr == nil {
-					for _, issue := range report.Issues {
-						if issue.Severity == "critical" {
-							hasCritical = true
-							fmt.Fprintf(os.Stderr, "🔴 %s\n", issue.Message)
-						}
-					}
-				}
-			}
-
-			if actual > threshold {
-				fmt.Fprintf(os.Stderr, "❌ CHECK FAILED: %v (threshold: %v)\n", actual, threshold)
-				os.Exit(1)
-			}
-
-			if hasCritical {
-				fmt.Fprintf(os.Stderr, "❌ CHECK FAILED: query has critical performance issues\n")
-				os.Exit(2)
-			}
-
-			fmt.Fprintf(os.Stderr, "✅ CHECK PASSED: %v (threshold: %v)\n", actual, threshold)
-		}
-
 		return nil
 	},
 }
@@ -312,14 +272,10 @@ func init() {
 	queryCmd.Flags().BoolVar(&queryDryRun, "dry-run", false, "Generate SQL but don't execute")
 	queryCmd.Flags().BoolVar(&queryExplain, "explain", false, "Show execution plan alongside results")
 	queryCmd.Flags().BoolVar(&queryNoStream, "no-stream", false, "Disable streaming AI output (wait for full response)")
-	queryCmd.Flags().BoolVar(&queryCheck, "check", false, "CI gate mode — exit 1 if slow, exit 2 if dangerous")
-	queryCmd.Flags().StringVar(&queryThreshold, "threshold", "1s", "Max query time for --check (e.g. 500ms, 2s)")
 	// Register same flags on root so `basemake "question" --flag` works
 	rootCmd.Flags().BoolVar(&queryJSON, "json", false, "Output results as JSON")
 	rootCmd.Flags().BoolVar(&queryCSV, "csv", false, "Output results as CSV")
 	rootCmd.Flags().BoolVar(&queryDryRun, "dry-run", false, "Generate SQL but don't execute")
 	rootCmd.Flags().BoolVar(&queryExplain, "explain", false, "Show execution plan alongside results")
 	rootCmd.Flags().BoolVar(&queryNoStream, "no-stream", false, "Disable streaming AI output (wait for full response)")
-	rootCmd.Flags().BoolVar(&queryCheck, "check", false, "CI gate mode — exit 1 if slow, exit 2 if dangerous")
-	rootCmd.Flags().StringVar(&queryThreshold, "threshold", "1s", "Max query time for --check (e.g. 500ms, 2s)")
 }
