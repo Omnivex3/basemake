@@ -1047,13 +1047,6 @@ export default function Pricing() {
             variants={fadeUp}
             className="mt-10 flex flex-wrap items-center justify-center gap-4"
           >
-            <Button
-              size="lg"
-              className="bg-[#e63946] text-white shadow-lg shadow-[#e63946]/25 hover:bg-[#e63946]/90 hover:shadow-[#e63946]/35"
-            >
-              <Download className="mr-1.5 h-4 w-4" />
-              Download basemake
-            </Button>
             <Link to="/docs/quickstart">
               <Button
                 size="lg"
