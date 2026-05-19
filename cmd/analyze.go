@@ -64,6 +64,25 @@ func analyzeQuery(ctx context.Context, conn db.Database, query string) error {
 
 			// Print the full analysis
 			fmt.Println(report.String())
+
+			// Check for index suggestions
+			tables := collectTablesFromReport(report)
+			if len(tables) > 0 {
+				stats, statsErr := FetchTableStats(ctx, conn, tables)
+				if statsErr == nil && stats != nil {
+					var allSuggestions []analyze.IndexSuggestion
+					for _, n := range report.Nodes {
+						if (n.NodeType == "Seq Scan" || n.NodeType == "Table Scan") && n.Filter != "" {
+							sugs := analyze.SuggestIndexesForScan(n.RelationName, n.Filter, n.PlanRows, stats[n.RelationName])
+							allSuggestions = append(allSuggestions, sugs...)
+						}
+					}
+					if idxOutput := FormatSuggestions(allSuggestions); idxOutput != "" {
+						fmt.Println(idxOutput)
+					}
+				}
+			}
+
 			return nil
 		}
 	}
