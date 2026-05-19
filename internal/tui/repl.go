@@ -1388,6 +1388,10 @@ func (m *Model) refreshViewport() {
 		if m.vp.AtBottom() {
 			m.vp.GotoBottom()
 		}
+	} else {
+		// Lock to top during startup so the ASCII logo stays visible.
+		// SetContent() can shift YOffset; force it back to 0.
+		m.vp.GotoTop()
 	}
 }
 
