@@ -42,7 +42,7 @@ echo "  ${GREEN}✓ Compiles clean${NC}"
 echo ""
 
 # 4. Tests on changed packages (quick)
-CHANGED=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$' | sed 's:/[^/]*$::' | sort -u | tr '\n' ' ') || true
+CHANGED=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$' | sed 's:/[^/]*$::' | sed 's/^/.\//' | sort -u | tr '\n' ' ') || true
 if [ -n "$CHANGED" ]; then
     echo "  ${YELLOW}→${NC} Running tests on changed packages..."
     if ! go test -count=1 $CHANGED 2>&1; then

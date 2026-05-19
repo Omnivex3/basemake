@@ -12,6 +12,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
@@ -44,6 +45,12 @@ const (
 type message struct {
 	kind    msgKind
 	content string
+}
+
+// addMessage appends a message and refreshes the viewport.
+func (m *Model) addMessage(kind msgKind, content string) {
+	m.messages = append(m.messages, message{kind: kind, content: content})
+	m.refreshViewport()
 }
 
 // ── Bubbletea Messages ──
@@ -122,6 +129,10 @@ type Model struct {
 	// Startup animation
 	animFrame int      // current animation frame (-1 = done, 0+ = logo line count)
 	logoLines []string // pre-split logo lines for animation
+
+	// Scrollable viewport for messages
+	vp      viewport.Model
+	vpReady bool
 }
 
 // ── Constructor ──
@@ -219,6 +230,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.input.Width = max(30, msg.Width-8)
 
+		// Initialize or resize viewport
+		// Leave room for: separator line + input line + status bar + a line of padding
+		vpHeight := msg.Height - 4
+		if vpHeight < 5 {
+			vpHeight = 5
+		}
+		if !m.vpReady {
+			m.vp = viewport.New(msg.Width-2, vpHeight)
+			m.vp.Style = lipgloss.NewStyle().Padding(0, 1)
+			m.vp.KeyMap = viewport.DefaultKeyMap()
+			m.vpReady = true
+		} else {
+			m.vp.Width = msg.Width - 2
+			m.vp.Height = vpHeight
+		}
+		m.vp.SetContent(buildViewportContent(&m))
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
@@ -229,7 +257,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.queryCancel = nil
 				}
 				m.state = stateIdle
-				m.messages = append(m.messages, message{kind: msgCmd, content: "  ⏹️  Query cancelled"})
+				(&m).addMessage(msgCmd, "  ⏹️  Query cancelled")
 				m.updateCursorStyle()
 				return m, nil
 			}
@@ -242,7 +270,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.queryCancel = nil
 				}
 				m.state = stateIdle
-				m.messages = append(m.messages, message{kind: msgCmd, content: "  ⏹️  Query cancelled"})
+				(&m).addMessage(msgCmd, "  ⏹️  Query cancelled")
 				m.updateCursorStyle()
 				return m, nil
 			}
@@ -251,6 +279,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.input.SetValue(m.pendingInput)
 				m.historyIdx = -1
 				m.pendingInput = ""
+				return m, nil
+			}
+
+		// ── Viewport scrolling ──
+		case "pgup", "ctrl+u":
+			if m.vpReady {
+				m.vp.HalfPageUp()
+				return m, nil
+			}
+		case "pgdown", "ctrl+d":
+			if m.vpReady {
+				m.vp.HalfPageDown()
+				return m, nil
+			}
+		case "home":
+			if m.vpReady {
+				m.vp.GotoTop()
+				return m, nil
+			}
+		case "end":
+			if m.vpReady {
+				m.vp.GotoBottom()
 				return m, nil
 			}
 
@@ -307,8 +357,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			// Read-only guard: reject write queries
 			if m.readonly && isWriteQuery(input) {
-				m.messages = append(m.messages, message{kind: msgError, content: errorBubble("Write queries are blocked in read-only mode.")})
-				m.messages = append(m.messages, message{kind: msgCmd, content: "  💡 Override with ! prefix (e.g. !DELETE FROM users) or restart without --readonly"})
+				(&m).addMessage(msgError, errorBubble("Write queries are blocked in read-only mode."))
+				(&m).addMessage(msgCmd, "  💡 Override with ! prefix (e.g. !DELETE FROM users) or restart without --readonly")
 				m.flashEnd = time.Now().Add(350 * time.Millisecond)
 				return m, tea.Tick(350*time.Millisecond, func(t time.Time) tea.Msg {
 					return flashEndMsg{}
@@ -320,7 +370,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.historyIdx = -1
 			m.pendingInput = ""
 
-			m.messages = append(m.messages, message{kind: msgUser, content: input})
+			(&m).addMessage(msgUser, input)
 			m.state = stateThinking
 			m.updateCursorStyle()
 
@@ -355,14 +405,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.queryCancel = nil // query completed, cancel is no-op now
 		m.updateCursorStyle()
 		if msg.err != nil {
-			m.messages = append(m.messages, message{kind: msgError, content: errorBubble(msg.err.Error())})
+			(&m).addMessage(msgError, errorBubble(msg.err.Error()))
 		} else {
-			m.messages = append(m.messages, message{kind: msgResult, content: msg.content})
+			(&m).addMessage(msgResult, msg.content)
 		}
 
 	case connResultMsg:
 		if msg.err != nil {
-			m.messages = append(m.messages, message{kind: msgError, content: errorBubble(msg.err.Error())})
+			(&m).addMessage(msgError, errorBubble(msg.err.Error()))
 		} else {
 			conn, err := db.ActiveConnection()
 			if err == nil {
@@ -374,7 +424,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			// Update input placeholder now that we're connected
 			m.input.Placeholder = "Type .help for commands  ·  ask your question or enter SQL"
-			m.messages = append(m.messages, message{kind: msgCmd, content: successBubble(msg.name)})
+			(&m).addMessage(msgCmd, successBubble(msg.name))
 			// Auto-introspect and cache schema after connect so NL queries work immediately
 			m.state = stateThinking
 			m.updateCursorStyle()
@@ -385,9 +435,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state = stateIdle
 		m.updateCursorStyle()
 		if msg.err != nil {
-			m.messages = append(m.messages, message{kind: msgError, content: errorBubble(msg.err.Error())})
+			(&m).addMessage(msgError, errorBubble(msg.err.Error()))
 		} else {
-			m.messages = append(m.messages, message{kind: msgCmd, content: msg.content})
+			(&m).addMessage(msgCmd, msg.content)
 		}
 
 	case aiTokenMsg:
@@ -443,7 +493,7 @@ func (m Model) handleDotCommand(input string) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case input == ".help":
-		m.messages = append(m.messages, message{kind: msgCmd, content: helpBox()})
+		(&m).addMessage(msgCmd, helpBox())
 		return m, nil
 
 	case input == ".tables":
@@ -466,7 +516,7 @@ func (m Model) handleDotCommand(input string) (tea.Model, tea.Cmd) {
 		filename := strings.TrimPrefix(input, ".export ")
 		filename = strings.TrimSpace(filename)
 		if filename == "" {
-			m.messages = append(m.messages, message{kind: msgError, content: errorBubble("Usage: .export <filename> (.csv, .json, .md)")})
+			(&m).addMessage(msgError, errorBubble("Usage: .export <filename> (.csv, .json, .md)"))
 			return m, nil
 		}
 		return m, m.exportCmd(filename)
@@ -476,7 +526,7 @@ func (m Model) handleDotCommand(input string) (tea.Model, tea.Cmd) {
 		idxStr = strings.TrimSpace(idxStr)
 		idx, err := strconv.Atoi(idxStr)
 		if err != nil || idx < 1 {
-			m.messages = append(m.messages, message{kind: msgError, content: errorBubble("Usage: .replay <N> — N is the # from .history (1 = most recent)")})
+			(&m).addMessage(msgError, errorBubble("Usage: .replay <N> — N is the # from .history (1 = most recent)"))
 			return m, nil
 		}
 		return m, m.replayCmd(idx)
@@ -490,7 +540,7 @@ func (m Model) handleDotCommand(input string) (tea.Model, tea.Cmd) {
 		if m.readonly {
 			status = "ON"
 		}
-		m.messages = append(m.messages, message{kind: msgCmd, content: successBubble("Read-only mode: " + status)})
+		(&m).addMessage(msgCmd, successBubble("Read-only mode: "+status))
 		m.updateCursorStyle()
 		return m, nil
 
@@ -498,7 +548,7 @@ func (m Model) handleDotCommand(input string) (tea.Model, tea.Cmd) {
 		name := strings.TrimPrefix(input, ".save ")
 		name = strings.TrimSpace(name)
 		if name == "" {
-			m.messages = append(m.messages, message{kind: msgError, content: errorBubble("Usage: .save <name> — saves the last query from history")})
+			(&m).addMessage(msgError, errorBubble("Usage: .save <name> — saves the last query from history"))
 			return m, nil
 		}
 		return m, m.saveCmd(name)
@@ -507,7 +557,7 @@ func (m Model) handleDotCommand(input string) (tea.Model, tea.Cmd) {
 		name := strings.TrimPrefix(input, ".run ")
 		name = strings.TrimSpace(name)
 		if name == "" {
-			m.messages = append(m.messages, message{kind: msgError, content: errorBubble("Usage: .run <name> — runs a saved query")})
+			(&m).addMessage(msgError, errorBubble("Usage: .run <name> — runs a saved query"))
 			return m, nil
 		}
 		return m, m.runCmd(name)
@@ -518,9 +568,9 @@ func (m Model) handleDotCommand(input string) (tea.Model, tea.Cmd) {
 	default:
 		// Check if it looks like a typo of a known command
 		if best, dist := fuzzyMatchLevenshtein(input); dist <= 2 {
-			m.messages = append(m.messages, message{kind: msgCmd, content: "  " + lipgloss.NewStyle().Foreground(Yellow).Render("💡 Did you mean") + " " + HelpCmdStyle.Render(best) + "?"})
+			(&m).addMessage(msgCmd, "  "+lipgloss.NewStyle().Foreground(Yellow).Render("💡 Did you mean")+" "+HelpCmdStyle.Render(best)+"?")
 		} else {
-			m.messages = append(m.messages, message{kind: msgError, content: errorBubble("unknown command: " + input + "\n  Type .help for available commands")})
+			(&m).addMessage(msgError, errorBubble("unknown command: "+input+"\n  Type .help for available commands"))
 		}
 		return m, nil
 	}
@@ -1213,40 +1263,13 @@ func (m Model) savedListCmd() tea.Cmd {
 func (m Model) View() string {
 	var b strings.Builder
 
-	for _, msg := range m.messages {
-		switch msg.kind {
-		case msgUser:
-			b.WriteString(UserPromptStyle.Render("  You > "))
-			b.WriteString(lipgloss.NewStyle().Foreground(Text).Render(msg.content))
-			b.WriteString("\n")
-		case msgBot:
-			b.WriteString(msg.content)
-			b.WriteString("\n")
-		case msgResult:
-			b.WriteString(SubBoxStyle.Render(msg.content))
-			b.WriteString("\n")
-		case msgCmd:
-			b.WriteString(msg.content)
-			b.WriteString("\n")
-		case msgError:
-			b.WriteString(msg.content)
-			b.WriteString("\n")
-		}
-	}
-
-	if m.state == stateThinking {
-		b.WriteString("\n  " + m.spinner.View() + " " + ThinkingStyle.Render(m.thinkingMsg) + "\n")
-
-		// Show AI-generated SQL tokens streaming in real-time
-		if m.thinkingMsg == "Generating SQL..." && m.generatingSQL != "" {
-			preview := m.generatingSQL
-			if len(preview) > 80 {
-				preview = preview[:77] + "..."
-			}
-			// Replace newlines with spaces for compact display
-			preview = strings.ReplaceAll(preview, "\n", " ")
-			b.WriteString(lipgloss.NewStyle().Foreground(DimText).Italic(true).Render("  ─╴"+preview) + "\n")
-		}
+	// Scrollable message area — use viewport if ready, otherwise render inline
+	if m.vpReady {
+		b.WriteString(m.vp.View())
+		b.WriteString("\n")
+	} else {
+		// Fallback before viewport is initialized
+		b.WriteString(buildViewportContent(&m))
 	}
 
 	b.WriteString("\n" + lipgloss.NewStyle().Foreground(DimText).Render(strings.Repeat("─", min(60, max(20, m.input.Width+4)))) + "\n")
@@ -1294,7 +1317,59 @@ func (m Model) View() string {
 	return b.String()
 }
 
-// ── Helpers ──
+// ── View helpers ──
+
+// refreshViewport rebuilds the viewport content and scrolls to bottom.
+// Call after any messages are added or modified.
+func (m *Model) refreshViewport() {
+	if !m.vpReady {
+		return
+	}
+	m.vp.SetContent(buildViewportContent(m))
+	m.vp.GotoBottom()
+}
+
+// buildViewportContent renders all messages into a single string for the viewport.
+func buildViewportContent(m *Model) string {
+	var b strings.Builder
+
+	for _, msg := range m.messages {
+		switch msg.kind {
+		case msgUser:
+			b.WriteString(UserPromptStyle.Render("  You > "))
+			b.WriteString(lipgloss.NewStyle().Foreground(Text).Render(msg.content))
+			b.WriteString("\n")
+		case msgBot:
+			b.WriteString(msg.content)
+			b.WriteString("\n")
+		case msgResult:
+			b.WriteString(SubBoxStyle.Render(msg.content))
+			b.WriteString("\n")
+		case msgCmd:
+			b.WriteString(msg.content)
+			b.WriteString("\n")
+		case msgError:
+			b.WriteString(msg.content)
+			b.WriteString("\n")
+		}
+	}
+
+	if m.state == stateThinking {
+		b.WriteString("\n  " + m.spinner.View() + " " + ThinkingStyle.Render(m.thinkingMsg) + "\n")
+
+		// Show AI-generated SQL tokens streaming in real-time
+		if m.thinkingMsg == "Generating SQL..." && m.generatingSQL != "" {
+			preview := m.generatingSQL
+			if len(preview) > 80 {
+				preview = preview[:77] + "..."
+			}
+			preview = strings.ReplaceAll(preview, "\n", " ")
+			b.WriteString(lipgloss.NewStyle().Foreground(DimText).Italic(true).Render("  ─╴"+preview) + "\n")
+		}
+	}
+
+	return b.String()
+}
 
 func looksLikeSQL(s string) bool {
 	trimmed := strings.TrimSpace(s)
