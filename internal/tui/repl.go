@@ -69,7 +69,13 @@ type aiTokenMsg struct {
 	ch    <-chan string
 }
 
-type aiStreamEndMsg struct {}
+type aiStreamEndMsg struct{}
+
+// Flash animation message (read-only shake)
+type flashEndMsg struct{}
+
+// Startup animation tick
+type animCompleteMsg struct{}
 
 // ── Model ──
 
@@ -109,6 +115,13 @@ type Model struct {
 
 	// Dot command autocomplete
 	autocompleteMatches []string // filtered dot commands matching current input
+
+	// Eye candy
+	flashEnd time.Time // when read-only shake ends (zero = no flash)
+
+	// Startup animation
+	animFrame   int      // current animation frame (-1 = done, 0+ = logo line count)
+	logoLines   []string // pre-split logo lines for animation
 }
 
 // ── Constructor ──
@@ -154,6 +167,9 @@ func NewModel(conn db.Database, format display.Format, version string, readonly 
 	// Set initial cursor style (idle = white)
 	ti.Cursor.Style = lipgloss.NewStyle().Foreground(White)
 
+	// Pre-split logo for startup animation
+	logoLines := strings.Split(logoASCII, "\n")
+
 	return Model{
 		conn:    conn,
 		format:  format,
@@ -165,8 +181,10 @@ func NewModel(conn db.Database, format display.Format, version string, readonly 
 		readonly: readonly,
 		historyItems: historyItems,
 		historyIdx:   -1,
+		animFrame:    0,
+		logoLines:    logoLines,
 		messages: []message{
-			{kind: msgBot, content: fullStartupView(conn, aiLabel, version)},
+			{kind: msgBot, content: ColoriseLogo(logoLines[0])},
 		},
 	}
 }
@@ -175,11 +193,22 @@ func NewModel(conn db.Database, format display.Format, version string, readonly 
 
 func (m Model) Init() tea.Cmd {
 	cmds := []tea.Cmd{textinput.Blink, m.spinner.Tick}
+	// Start logo reveal animation
+	if len(m.logoLines) > 0 && m.animFrame >= 0 {
+		cmds = append(cmds, m.animNextTick())
+	}
 	// If already connected at startup, auto-introspect and cache schema
 	if m.conn != nil {
 		cmds = append(cmds, m.syncIntrospectCmd())
 	}
 	return tea.Batch(cmds...)
+}
+
+// animNextTick schedules the next logo animation frame
+func (m Model) animNextTick() tea.Cmd {
+	return tea.Tick(60*time.Millisecond, func(t time.Time) tea.Msg {
+		return animCompleteMsg{}
+	})
 }
 
 // ── Update ──
@@ -280,7 +309,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.readonly && isWriteQuery(input) {
 				m.messages = append(m.messages, message{kind: msgError, content: errorBubble("Write queries are blocked in read-only mode.")})
 				m.messages = append(m.messages, message{kind: msgCmd, content: "  💡 Override with ! prefix (e.g. !DELETE FROM users) or restart without --readonly"})
-				return m, nil
+				m.flashEnd = time.Now().Add(350 * time.Millisecond)
+				return m, tea.Tick(350*time.Millisecond, func(t time.Time) tea.Msg {
+					return flashEndMsg{}
+				})
 			}
 
 			// Add to history for up/down navigation
@@ -361,8 +393,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.thinkingMsg = "Running query..."
 		sqlStr := m.generatingSQL
 		return m, func() tea.Msg {
-			return m.validateAndExecSQL(m.aiCtx, m.pendingQuestion, sqlStr)
-		}
+				return m.validateAndExecSQL(m.aiCtx, m.pendingQuestion, sqlStr)
+			}
+
+		case flashEndMsg:
+			m.flashEnd = time.Time{} // clear flash
+			return m, nil
+
+		case animCompleteMsg:
+			// Logo reveal animation
+			if m.animFrame >= 0 && m.animFrame < len(m.logoLines)-1 {
+				m.animFrame++
+				// Show more logo lines
+				partial := strings.Join(m.logoLines[:m.animFrame+1], "\n")
+				m.messages[0].content = ColoriseLogo(partial)
+				return m, m.animNextTick()
+			}
+			// Animation complete — show full startup
+			m.animFrame = -1
+			m.messages[0].content = fullStartupView(m.conn, m.aiLabel, m.version)
+			return m, nil
 
 	case spinner.TickMsg:
 		if m.state != stateIdle {
@@ -638,6 +688,12 @@ func (m Model) execQueryWithCtx(ctx context.Context, sql string, isNL bool) tea.
 		plural = "row"
 	}
 	b.WriteString(fmt.Sprintf("\n\n  %s %d %s in %.0fms", Dot(false, false), len(resultRows), plural, elapsed))
+
+	// ASCII sparkline for first numeric column
+	if spark := resultSparkline(resultRows, cols); spark != "" {
+		b.WriteString(lipgloss.NewStyle().Foreground(DimText).Render("\n  " + spark))
+	}
+
 	if len(cols) > 8 {
 		b.WriteString(lipgloss.NewStyle().Foreground(DimText).Render("\n  💡 Wide results — try .export results.csv"))
 	}
@@ -781,6 +837,12 @@ func (m Model) validateAndExecSQL(ctx context.Context, question, sqlStr string) 
 		plural = "row"
 	}
 	b.WriteString(fmt.Sprintf("\n\n  %s %d %s in %.0fms", Dot(false, false), len(resultRows), plural, elapsed))
+
+	// ASCII sparkline for first numeric column
+	if spark := resultSparkline(resultRows, cols); spark != "" {
+		b.WriteString(lipgloss.NewStyle().Foreground(DimText).Render("\n  " + spark))
+	}
+
 	if len(cols) > 8 {
 		b.WriteString(lipgloss.NewStyle().Foreground(DimText).Render("\n  💡 Wide results — try .export results.csv"))
 	}
@@ -1178,6 +1240,10 @@ func (m Model) View() string {
 	b.WriteString("\n" + lipgloss.NewStyle().Foreground(DimText).Render(strings.Repeat("─", min(60, max(20, m.input.Width+4)))) + "\n")
 
 	prompt := UserPromptStyle.Render("  You > ")
+	// Flash prompt red briefly when write blocked in read-only mode
+	if !m.flashEnd.IsZero() && time.Now().Before(m.flashEnd) {
+		prompt = lipgloss.NewStyle().Foreground(Red).Bold(true).Render("  ⛔ You > ")
+	}
 	b.WriteString(prompt + m.input.View())
 	b.WriteString("\n")
 
@@ -1511,6 +1577,81 @@ func max(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// resultSparkline detects the first numeric column and returns an inline sparkline
+func resultSparkline(rows [][]string, cols []string) string {
+	if len(rows) < 3 || len(cols) == 0 {
+		return ""
+	}
+	// Find first column that looks numeric
+	numIdx := -1
+	for i := range cols {
+		if looksNumeric(rows[0][i]) || (len(rows) > 1 && looksNumeric(rows[1][i])) {
+			numIdx = i
+			break
+		}
+	}
+	if numIdx < 0 {
+		return ""
+	}
+	// Parse values
+	values := make([]float64, 0, len(rows))
+	for _, row := range rows {
+		if numIdx < len(row) {
+			if v, err := strconv.ParseFloat(row[numIdx], 64); err == nil {
+				values = append(values, v)
+			}
+		}
+	}
+	if len(values) < 3 {
+		return ""
+	}
+	// Only show sparkline for reasonable number of rows
+	if len(values) > 60 {
+		// Downsample: take first 30 and last 30
+		sampled := make([]float64, 0, 60)
+		sampled = append(sampled, values[:30]...)
+		sampled = append(sampled, values[len(values)-30:]...)
+		values = sampled
+	}
+	return cols[numIdx] + " " + sparkline(values)
+}
+
+// looksNumeric checks if a string can be parsed as a number
+func looksNumeric(s string) bool {
+	_, err := strconv.ParseFloat(strings.TrimSpace(s), 64)
+	return err == nil
+}
+
+// sparkline renders a compact ASCII sparkline from numeric values
+func sparkline(values []float64) string {
+	if len(values) == 0 {
+		return ""
+	}
+	const bars = "▁▂▃▄▅▆▇█"
+	minV, maxV := values[0], values[0]
+	for _, v := range values {
+		if v < minV {
+			minV = v
+		}
+		if v > maxV {
+			maxV = v
+		}
+	}
+	rangeV := maxV - minV
+	if rangeV == 0 {
+		return string(bars[len(bars)/2])
+	}
+	var sb strings.Builder
+	for _, v := range values {
+		idx := int((v - minV) / rangeV * float64(len(bars)-1))
+		if idx >= len(bars) {
+			idx = len(bars) - 1
+		}
+		sb.WriteByte(bars[idx])
+	}
+	return sb.String()
 }
 
 // Same as cmd/root.go's BannerASCII.
