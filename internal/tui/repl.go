@@ -397,6 +397,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if input == "" {
 					break
 				}
+				// Allow dot commands in chat mode (e.g. .sql, .exit)
+				if strings.HasPrefix(input, ".") {
+					model, cmd := m.handleDotCommand(input)
+					return model, cmd
+				}
 				// Cancel any orphaned AI stream
 				if m.aiCtx != nil {
 					if cancel := m.queryCancel; cancel != nil {
