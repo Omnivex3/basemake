@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/DynamicKarabo/basemake/internal/config"
+	"github.com/DynamicKarabo/basemake/internal/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -123,6 +124,22 @@ func init() {
 	configCmd.AddCommand(configShowCmd)
 	configCmd.AddCommand(configGetCmd)
 	configCmd.AddCommand(configSetCmd)
+	configCmd.AddCommand(configSetAIProviderCmd)
+}
+
+var configSetAIProviderCmd = &cobra.Command{
+	Use:   "set-ai-provider",
+	Short: "Interactively configure AI provider and model",
+	Long: `Launch an interactive TUI to select and configure your AI provider.
+
+Presents a visual menu of providers (OpenAI, Anthropic, Ollama, OpenCode),
+curated model presets per provider, and tests connectivity before saving.
+
+Environment variables still take precedence over config values.`,
+	Args: cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return tui.RunProviderSelector()
+	},
 }
 
 func printField(val, key string) {

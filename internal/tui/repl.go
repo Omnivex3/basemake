@@ -544,11 +544,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err == nil {
 				m.conn = conn
 			}
-			// Refresh the startup screen so it reflects the new connection
-			// Only touch messages[0] if the logo animation has finished
-			if len(m.messages) > 0 && m.animFrame < 0 {
+			// Refresh labels and viewport
+			m.aiLabel = ai.ProviderInfo()
+			if len(m.messages) > 0 {
 				m.messages[0].content = fullStartupView(m.conn, m.aiLabel, m.version)
 				m.vpContent = buildViewportContent(&m)
+				m.refreshViewport()
 			}
 			// Update input placeholder now that we're connected
 			m.input.Placeholder = "Type .help for commands  ·  ask your question or enter SQL"
