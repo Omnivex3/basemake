@@ -215,6 +215,74 @@ func TestExtractColumns_GreaterThan(t *testing.T) {
 	}
 }
 
+func TestExtractColumns_LIKE(t *testing.T) {
+	cols := extractColumnsFromFilter("(name LIKE 'John%')")
+	if len(cols) != 1 || cols[0] != "name" {
+		t.Errorf("got %v, want [name]", cols)
+	}
+}
+
+func TestExtractColumns_IN_StringList(t *testing.T) {
+	cols := extractColumnsFromFilter("(status IN ('pending', 'processing'))")
+	if len(cols) != 1 || cols[0] != "status" {
+		t.Errorf("got %v, want [status]", cols)
+	}
+}
+
+func TestExtractColumns_BETWEEN(t *testing.T) {
+	cols := extractColumnsFromFilter("(price BETWEEN 100 AND 200)")
+	if len(cols) != 1 || cols[0] != "price" {
+		t.Errorf("got %v, want [price]", cols)
+	}
+}
+
+func TestExtractColumns_DeepNestedParens(t *testing.T) {
+	cols := extractColumnsFromFilter("(((status = 'active') AND (plan = 'pro')))")
+	if len(cols) != 2 {
+		t.Fatalf("got %d cols, want 2: %v", len(cols), cols)
+	}
+	if cols[0] != "status" || cols[1] != "plan" {
+		t.Errorf("got %v, want [status, plan]", cols)
+	}
+}
+
+func TestExtractColumns_NotEqual(t *testing.T) {
+	cols := extractColumnsFromFilter("(status <> 'deleted')")
+	if len(cols) != 1 || cols[0] != "status" {
+		t.Errorf("got %v, want [status]", cols)
+	}
+}
+
+func TestExtractColumns_IS_NOT_NULL(t *testing.T) {
+	cols := extractColumnsFromFilter("(shipped_at IS NOT NULL)")
+	if len(cols) != 1 || cols[0] != "shipped_at" {
+		t.Errorf("got %v, want [shipped_at]", cols)
+	}
+}
+
+func TestExtractColumns_NoOperator(t *testing.T) {
+	// No recognizable operator — should return empty
+	cols := extractColumnsFromFilter("(1)")
+	if len(cols) != 0 {
+		t.Errorf("expected no columns for literal-only filter, got %v", cols)
+	}
+}
+
+func TestExtractColumns_MixedOperators(t *testing.T) {
+	// Complex filter with multiple operators
+	cols := extractColumnsFromFilter("(total > 100 AND status = 'active' AND created_at >= '2026-01-01')")
+	if len(cols) != 3 {
+		t.Fatalf("got %d cols, want 3: %v", len(cols), cols)
+	}
+	// Order may vary, check all present
+	expected := map[string]bool{"total": true, "status": true, "created_at": true}
+	for _, c := range cols {
+		if !expected[c] {
+			t.Errorf("unexpected column: %s", c)
+		}
+	}
+}
+
 // ─── Partial Index Detection ────────────────────────────────────────────────
 
 func TestDetectPartialIndex_SelectiveValue(t *testing.T) {

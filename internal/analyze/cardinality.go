@@ -563,16 +563,34 @@ func buildStatsQuery(tables []string) string {
 				WHERE schemaname = 'public'
 				ORDER BY tablename, attname`
 	}
-	quoted := make([]string, len(tables))
-	for i, t := range tables {
-		quoted[i] = "'" + strings.ReplaceAll(t, "'", "''") + "'"
+	var valid []string
+	for _, t := range tables {
+		// Only allow alphanumeric + underscore — reject anything else
+		safe := true
+		for _, ch := range t {
+			if !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+				(ch >= '0' && ch <= '9') || ch == '_') {
+				safe = false
+				break
+			}
+		}
+		if safe && t != "" {
+			valid = append(valid, "'"+t+"'")
+		}
+	}
+	if len(valid) == 0 {
+		// No valid tables — return a query that returns nothing
+		return `SELECT tablename, attname, n_distinct, null_frac, avg_width, correlation,
+					   most_common_vals::text, most_common_freqs::text
+				FROM pg_stats
+				WHERE 1=0`
 	}
 	return fmt.Sprintf(`SELECT tablename, attname, n_distinct, null_frac, avg_width, correlation,
 						   most_common_vals::text, most_common_freqs::text
 					FROM pg_stats
 					WHERE schemaname = 'public'
 					  AND tablename IN (%s)
-					ORDER BY tablename, attname`, strings.Join(quoted, ","))
+					ORDER BY tablename, attname`, strings.Join(valid, ","))
 }
 
 // FormatSuggestions renders index suggestions as a formatted string.

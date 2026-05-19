@@ -28,7 +28,7 @@ type RecStore struct {
 	LastTable       string           `json:"last_table,omitempty"`
 }
 
-func recStorePath() string {
+var recStorePath = func() string {
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".basemake", "recommendations.json")
 }
