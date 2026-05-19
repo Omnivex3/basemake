@@ -136,6 +136,10 @@ type Model struct {
 	vp        viewport.Model
 	vpReady   bool
 	vpContent string // accumulated rendered content, rebuilt incrementally
+
+	// Startup phase guard: suppress auto-scroll until introspection/animation
+	// completes so the ASCII logo stays visible on launch.
+	startupDone bool
 }
 
 // ── Constructor ──
@@ -469,6 +473,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			(&m).addMessage(msgCmd, msg.content)
 		}
+		m.startupDone = true
 
 	case aiTokenMsg:
 		m.generatingSQL += msg.token
@@ -503,6 +508,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.animFrame = -1
 		m.messages[0].content = fullStartupView(m.conn, m.aiLabel, m.version)
 		m.vpContent = buildViewportContent(&m)
+		m.startupDone = true
 		return m, nil
 
 	case spinner.TickMsg:
@@ -1368,16 +1374,18 @@ func (m Model) viewportReservedHeight() int {
 }
 
 // refreshViewport rebuilds the viewport content.
-// Only auto-scrolls to bottom if the user was already at the bottom
+// Suppresses auto-scroll during startup so the ASCII logo stays visible.
+// After startup, only auto-scrolls when the user is already at the bottom
 // (standard chat behaviour — don't jerk the scroll when reading history).
 func (m *Model) refreshViewport() {
 	if !m.vpReady {
 		return
 	}
-	wasAtBottom := m.vp.AtBottom()
 	m.vp.SetContent(m.vpContent + m.thinkingBlock())
-	if wasAtBottom {
-		m.vp.GotoBottom()
+	if m.startupDone {
+		if m.vp.AtBottom() {
+			m.vp.GotoBottom()
+		}
 	}
 }
 
