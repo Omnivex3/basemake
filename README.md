@@ -12,26 +12,54 @@
 
 ## Features
 
+### 🧠 Natural Language → SQL
 - **Natural language queries** — `basemake "show me users who signed up last week"` → SQL → results
-- **Zero data exfiltration** — works with [Ollama](https://ollama.ai) locally or your own API keys
-- **Performance analysis** — `basemake analyze "SELECT * FROM orders"` surfaces slow scans, missing indexes
+- **Multi-dialect** — PostgreSQL, MySQL, SQLite with automatic SQL generation for each dialect
+- **History compounding** — past queries inform future AI responses for context-aware SQL generation
+- **Streaming AI** — watch SQL generate token by token, or use `--no-stream` for instant results
+- **Output formats** — table (default), `--json`, `--csv`
 - **EXPLAIN mode** — `basemake "top products" --explain` shows execution plan alongside results
-- **CI/CD gate** — `basemake check "query"` exits 0 if fast, 1 if slow, 2 if dangerous. Drop it in your pipeline.
+- **Performance analysis** — `basemake analyze` surfaces slow scans and missing indexes
+
+### 🚀 Zero-Friction Onboarding
+- **`basemake init`** — one-command setup wizard: detects your database, picks AI provider, runs test query
+- **`basemake doctor`** — diagnose connections, schema, AI config, and permissions in one command
+- **First-run detection** — fresh install → `basemake` with no args shows a welcome screen with next steps
+- **Auto-connect on startup** — REPL opens already connected to your last-used database
+- **Contextual REPL hints** — the input placeholder changes based on your state ("no database", "need API key", "ready to query")
+
+### 🔗 Smart Connections
+- **`basemake connect --detect`** — scans localhost + Docker containers, shows a menu of running databases
+- **Saved named connections** — `basemake connect --save prod <dsn>` then switch with `basemake use prod`
+- **Connection listing** — `basemake connect --list` shows all saved connections with active indicator
+- **`.refresh` in the REPL** — re-introspect schema without disconnecting
+- **Auto-reconnect** — if your connection drops, basemake replays the saved DSN automatically
+
+### 🛡️ Self-Healing & Safety
+- **Friendly errors** — 12 error patterns mapped to human-readable fixes ("Is PostgreSQL running?" not "pq: connection refused")
+- **Auto-LIMIT** — AI-generated `SELECT` queries cap at 100 rows so you never freeze your terminal
+- **SQL validation + AI retry** — generated SQL is validated with `EXPLAIN` before execution; if invalid, the AI self-corrects once silently
+- **Differentiated spinner** — shows "Generating SQL…" during AI generation and "Running query…" during execution
+- **Auto-LIMIT safety** — prevents million-row result sets from AI queries
+- **Query cancellation** — `Ctrl+C` or `Esc` cancels mid-flight queries (cancels both AI generation and DB execution)
+- **Read-only mode** — `--readonly` flag blocks INSERT/UPDATE/DELETE/DROP/ALTER/CREATE/TRUNCATE
+
+### 🎮 Interactive REPL
+- **Tab completion** — press Tab to cycle through matching table and column names
+- **`.export`** — save last result as CSV, JSON, or Markdown
+- **`.replay`** — re-run any query from history
+- **`.info`** — dashboard showing database, AI provider, version, read-only status
+- **`.readonly`** — toggle write protection on/off mid-session
+- **`.save` / `.run` / `.saved`** — bookmark named queries, replay them later
+- **`.help`** — full command reference with keyboard shortcuts
+
+### 🔧 DevOps & Team
+- **CI/CD gate** — `basemake check "query"` exits 0 if fast, 1 if slow, 2 if dangerous
 - **Policy as code** — `basemake budget` defines performance rules that travel with your code
 - **Schema diffing** — `basemake diff` catches schema drift between dev, staging, and prod
 - **Query monitoring** — `basemake watch` schedules queries and alerts on slow-downs or data changes
-- **Team sync** — `basemake server` + `sync` share query history and budgets across your team
-- **Multi-dialect** — PostgreSQL, MySQL, SQLite with automatic SQL generation for each
-- **Output formats** — table (default), `--json`, `--csv`
-- **Streaming AI** — watch SQL generate token by token, or use `--no-stream` for instant results
-- **CI/CD gate** — `basemake check "query"` exits 0 if fast, 1 if slow, 2 if dangerous. Drop it in your pipeline.
-- **History compounding** — past queries inform future AI responses for context-aware SQL generation
-- **Config persistence** — set once with `basemake config set`, forget it
-- **Interactive REPL** — `basemake repl` for an AI-assisted SQL shell with tab completion, history, and named saved queries
-- **Query cancellation** — `Ctrl+C` or `Esc` cancels mid-flight queries (cancels both AI generation and DB execution)
-- **Read-only mode** — `--readonly` flag blocks accidental writes in production
-- **Export results** — `.export results.csv` in the REPL, or `--csv`/`--json` flags on any query
-- **Named bookmarks** — `.save weekly-report` in the REPL to bookmark queries, `.run weekly-report` to replay
+- **Team sync** — `basemake server` + `sync` share query history and budgets
+- **Zero data exfiltration** — works with Ollama locally or your own API keys
 
 ## Quick Start
 
