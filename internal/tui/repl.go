@@ -158,9 +158,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.conn = conn
 			}
 			m.messages = append(m.messages, message{kind: msgCmd, content: successBubble(msg.name)})
+			// Auto-introspect and cache schema after connect so NL queries work immediately
+			m.state = stateThinking
+			return m, m.syncIntrospectCmd()
 		}
 
 	case introspectResultMsg:
+		m.state = stateIdle
 		if msg.err != nil {
 			m.messages = append(m.messages, message{kind: msgError, content: errorBubble(msg.err.Error())})
 		} else {
@@ -232,6 +236,8 @@ func (m Model) introspectCmd(mode string) tea.Cmd {
 		if err != nil {
 			return introspectResultMsg{err: fmt.Errorf("introspect: %w", err)}
 		}
+		// Cache schema for NL queries
+		_ = db.SaveSchema(schema)
 		var b strings.Builder
 		if mode == "tables" {
 			b.WriteString(fmt.Sprintf("  📦 Found %d tables in %s:\n", len(schema.Tables), schema.DBName))
@@ -255,6 +261,24 @@ func (m Model) introspectCmd(mode string) tea.Cmd {
 			}
 		}
 		return introspectResultMsg{content: b.String()}
+	}
+}
+
+// syncIntrospectCmd introspects the connected database, caches the schema,
+// and returns a confirmation message. Used after .connect to prepare for NL queries.
+func (m Model) syncIntrospectCmd() tea.Cmd {
+	return func() tea.Msg {
+		if m.conn == nil {
+			return introspectResultMsg{err: fmt.Errorf("no database connected")}
+		}
+		schema, err := m.conn.Introspect(context.Background())
+		if err != nil {
+			return introspectResultMsg{err: fmt.Errorf("introspect: %w", err)}
+		}
+		if err := db.SaveSchema(schema); err != nil {
+			return introspectResultMsg{content: fmt.Sprintf("  📦 %d tables — schema read ✅ (cache write: %v)", len(schema.Tables), err)}
+		}
+		return introspectResultMsg{content: fmt.Sprintf("  📦 %d tables — schema cached ✅", len(schema.Tables))}
 	}
 }
 
