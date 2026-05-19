@@ -8,6 +8,7 @@ import (
 
 	"github.com/DynamicKarabo/basemake/internal/db"
 	"github.com/DynamicKarabo/basemake/internal/diff"
+	"github.com/DynamicKarabo/basemake/internal/license"
 	"github.com/spf13/cobra"
 )
 
@@ -34,6 +35,10 @@ Useful for catching schema drift between environments.
 
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if !requireLicense(license.FeatureDiff) {
+			os.Exit(1)
+			return nil
+		}
 		var fromSchema, toSchema *db.Schema
 		var fromName, toName string
 

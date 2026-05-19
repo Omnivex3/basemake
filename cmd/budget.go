@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/DynamicKarabo/basemake/internal/budget"
+	"github.com/DynamicKarabo/basemake/internal/license"
 	"github.com/spf13/cobra"
 )
 
@@ -77,6 +78,10 @@ var budgetSetCmd = &cobra.Command{
   basemake budget set --query "SELECT * FROM" --threshold 1s`,
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if !requireLicense(license.FeatureBudget) {
+			os.Exit(1)
+			return nil
+		}
 		dir, err := findBudgetsRoot()
 		if err != nil {
 			return fmt.Errorf("no .basemake/budgets.json found — run 'basemake budget init' first")

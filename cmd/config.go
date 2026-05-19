@@ -41,6 +41,7 @@ var configShowCmd = &cobra.Command{
 		printField(cfg.OllamaBaseURL, "ollama_base_url")
 		printField(cfg.OpenCodeModel, "opencode_model")
 		printField(cfg.OpenCodeBaseURL, "opencode_base_url")
+		printField(cfg.LicenseKey, "license_key")
 		fmt.Fprintf(os.Stderr, "\n  %-20s %s\n", "active_connection", cfg.ActiveConnection)
 		if len(cfg.Connections) > 0 {
 			fmt.Fprintf(os.Stderr, "  connections:\n")
@@ -174,6 +175,8 @@ func getField(cfg *config.Config, key string) string {
 		return cfg.OpenCodeModel
 	case "opencode_base_url":
 		return cfg.OpenCodeBaseURL
+	case "license_key":
+		return cfg.LicenseKey
 	}
 	return ""
 }
@@ -208,12 +211,15 @@ func setField(cfg *config.Config, key, value string) error {
 		cfg.OpenCodeModel = value
 	case "opencode_base_url":
 		cfg.OpenCodeBaseURL = value
+	case "license_key":
+		cfg.LicenseKey = value
 	default:
 		valid := []string{"default_dsn", "output_format", "ai_provider",
 			"openai_model", "openai_base_url",
 			"anthropic_model", "anthropic_base_url",
 			"ollama_model", "ollama_base_url",
-			"opencode_model", "opencode_base_url"}
+			"opencode_model", "opencode_base_url",
+			"license_key"}
 		return fmt.Errorf("unknown config key: %s\n\nValid keys:\n  %s", key, strings.Join(valid, "\n  "))
 	}
 	return nil

@@ -23,6 +23,7 @@ type Config struct {
 	OllamaBaseURL    string            `json:"ollama_base_url,omitempty"`
 	OpenCodeModel    string            `json:"opencode_model,omitempty"`
 	OpenCodeBaseURL  string            `json:"opencode_base_url,omitempty"`
+	LicenseKey       string            `json:"license_key,omitempty"`
 }
 
 // DefaultConfig returns a config with sensible defaults

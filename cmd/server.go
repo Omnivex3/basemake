@@ -10,6 +10,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 
+	"github.com/DynamicKarabo/basemake/internal/license"
 	"github.com/DynamicKarabo/basemake/internal/server"
 	"github.com/DynamicKarabo/basemake/internal/tui"
 	"github.com/spf13/cobra"
@@ -38,6 +39,10 @@ var serverStartCmd = &cobra.Command{
 	Short: "Start the server daemon",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if !requireLicense(license.FeatureServer) {
+			os.Exit(1)
+			return nil
+		}
 		store, err := server.NewStore(serverDir + "/basemake.db")
 		if err != nil {
 			return fmt.Errorf("init store: %w", err)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/DynamicKarabo/basemake/internal/analyze"
 	"github.com/DynamicKarabo/basemake/internal/db"
+	"github.com/DynamicKarabo/basemake/internal/license"
 	"github.com/spf13/cobra"
 )
 
@@ -93,6 +94,10 @@ var indexApplyCmd = &cobra.Command{
 	Short: "Apply an index recommendation (with confirmation)",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if !requireLicense(license.FeatureIndexApply) {
+			os.Exit(1)
+			return nil
+		}
 		id := args[0]
 
 		store, err := analyze.LoadRecs()

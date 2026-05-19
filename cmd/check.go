@@ -10,6 +10,7 @@ import (
 	"github.com/DynamicKarabo/basemake/internal/analyze"
 	"github.com/DynamicKarabo/basemake/internal/budget"
 	"github.com/DynamicKarabo/basemake/internal/db"
+	"github.com/DynamicKarabo/basemake/internal/license"
 	"github.com/spf13/cobra"
 )
 
@@ -38,6 +39,10 @@ Examples:
 
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if !requireLicense(license.FeatureCheck) {
+			os.Exit(1)
+			return nil
+		}
 		input := args[0]
 
 		// Resolve SQL — inline string or file path
