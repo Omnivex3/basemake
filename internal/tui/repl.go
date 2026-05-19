@@ -1359,13 +1359,11 @@ func (m Model) View() string {
 // ── View helpers ──
 
 // viewportReservedHeight returns the number of terminal lines reserved
-// below the viewport (separator + input + autocomplete + status bar).
+// below the viewport (gap + separator + input + status bar + trailing newline).
 func (m Model) viewportReservedHeight() int {
-	// separator line (1) + input line (1) + status bar (1) + padding (1)
-	h := 4
-	if len(m.autocompleteMatches) > 0 {
-		h += len(m.autocompleteMatches)
-	}
+	// Gap after viewport (1) + separator block (3: empty, sep, empty)
+	// + input line (1) + empty after input (1) + status bar (1) + trailing \n (1)
+	h := 8
 	return h
 }
 
