@@ -550,6 +550,17 @@ func aiProviderLabel() string {
 		if model == "" {
 			model = "gpt-4"
 		}
+	case "opencode":
+		model = os.Getenv("OPENAI_MODEL")
+		if model == "" {
+			model = os.Getenv("OPENCODE_MODEL")
+		}
+		if model == "" {
+			model = cfg.OpenAIModel
+		}
+		if model == "" {
+			model = "deepseek-chat"
+		}
 	case "anthropic":
 		model = os.Getenv("ANTHROPIC_MODEL")
 		if model == "" {

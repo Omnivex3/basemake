@@ -11,7 +11,7 @@ func loadAPIKeysFromEnv() {
 	if data, err := os.ReadFile(envPath); err == nil {
 		for _, line := range strings.Split(string(data), "\n") {
 			parts := strings.SplitN(strings.TrimSpace(line), "=", 2)
-			if len(parts) == 2 && (strings.HasPrefix(parts[0], "OPENAI") || strings.HasPrefix(parts[0], "ANTHROPIC") || parts[0] == "AI_PROVIDER") {
+			if len(parts) == 2 && (strings.HasPrefix(parts[0], "OPENAI") || strings.HasPrefix(parts[0], "OPENCODE") || strings.HasPrefix(parts[0], "ANTHROPIC") || parts[0] == "AI_PROVIDER") {
 				if os.Getenv(parts[0]) == "" {
 					os.Setenv(parts[0], parts[1])
 				}

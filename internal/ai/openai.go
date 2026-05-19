@@ -176,3 +176,10 @@ func cleanSQL(s string) string {
 	s = strings.TrimSpace(s)
 	return s
 }
+
+// openCodeProvider wraps openAIProvider with an "OpenCode" label.
+type openCodeProvider struct {
+	*openAIProvider
+}
+
+func (p *openCodeProvider) Name() string { return "OpenCode" }

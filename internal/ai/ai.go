@@ -60,6 +60,37 @@ func SelectedProvider() (Provider, error) {
 		}
 		return &openAIProvider{apiKey: apiKey, model: model, baseURL: baseURL}, nil
 
+	case "opencode":
+		apiKey := os.Getenv("OPENAI_API_KEY")
+		if apiKey == "" {
+			apiKey = os.Getenv("OPENCODE_API_KEY")
+		}
+		model := os.Getenv("OPENAI_MODEL")
+		if model == "" {
+			model = os.Getenv("OPENCODE_MODEL")
+		}
+		if model == "" {
+			model = cfg.OpenAIModel
+		}
+		if model == "" {
+			model = "deepseek-chat"
+		}
+		baseURL := os.Getenv("OPENAI_BASE_URL")
+		if baseURL == "" {
+			baseURL = os.Getenv("OPENCODE_BASE_URL")
+		}
+		if baseURL == "" {
+			baseURL = cfg.OpenAIBaseURL
+		}
+		if baseURL == "" {
+			baseURL = "https://api.opencode.ai/v1"
+		}
+
+		if apiKey == "" {
+			return nil, ErrNoKey
+		}
+		return &openCodeProvider{&openAIProvider{apiKey: apiKey, model: model, baseURL: baseURL}}, nil
+
 	case "anthropic":
 		apiKey := os.Getenv("ANTHROPIC_API_KEY")
 		model := os.Getenv("ANTHROPIC_MODEL")
