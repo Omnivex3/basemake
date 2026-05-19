@@ -108,7 +108,12 @@ func NewModel(conn db.Database, format display.Format, version string) Model {
 // ── Init ──
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(textinput.Blink, m.spinner.Tick)
+	cmds := []tea.Cmd{textinput.Blink, m.spinner.Tick}
+	// If already connected at startup, auto-introspect and cache schema
+	if m.conn != nil {
+		cmds = append(cmds, m.syncIntrospectCmd())
+	}
+	return tea.Batch(cmds...)
 }
 
 // ── Update ──
@@ -223,6 +228,8 @@ func (m Model) connectCmd(dsn string) tea.Cmd {
 		if err != nil {
 			return connResultMsg{err: err}
 		}
+		// Save DSN so it auto-connects on next launch
+		_ = db.SaveDSN(dsn)
 		return connResultMsg{name: conn.Name()}
 	}
 }
