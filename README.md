@@ -27,7 +27,11 @@
 - **CI/CD gate** — `basemake check "query"` exits 0 if fast, 1 if slow, 2 if dangerous. Drop it in your pipeline.
 - **History compounding** — past queries inform future AI responses for context-aware SQL generation
 - **Config persistence** — set once with `basemake config set`, forget it
-- **Interactive REPL** — `basemake repl` for an AI-assisted SQL shell
+- **Interactive REPL** — `basemake repl` for an AI-assisted SQL shell with tab completion, history, and named saved queries
+- **Query cancellation** — `Ctrl+C` or `Esc` cancels mid-flight queries (cancels both AI generation and DB execution)
+- **Read-only mode** — `--readonly` flag blocks accidental writes in production
+- **Export results** — `.export results.csv` in the REPL, or `--csv`/`--json` flags on any query
+- **Named bookmarks** — `.save weekly-report` in the REPL to bookmark queries, `.run weekly-report` to replay
 
 ## Quick Start
 
@@ -50,6 +54,40 @@ basemake "slow queries from yesterday" --csv
 ```
 
 That's it. Two commands to go from zero to querying with AI.
+
+### Interactive REPL
+
+```bash
+# Start the AI-assisted SQL shell
+basemake
+
+# Tab completion — press Tab to complete table/column names
+You > SELECT * FROM or[Tab] → SELECT * FROM orders
+
+# Cancel a running query with Ctrl+C or Escape
+You > SELECT * FROM really_big_table
+⏹️  Query cancelled
+
+# Save queries as named bookmarks
+You > .save weekly-report
+
+# Replay them later
+You > .run weekly-report
+
+# Export results to a file
+You > .export results.csv
+💾 Exported 42 rows to results.csv
+
+# Toggle read-only mode for production safety
+You > .readonly
+✅ Read-only mode: ON
+You > DELETE FROM users
+⚠ Write queries are blocked in read-only mode.
+
+# Check your setup
+basemake doctor
+basemake init   # one-command setup wizard
+```
 
 ## Install
 
@@ -273,6 +311,9 @@ jobs:
 | `basemake config show` | View all configuration |
 | `basemake config set <key> <value>` | Persist a config value |
 | `basemake repl` | Interactive SQL shell with AI assistance |
+| `basemake init` | One-command setup: detect DB, configure AI, test query |
+| `basemake doctor` | Diagnose connections, schema, AI config in one shot |
+| `basemake use <name>` | Switch to a named connection |
 | `basemake version` | Print version information |
 
 ### Query flags
@@ -284,6 +325,37 @@ jobs:
 | `--dry-run` | Generate SQL without executing |
 | `--explain` | Show execution plan alongside results |
 | `--no-stream` | Wait for full AI response (disable streaming) |
+| `--readonly` | Block write queries (INSERT/UPDATE/DELETE/DROP/ALTER/CREATE/TRUNCATE) |
+
+### REPL commands (interactive shell)
+
+Enter `basemake repl` (or just `basemake`) for the AI-assisted SQL shell.
+
+| Command | Description |
+|---------|-------------|
+| `.help` | Show help with all commands and keyboard shortcuts |
+| `.quit` | Exit the REPL |
+| `.tables` | List tables in the current database |
+| `.schema` | Show full database schema |
+| `.connect <dsn>` | Connect to a database |
+| `.refresh` | Re-introspect and cache schema |
+| `.history` | Show past queries (most recent first) |
+| `.replay <N>` | Re-run query N from history (1 = most recent) |
+| `.export <file>` | Save last result as CSV/JSON/MD |
+| `.info` | Show connection, AI provider, version, read-only status |
+| `.readonly` | Toggle write protection on/off |
+| `.save <name>` | Bookmark the last query |
+| `.run <name>` | Run a saved query |
+| `.saved` | List all saved queries |
+
+### Keyboard shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Enter` | Run query or send message |
+| `Tab` | Complete table / column names |
+| `Esc` / `Ctrl+C` | Cancel running query |
+| `Ctrl+C` (idle) | Exit the REPL |
 
 ### Check flags
 
