@@ -38,6 +38,8 @@ var configShowCmd = &cobra.Command{
 		printField(cfg.AnthropicBaseURL, "anthropic_base_url")
 		printField(cfg.OllamaModel, "ollama_model")
 		printField(cfg.OllamaBaseURL, "ollama_base_url")
+		printField(cfg.OpenCodeModel, "opencode_model")
+		printField(cfg.OpenCodeBaseURL, "opencode_base_url")
 		fmt.Fprintf(os.Stderr, "\n  %-20s %s\n", "active_connection", cfg.ActiveConnection)
 		if len(cfg.Connections) > 0 {
 			fmt.Fprintf(os.Stderr, "  connections:\n")
@@ -64,7 +66,7 @@ var configGetCmd = &cobra.Command{
 
 Valid keys: default_dsn, output_format, ai_provider, openai_model,
             openai_base_url, anthropic_model, anthropic_base_url,
-            ollama_model, ollama_base_url`,
+            ollama_model, ollama_base_url, opencode_model, opencode_base_url`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
@@ -87,7 +89,7 @@ var configSetCmd = &cobra.Command{
 
 Valid keys: default_dsn, output_format, ai_provider, openai_model,
             openai_base_url, anthropic_model, anthropic_base_url,
-            ollama_model, ollama_base_url
+            ollama_model, ollama_base_url, opencode_model, opencode_base_url
 
 Examples:
   basemake config set ai_provider ollama
@@ -151,6 +153,10 @@ func getField(cfg *config.Config, key string) string {
 		return cfg.OllamaModel
 	case "ollama_base_url":
 		return cfg.OllamaBaseURL
+	case "opencode_model":
+		return cfg.OpenCodeModel
+	case "opencode_base_url":
+		return cfg.OpenCodeBaseURL
 	}
 	return ""
 }
@@ -165,8 +171,8 @@ func setField(cfg *config.Config, key, value string) error {
 		}
 		cfg.OutputFormat = value
 	case "ai_provider":
-		if value != "openai" && value != "anthropic" && value != "ollama" {
-			return fmt.Errorf("invalid ai_provider: %s (use openai, anthropic, or ollama)", value)
+		if value != "openai" && value != "anthropic" && value != "ollama" && value != "opencode" {
+			return fmt.Errorf("invalid ai_provider: %s (use openai, anthropic, ollama, or opencode)", value)
 		}
 		cfg.AIProvider = value
 	case "openai_model":
@@ -181,9 +187,16 @@ func setField(cfg *config.Config, key, value string) error {
 		cfg.OllamaModel = value
 	case "ollama_base_url":
 		cfg.OllamaBaseURL = value
+	case "opencode_model":
+		cfg.OpenCodeModel = value
+	case "opencode_base_url":
+		cfg.OpenCodeBaseURL = value
 	default:
-		valid := []string{"default_dsn", "output_format", "ai_provider", "openai_model", "openai_base_url",
-			"anthropic_model", "anthropic_base_url", "ollama_model", "ollama_base_url"}
+		valid := []string{"default_dsn", "output_format", "ai_provider",
+			"openai_model", "openai_base_url",
+			"anthropic_model", "anthropic_base_url",
+			"ollama_model", "ollama_base_url",
+			"opencode_model", "opencode_base_url"}
 		return fmt.Errorf("unknown config key: %s\n\nValid keys:\n  %s", key, strings.Join(valid, "\n  "))
 	}
 	return nil

@@ -178,6 +178,14 @@ basemake config set ai_provider anthropic
 basemake "show me users who signed up last week"
 ```
 
+### OpenCode
+
+```bash
+export OPENCODE_API_KEY="sk-..."
+basemake config set ai_provider opencode
+basemake "show me users who signed up last week"
+```
+
 ## Examples
 
 ### Connect and introspect
@@ -407,13 +415,17 @@ Environment variables override config values:
 
 | Variable | Purpose |
 |----------|---------|
-| `AI_PROVIDER` | Provider: `openai`, `anthropic`, `ollama` |
+| `AI_PROVIDER` | Provider: `openai`, `anthropic`, `ollama`, `opencode` |
 | `OPENAI_API_KEY` | API key for OpenAI |
 | `ANTHROPIC_API_KEY` | API key for Anthropic |
+| `OPENCODE_API_KEY` | API key for OpenCode |
 | `OPENAI_MODEL` | Model override (default: `gpt-4`) |
 | `ANTHROPIC_MODEL` | Model override (default: `claude-sonnet-4-20250514`) |
 | `OLLAMA_MODEL` | Model override (default: `llama3`) |
+| `OPENCODE_MODEL` | Model override (default: `deepseek-chat`) |
 | `OLLAMA_BASE_URL` | Ollama server URL (default: `http://localhost:11434/v1`) |
+| `OPENCODE_BASE_URL` | OpenCode server URL (default: `https://api.opencode.ai/v1`) |
+| `OPENAI_BASE_URL` | OpenAI API base URL |
 
 ## Shell Completion
 

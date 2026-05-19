@@ -21,6 +21,8 @@ type Config struct {
 	AnthropicBaseURL string            `json:"anthropic_base_url,omitempty"`
 	OllamaModel      string            `json:"ollama_model,omitempty"`
 	OllamaBaseURL    string            `json:"ollama_base_url,omitempty"`
+	OpenCodeModel    string            `json:"opencode_model,omitempty"`
+	OpenCodeBaseURL  string            `json:"opencode_base_url,omitempty"`
 }
 
 // DefaultConfig returns a config with sensible defaults

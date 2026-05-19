@@ -18,7 +18,6 @@ import (
 
 	"github.com/DynamicKarabo/basemake/internal/ai"
 	"github.com/DynamicKarabo/basemake/internal/analyze"
-	"github.com/DynamicKarabo/basemake/internal/config"
 	"github.com/DynamicKarabo/basemake/internal/db"
 	"github.com/DynamicKarabo/basemake/internal/display"
 	"github.com/DynamicKarabo/basemake/internal/history"
@@ -1835,58 +1834,7 @@ func autoLimit(sql string) string {
 }
 
 func aiProviderLabel() string {
-	cfg, _ := config.Load()
-	provider := os.Getenv("AI_PROVIDER")
-	if provider == "" {
-		provider = cfg.AIProvider
-	}
-	if provider == "" {
-		provider = "openai"
-	}
-
-	model := ""
-	switch provider {
-	case "openai":
-		model = os.Getenv("OPENAI_MODEL")
-		if model == "" {
-			model = cfg.OpenAIModel
-		}
-		if model == "" {
-			model = "gpt-4"
-		}
-	case "opencode":
-		model = os.Getenv("OPENAI_MODEL")
-		if model == "" {
-			model = os.Getenv("OPENCODE_MODEL")
-		}
-		if model == "" {
-			model = cfg.OpenAIModel
-		}
-		if model == "" {
-			model = "deepseek-chat"
-		}
-	case "anthropic":
-		model = os.Getenv("ANTHROPIC_MODEL")
-		if model == "" {
-			model = cfg.AnthropicModel
-		}
-		if model == "" {
-			model = "claude-sonnet-4-20250514"
-		}
-	case "ollama":
-		model = os.Getenv("OLLAMA_MODEL")
-		if model == "" {
-			model = cfg.OllamaModel
-		}
-		if model == "" {
-			model = "llama3"
-		}
-	}
-
-	if model != "" {
-		return strings.ToUpper(provider) + "/" + model
-	}
-	return strings.ToUpper(provider)
+	return ai.ProviderInfo()
 }
 
 // ── Render Components ──
