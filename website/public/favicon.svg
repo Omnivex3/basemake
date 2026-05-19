@@ -1,4 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <rect width="32" height="32" rx="6" fill="#0C0C0C"/>
-  <text x="50%" y="54%" dominant-baseline="central" text-anchor="middle" fill="#FC0E22" font-family="system-ui, sans-serif" font-size="22" font-weight="700">b</text>
+  <rect width="32" height="32" rx="7" fill="#FC0E22"/>
+  <path fill="#0C0C0C" fill-rule="evenodd" d="
+    M 7 5 H 15 V 11
+    C 27 11 27 27 15 27
+    H 7 Z
+    M 15 16
+    C 22 16 22 23 15 23
+    Z
+  "/>
 </svg>
