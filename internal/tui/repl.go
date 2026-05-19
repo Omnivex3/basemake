@@ -393,26 +393,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.thinkingMsg = "Running query..."
 		sqlStr := m.generatingSQL
 		return m, func() tea.Msg {
-				return m.validateAndExecSQL(m.aiCtx, m.pendingQuestion, sqlStr)
-			}
+			return m.validateAndExecSQL(m.aiCtx, m.pendingQuestion, sqlStr)
+		}
 
-		case flashEndMsg:
-			m.flashEnd = time.Time{} // clear flash
-			return m, nil
+	case flashEndMsg:
+		m.flashEnd = time.Time{} // clear flash
+		return m, nil
 
-		case animCompleteMsg:
-			// Logo reveal animation
-			if m.animFrame >= 0 && m.animFrame < len(m.logoLines)-1 {
-				m.animFrame++
-				// Show more logo lines
-				partial := strings.Join(m.logoLines[:m.animFrame+1], "\n")
-				m.messages[0].content = ColoriseLogo(partial)
-				return m, m.animNextTick()
-			}
-			// Animation complete — show full startup
-			m.animFrame = -1
-			m.messages[0].content = fullStartupView(m.conn, m.aiLabel, m.version)
-			return m, nil
+	case animCompleteMsg:
+		// Logo reveal animation
+		if m.animFrame >= 0 && m.animFrame < len(m.logoLines)-1 {
+			m.animFrame++
+			// Show more logo lines
+			partial := strings.Join(m.logoLines[:m.animFrame+1], "\n")
+			m.messages[0].content = ColoriseLogo(partial)
+			return m, m.animNextTick()
+		}
+		// Animation complete — show full startup
+		m.animFrame = -1
+		m.messages[0].content = fullStartupView(m.conn, m.aiLabel, m.version)
+		return m, nil
 
 	case spinner.TickMsg:
 		if m.state != stateIdle {
@@ -705,14 +705,17 @@ func (m Model) execQueryWithCtx(ctx context.Context, sql string, isNL bool) tea.
 
 // startAIStream begins the AI streaming flow — returns first token or end signal
 func (m Model) startAIStream(ctx context.Context, question string) tea.Cmd {
-		return func() tea.Msg {
-			schema, err := db.LoadSchema()
-			if err != nil {
-				return queryResultMsg{err: fmt.Errorf("no schema cache — run 'basemake connect' first: %w", err)}
-			}
+	return func() tea.Msg {
+		if m.conn == nil {
+			return queryResultMsg{err: fmt.Errorf("no database connected — use .connect <dsn>")}
+		}
+		schema, err := db.LoadSchema()
+		if err != nil {
+			return queryResultMsg{err: fmt.Errorf("no schema cache — run 'basemake connect' first: %w", err)}
+		}
 
-			dialect := m.conn.Dialect()
-			prompt := history.BuildPromptWithHistory(schema.SchemaForPrompt(), 5, dialect)
+		dialect := m.conn.Dialect()
+		prompt := history.BuildPromptWithHistory(schema.SchemaForPrompt(), 5, dialect)
 
 		ch, err := ai.QuestionToSQLStream(ctx, prompt, question)
 		if err != nil {
@@ -741,6 +744,9 @@ func (m Model) pollAIStream(ch <-chan string) tea.Cmd {
 
 // validateAndExecSQL validates and executes AI-generated SQL, with retry on failure
 func (m Model) validateAndExecSQL(ctx context.Context, question, sqlStr string) tea.Msg {
+	if m.conn == nil {
+		return queryResultMsg{err: fmt.Errorf("no database connected — use .connect <dsn>")}
+	}
 	sqlStr = strings.TrimSpace(sqlStr)
 	sqlStr = autoLimit(sqlStr)
 
@@ -1587,7 +1593,7 @@ func resultSparkline(rows [][]string, cols []string) string {
 	// Find first column that looks numeric
 	numIdx := -1
 	for i := range cols {
-		if looksNumeric(rows[0][i]) || (len(rows) > 1 && looksNumeric(rows[1][i])) {
+		if i < len(rows[0]) && (looksNumeric(rows[0][i]) || (len(rows) > 1 && i < len(rows[1]) && looksNumeric(rows[1][i]))) {
 			numIdx = i
 			break
 		}
