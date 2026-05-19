@@ -1680,6 +1680,21 @@ func (m Model) View() string {
 	}
 	b.WriteString("\n")
 
+	// Autocomplete matches list (dropdown-style below input)
+	for i, match := range m.autocompleteMatches {
+		if i >= 8 { // cap at 8 visible matches to avoid overflow
+			b.WriteString(lipgloss.NewStyle().Foreground(DimText).Render("  ... and " + fmt.Sprintf("%d more", len(m.autocompleteMatches)-8) + " matches"))
+			break
+		}
+		prefix := ""
+		if i == 0 {
+			prefix = "  ▸ " // highlight first match
+		} else {
+			prefix = "    "
+		}
+		b.WriteString(lipgloss.NewStyle().Foreground(White).Render(prefix+match) + "\n")
+	}
+
 	// Persistent status bar (tmux-style)
 	dbName := "disconnected"
 	connected := false
@@ -1721,11 +1736,18 @@ func (m Model) View() string {
 // ── View helpers ──
 
 // viewportReservedHeight returns the number of terminal lines reserved
-// below the viewport (gap + separator + input + status bar + trailing newline).
+// below the viewport (gap + separator + input + autocomplete + status bar + trailing newline).
 func (m Model) viewportReservedHeight() int {
 	// Gap after viewport (1) + separator block (3: empty, sep, empty)
 	// + input line (1) + empty after input (1) + status bar (1) + trailing \n (1)
 	h := 8
+	// Add space for autocomplete matches list if visible
+	if n := len(m.autocompleteMatches); n > 0 {
+		if n > 8 {
+			n = 8 // cap at 8 visible matches
+		}
+		h += n // one line per match
+	}
 	return h
 }
 
