@@ -63,15 +63,6 @@ type introspectResultMsg struct {
 	err     error
 }
 
-// savedResult stores the last query output for .export
-type savedResult struct {
-	columns []string
-	rows    [][]string
-	sql     string
-	elapsed float64
-	isNL    bool
-}
-
 // ── Model ──
 
 type Model struct {
@@ -89,9 +80,6 @@ type Model struct {
 
 	// Ctrl+C cancellation support
 	queryCancel context.CancelFunc
-
-	// Last result for .export
-	lastResult *savedResult
 
 	// Read-only guard
 	readonly bool
@@ -318,10 +306,6 @@ func (m Model) handleDotCommand(input string) (tea.Model, tea.Cmd) {
 			m.messages = append(m.messages, message{kind: msgError, content: errorBubble("Usage: .export <filename> (.csv, .json, .md)")})
 			return m, nil
 		}
-		if m.lastResult == nil {
-			m.messages = append(m.messages, message{kind: msgError, content: errorBubble("No result to export — run a query first")})
-			return m, nil
-		}
 		return m, m.exportCmd(filename)
 
 	case strings.HasPrefix(input, ".replay "):
@@ -442,197 +426,6 @@ func (m Model) syncIntrospectCmd() tea.Cmd {
 	}
 }
 
-func (m Model) execQueryCmd(sql string, isNL bool) tea.Cmd {
-	return func() tea.Msg {
-		if m.conn == nil {
-			return queryResultMsg{err: fmt.Errorf("no database connected — use .connect <dsn>")}
-		}
-
-		startTime := time.Now()
-		rows, err := m.conn.Query(context.Background(), sql)
-		if err != nil {
-			return queryResultMsg{err: fmt.Errorf("query failed: %w", db.Friendly(err))}
-		}
-		defer rows.Close()
-
-		elapsed := time.Since(startTime).Seconds() * 1000
-		cols := rows.Columns()
-		var resultRows [][]string
-		vals := make([]any, len(cols))
-		ptrs := make([]any, len(cols))
-
-		for rows.Next() {
-			for i := range vals {
-				ptrs[i] = &vals[i]
-			}
-			if err := rows.Scan(ptrs...); err != nil {
-				return queryResultMsg{err: fmt.Errorf("scan: %w", err)}
-			}
-			row := make([]string, len(cols))
-			for i, v := range vals {
-				switch val := v.(type) {
-				case []byte:
-					row[i] = string(val)
-				case nil:
-					row[i] = "NULL"
-				default:
-					row[i] = fmt.Sprint(val)
-				}
-			}
-			resultRows = append(resultRows, row)
-		}
-
-		_ = history.Record(history.Entry{
-			SQLGenerated:       sql,
-			DatabaseName:       m.conn.Name(),
-			ExecutedAt:         startTime,
-			ExecutionTimeMs:    elapsed,
-			RowCount:           len(resultRows),
-			WasNaturalLanguage: isNL,
-		})
-
-		var b strings.Builder
-		if isNL {
-			b.WriteString(sqlPreview(sql))
-			b.WriteString("\n\n")
-		}
-		res := display.Result{Columns: cols, Rows: resultRows}
-		if err := display.Print(&b, res, m.format); err != nil {
-			return queryResultMsg{err: fmt.Errorf("print: %w", err)}
-		}
-		plural := "rows"
-		if len(resultRows) == 1 {
-			plural = "row"
-		}
-		b.WriteString(fmt.Sprintf("\n\n  %s %d %s in %.0fms", Dot(true, false), len(resultRows), plural, elapsed))
-
-		return queryResultMsg{content: b.String()}
-	}
-}
-
-func (m Model) startNLCmd(question string) tea.Cmd {
-	return func() tea.Msg {
-		if m.conn == nil {
-			return queryResultMsg{err: fmt.Errorf("no database connected — use .connect <dsn>")}
-		}
-
-		schema, err := db.LoadSchema()
-		if err != nil {
-			return queryResultMsg{err: fmt.Errorf("no schema cache — run 'basemake connect' first: %w", err)}
-		}
-
-		provider, _ := ai.SelectedProvider()
-		providerName := ""
-		if provider != nil {
-			providerName = provider.Name()
-		}
-
-		dialect := m.conn.Dialect()
-		prompt := history.BuildPromptWithHistory(schema.SchemaForPrompt(), 5, dialect)
-
-		ch, err := ai.QuestionToSQLStream(context.Background(), prompt, question)
-		if err != nil {
-			return queryResultMsg{err: fmt.Errorf("AI error: %w", err)}
-		}
-
-		var sql strings.Builder
-		for token := range ch {
-			sql.WriteString(token)
-		}
-		sqlStr := strings.TrimSpace(sql.String())
-
-	// Auto-add LIMIT for SELECT queries to prevent massive result sets
-		sqlStr = autoLimit(sqlStr)
-
-		// Validate AI-generated SQL — retry once if invalid
-		retryCount := 0
-	maxRetries := 1
-	for {
-		if _, err := m.conn.ExplainNoAnalyze(context.Background(), sqlStr); err != nil {
-			if retryCount < maxRetries {
-				retryCount++
-				// Feed error back to AI for self-correction
-				retryPrompt := prompt + "\n\nThe previous SQL was invalid. Error: " + err.Error() + "\nPlease fix the SQL query for this question: " + question
-				ch, err := ai.QuestionToSQLStream(context.Background(), retryPrompt, question)
-				if err != nil {
-					return queryResultMsg{err: fmt.Errorf("AI error on retry: %w", err)}
-				}
-				var retrySQL strings.Builder
-				for token := range ch {
-					retrySQL.WriteString(token)
-				}
-				sqlStr = strings.TrimSpace(retrySQL.String())
-				sqlStr = autoLimit(sqlStr)
-				continue
-			}
-			return queryResultMsg{err: fmt.Errorf("generated SQL is still invalid after retry:\n  %s\n  %w", sqlStr, db.Friendly(err))}
-		}
-		break
-	}
-
-	startTime := time.Now()
-	rows, err := m.conn.Query(context.Background(), sqlStr)
-	m.thinkingMsg = "Running query..."
-	if err != nil {
-		return queryResultMsg{err: fmt.Errorf("query failed: %w", db.Friendly(err))}
-	}
-	defer rows.Close()
-
-	elapsed := time.Since(startTime).Seconds() * 1000
-		cols := rows.Columns()
-		var resultRows [][]string
-		vals := make([]any, len(cols))
-		ptrs := make([]any, len(cols))
-
-		for rows.Next() {
-			for i := range vals {
-				ptrs[i] = &vals[i]
-			}
-			if err := rows.Scan(ptrs...); err != nil {
-				return queryResultMsg{err: fmt.Errorf("scan: %w", err)}
-			}
-			row := make([]string, len(cols))
-			for i, v := range vals {
-				switch val := v.(type) {
-				case []byte:
-					row[i] = string(val)
-				case nil:
-					row[i] = "NULL"
-				default:
-					row[i] = fmt.Sprint(val)
-				}
-			}
-			resultRows = append(resultRows, row)
-		}
-
-		_ = history.Record(history.Entry{
-			Question:           question,
-			SQLGenerated:       sqlStr,
-			DatabaseName:       m.conn.Name(),
-			ExecutedAt:         startTime,
-			ExecutionTimeMs:    elapsed,
-			RowCount:           len(resultRows),
-			WasNaturalLanguage: true,
-			ProviderUsed:       providerName,
-		})
-
-		var b strings.Builder
-		b.WriteString(sqlPreview(sqlStr))
-		b.WriteString("\n\n")
-		res := display.Result{Columns: cols, Rows: resultRows}
-		if err := display.Print(&b, res, m.format); err != nil {
-			return queryResultMsg{err: fmt.Errorf("print: %w", err)}
-		}
-		plural := "rows"
-		if len(resultRows) == 1 {
-			plural = "row"
-		}
-		b.WriteString(fmt.Sprintf("\n\n  %s %d %s in %.0fms", Dot(true, false), len(resultRows), plural, elapsed))
-
-		return queryResultMsg{content: b.String()}
-	}
-}
-
 func (m Model) historyCmd() tea.Cmd {
 	return func() tea.Msg {
 		entries, err := history.List(20)
@@ -716,8 +509,7 @@ func (m Model) execQueryWithCtx(ctx context.Context, sql string, isNL bool) tea.
 		WasNaturalLanguage: isNL,
 	})
 
-	// Save for .export
-	m.saveResult(cols, resultRows, sql, elapsed, isNL)
+	// Save for .export (via history re-execution in exportCmd)
 
 	var b strings.Builder
 	if isNL {
@@ -850,8 +642,7 @@ func (m Model) startNLWithCtx(ctx context.Context, question string) tea.Msg {
 		ProviderUsed:       providerName,
 	})
 
-	// Save for .export
-	m.saveResult(cols, resultRows, sqlStr, elapsed, true)
+	// Save for .export (via history re-execution in exportCmd)
 
 	var b strings.Builder
 	b.WriteString(sqlPreview(sqlStr))
@@ -873,14 +664,6 @@ func (m Model) startNLWithCtx(ctx context.Context, question string) tea.Msg {
 }
 
 // ── New Dot Command Methods ──
-
-func (m Model) saveResult(cols []string, rows [][]string, sql string, elapsed float64, isNL bool) {
-	// Can't modify m.lastResult directly since m is a value copy.
-	// Instead, we rely on the fact that the tea.Msg returned will be handled
-	// by the Update method which has the real m. This is a limitation of the
-	// bubbletea pattern — we store result data in the queryResultMsg instead.
-	// Export functionality is implemented via the result content + replay.
-}
 
 func (m Model) exportCmd(filename string) tea.Cmd {
 	return func() tea.Msg {

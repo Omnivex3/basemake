@@ -409,7 +409,7 @@ func createDemoDB() (db.Database, string, string, error) {
 		return nil, "", "", fmt.Errorf("connect demo: %w", err)
 	}
 
-	return database, fmt.Sprintf("Demo DB (users, products, orders)"), dsn, nil
+	return database, "Demo DB (users, products, orders)", dsn, nil
 }
 
 // ── Provider Resolution ──
