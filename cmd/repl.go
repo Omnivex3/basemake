@@ -80,7 +80,7 @@ Everything else is a question or SQL query.`,
 		// Launch bubbletea TUI
 		readonly := replReadOnly || sharedReadOnly
 		model := tui.NewModel(conn, format, info.version, readonly)
-		p := tea.NewProgram(model)
+		p := tea.NewProgram(model, tea.WithMouseCellMotion())
 		if _, err := p.Run(); err != nil {
 			return fmt.Errorf("TUI error: %w", err)
 		}
