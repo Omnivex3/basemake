@@ -26,9 +26,10 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-6 py-16">
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
           <div>
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <img src="/logo.svg" alt="basemake" className="h-10 w-auto" />
-              <span className="text-base font-semibold">basemake</span>
+            <Link to="/" className="flex items-center mb-4">
+              <span className="text-base font-semibold">
+                <span className="text-[#FC0E22]">b</span>asemake
+              </span>
             </Link>
             <p className="text-sm text-muted-foreground max-w-xs">
               Talk to your database in plain English. All local. All private. All yours.

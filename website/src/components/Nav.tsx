@@ -14,9 +14,10 @@ export default function Nav() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        <Link to="/" className="flex items-center gap-3">
-          <img src="/logo.svg" alt="basemake" className="h-10 w-auto" />
-          <span className="text-lg font-semibold tracking-tight hidden sm:inline">basemake</span>
+        <Link to="/" className="flex items-center">
+          <span className="text-lg font-semibold tracking-tight">
+            <span className="text-[#FC0E22]">b</span>asemake
+          </span>
         </Link>
 
         <nav className="flex items-center gap-1">

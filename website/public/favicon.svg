@@ -1,10 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 40" width="24" height="40">
-  <path fill="#e63946" fill-rule="evenodd" d="
-    M 0 0 H 8 V 8
-    A 16 16 0 0 1 8 40
-    H 0 Z
-    M 8 15
-    A 9 9 0 0 1 8 33
-    Z
-  "/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" rx="6" fill="#0C0C0C"/>
+  <text x="50%" y="54%" dominant-baseline="central" text-anchor="middle" fill="#FC0E22" font-family="system-ui, sans-serif" font-size="22" font-weight="700">b</text>
 </svg>
