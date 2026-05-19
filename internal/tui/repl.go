@@ -251,11 +251,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.vp.Style = lipgloss.NewStyle().Padding(0, 1)
 			m.vp.KeyMap = viewport.DefaultKeyMap()
 			m.vpReady = true
+			m.vp.SetContent(buildViewportContent(&m))
+			m.vp.GotoTop() // start with logo visible, not scrolled to middle
 		} else {
 			m.vp.Width = msg.Width - 2
 			m.vp.Height = vpHeight
+			m.vp.SetContent(buildViewportContent(&m))
 		}
-		m.vp.SetContent(buildViewportContent(&m))
 		m.vpContent = buildViewportContent(&m)
 
 	case tea.MouseMsg:
