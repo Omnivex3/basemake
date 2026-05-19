@@ -257,6 +257,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.vp.Width = msg.Width - 2
 			m.vp.Height = vpHeight
 			m.vp.SetContent(buildViewportContent(&m))
+			m.vp.GotoTop()
 		}
 		m.vpContent = buildViewportContent(&m)
 
@@ -506,11 +507,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.vpContent = buildViewportContent(&m)
 			return m, m.animNextTick()
 		}
-		// Animation complete — show full startup
+		// Animation complete — show full startup and refresh viewport so the
+		// full logo + status block actually renders (previously it only updated
+		// m.messages[0] in memory but never pushed the new content to vp).
 		m.animFrame = -1
 		m.messages[0].content = fullStartupView(m.conn, m.aiLabel, m.version)
 		m.vpContent = buildViewportContent(&m)
 		m.startupDone = true
+		(&m).refreshViewport()
 		return m, nil
 
 	case spinner.TickMsg:
@@ -1376,22 +1380,20 @@ func (m Model) viewportReservedHeight() int {
 }
 
 // refreshViewport rebuilds the viewport content.
-// Suppresses auto-scroll during startup so the ASCII logo stays visible.
+// During startup, locks scroll to top so the ASCII logo stays visible.
 // After startup, only auto-scrolls when the user is already at the bottom
 // (standard chat behaviour — don't jerk the scroll when reading history).
 func (m *Model) refreshViewport() {
 	if !m.vpReady {
 		return
 	}
+	wasAtBottom := m.vp.AtBottom()
 	m.vp.SetContent(m.vpContent + m.thinkingBlock())
-	if m.startupDone {
-		if m.vp.AtBottom() {
-			m.vp.GotoBottom()
-		}
-	} else {
+	if !m.startupDone {
 		// Lock to top during startup so the ASCII logo stays visible.
-		// SetContent() can shift YOffset; force it back to 0.
 		m.vp.GotoTop()
+	} else if wasAtBottom {
+		m.vp.GotoBottom()
 	}
 }
 
