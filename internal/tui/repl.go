@@ -1367,14 +1367,18 @@ func (m Model) viewportReservedHeight() int {
 	return h
 }
 
-// refreshViewport rebuilds the viewport content and scrolls to bottom.
-// Call after any messages are added or modified.
+// refreshViewport rebuilds the viewport content.
+// Only auto-scrolls to bottom if the user was already at the bottom
+// (standard chat behaviour — don't jerk the scroll when reading history).
 func (m *Model) refreshViewport() {
 	if !m.vpReady {
 		return
 	}
+	wasAtBottom := m.vp.AtBottom()
 	m.vp.SetContent(m.vpContent + m.thinkingBlock())
-	m.vp.GotoBottom()
+	if wasAtBottom {
+		m.vp.GotoBottom()
+	}
 }
 
 // thinkingBlock returns the spinner + generating SQL preview when in thinking state.
