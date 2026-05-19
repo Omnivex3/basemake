@@ -163,6 +163,7 @@ func (p *postgresDB) Query(ctx context.Context, sql string) (*Rows, error) {
 
 	return &Rows{rows: rows, cols: cols}, nil
 }
+
 // Explain runs EXPLAIN ANALYZE and returns the raw plan text.
 // For DML queries, runs inside a Go-level transaction that gets rolled back.
 func (p *postgresDB) Explain(ctx context.Context, query string) (string, error) {

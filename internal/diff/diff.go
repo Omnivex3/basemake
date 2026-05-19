@@ -24,24 +24,24 @@ const (
 
 // Change represents a single schema difference.
 type Change struct {
-	Type    ChangeType `json:"type"`
-	Table   string     `json:"table"`
-	Column  string     `json:"column,omitempty"`
-	Index   string     `json:"index,omitempty"`
-	Old     string     `json:"old,omitempty"`
-	New     string     `json:"new,omitempty"`
-	Detail  string     `json:"detail,omitempty"`
+	Type   ChangeType `json:"type"`
+	Table  string     `json:"table"`
+	Column string     `json:"column,omitempty"`
+	Index  string     `json:"index,omitempty"`
+	Old    string     `json:"old,omitempty"`
+	New    string     `json:"new,omitempty"`
+	Detail string     `json:"detail,omitempty"`
 }
 
 // Report contains the full diff between two schemas.
 type Report struct {
-	From        string   `json:"from"`
-	To          string   `json:"to"`
-	Changes     []Change `json:"changes"`
-	TablesOnly  bool     `json:"tables_only"`
-	TablesAdded int      `json:"tables_added"`
-	TablesRemoved int    `json:"tables_removed"`
-	ChangesCount int     `json:"changes_count"`
+	From          string   `json:"from"`
+	To            string   `json:"to"`
+	Changes       []Change `json:"changes"`
+	TablesOnly    bool     `json:"tables_only"`
+	TablesAdded   int      `json:"tables_added"`
+	TablesRemoved int      `json:"tables_removed"`
+	ChangesCount  int      `json:"changes_count"`
 }
 
 // SchemaDiff compares two database schemas and returns a structured diff.
@@ -305,5 +305,3 @@ func FormatPlain(r *Report) string {
 
 	return b.String()
 }
-
-

@@ -210,7 +210,7 @@ func (m *mysqlDB) ExplainJSON(ctx context.Context, query string) (string, error)
 
 func (m *mysqlDB) ExplainNoAnalyze(ctx context.Context, query string) (string, error) {
 	var plan string
-	err := m.conn.QueryRowContext(ctx, "EXPLAIN FORMAT=JSON " + query).Scan(&plan)
+	err := m.conn.QueryRowContext(ctx, "EXPLAIN FORMAT=JSON "+query).Scan(&plan)
 	if err != nil {
 		return "", fmt.Errorf("mysql explain: %w", err)
 	}

@@ -26,12 +26,12 @@ type Config struct {
 // DefaultConfig returns a config with sensible defaults
 func DefaultConfig() *Config {
 	return &Config{
-		OutputFormat:    "table",
-		AIProvider:      "openai",
-		OpenAIModel:     "gpt-4",
-		AnthropicModel:  "claude-sonnet-4-20250514",
-		OllamaModel:     "llama3",
-		OllamaBaseURL:   "http://localhost:11434/v1",
+		OutputFormat:   "table",
+		AIProvider:     "openai",
+		OpenAIModel:    "gpt-4",
+		AnthropicModel: "claude-sonnet-4-20250514",
+		OllamaModel:    "llama3",
+		OllamaBaseURL:  "http://localhost:11434/v1",
 	}
 }
 

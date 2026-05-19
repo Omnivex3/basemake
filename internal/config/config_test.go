@@ -22,10 +22,10 @@ func TestSaveAndLoad(t *testing.T) {
 	t.Setenv("HOME", tmp)
 
 	cfg := &Config{
-		DefaultDSN:    "postgres://test@localhost/db",
-		OutputFormat:  "json",
-		AIProvider:    "anthropic",
-		OpenAIModel:   "gpt-4o",
+		DefaultDSN:     "postgres://test@localhost/db",
+		OutputFormat:   "json",
+		AIProvider:     "anthropic",
+		OpenAIModel:    "gpt-4o",
 		AnthropicModel: "claude-sonnet-4",
 	}
 

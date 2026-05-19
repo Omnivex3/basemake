@@ -95,12 +95,12 @@ func (s *sqliteDB) Introspect(ctx context.Context) (*Schema, error) {
 		}
 
 		type colInfo struct {
-			cid    int
-			name   string
-			typ    string
+			cid     int
+			name    string
+			typ     string
 			notNull int
-			dflt   *string
-			pk     int
+			dflt    *string
+			pk      int
 		}
 
 		for colRows.Next() {
@@ -130,10 +130,10 @@ func (s *sqliteDB) Introspect(ctx context.Context) (*Schema, error) {
 		}
 
 		type idxInfo struct {
-			seq    int
-			name   string
-			unique int
-			origin string
+			seq     int
+			name    string
+			unique  int
+			origin  string
 			partial int
 		}
 

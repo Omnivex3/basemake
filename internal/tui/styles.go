@@ -11,17 +11,17 @@ import (
 // Background/text: #020303 (near black)
 // Secondary: white for contrast
 var (
-	Red       = lipgloss.Color("#FC0E22")
-	DarkBg    = lipgloss.Color("#020303")
-	DarkCard  = lipgloss.Color("#0A0A0A")
-	White     = lipgloss.Color("#FFFFFF")
-	DimText   = lipgloss.Color("#888888")
-	Muted     = lipgloss.Color("#555555")
-	Text      = lipgloss.Color("#E0E0E0")
-	Green     = lipgloss.Color("#22C55E")
-	RedDot    = lipgloss.Color("#FC0E22")
-	Yellow    = lipgloss.Color("#F59E0B")
-	Orange    = lipgloss.Color("#F97316")
+	Red      = lipgloss.Color("#FC0E22")
+	DarkBg   = lipgloss.Color("#020303")
+	DarkCard = lipgloss.Color("#0A0A0A")
+	White    = lipgloss.Color("#FFFFFF")
+	DimText  = lipgloss.Color("#888888")
+	Muted    = lipgloss.Color("#555555")
+	Text     = lipgloss.Color("#E0E0E0")
+	Green    = lipgloss.Color("#22C55E")
+	RedDot   = lipgloss.Color("#FC0E22")
+	Yellow   = lipgloss.Color("#F59E0B")
+	Orange   = lipgloss.Color("#F97316")
 )
 
 // ── Base Styles ──

@@ -93,4 +93,3 @@ func enterInteractiveMode() error {
 	// DSN loading and connection is handled inside replCmd.
 	return replCmd.RunE(replCmd, []string{})
 }
-

@@ -114,5 +114,3 @@ func EffectiveThreshold(sql, filename string, bf *BudgetFile) string {
 
 	return closest
 }
-
-

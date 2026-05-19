@@ -197,4 +197,3 @@ func (s *Server) recordWatchResult(watchID int64, durationMs int64, rowCount int
 		log.Printf("[watcher] Error recording result for watch %d: %v", watchID, err)
 	}
 }
-

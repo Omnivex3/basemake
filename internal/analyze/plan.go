@@ -10,9 +10,9 @@ import (
 
 // RawPlan represents the top-level PostgreSQL EXPLAIN JSON structure
 type RawPlan struct {
-	Plan          RawNode  `json:"Plan"`
-	PlanningTime  float64  `json:"Planning Time"`
-	ExecutionTime float64  `json:"Execution Time"`
+	Plan          RawNode `json:"Plan"`
+	PlanningTime  float64 `json:"Planning Time"`
+	ExecutionTime float64 `json:"Execution Time"`
 }
 
 // RawNode represents a single node in the PostgreSQL plan tree
@@ -64,20 +64,20 @@ type Issue struct {
 
 // Report is the complete analysis result
 type Report struct {
-	Query               string
-	Dialect             string
-	PlanningTime        float64
-	ExecutionTime       float64
-	TotalCost           float64
-	Nodes               []FlatNode
-	Issues              []Issue
-	SequentialScans     int
-	IndexScans          int
-	TotalTableScans     int
-	HasRowMismatch      bool
-	WorstRowMismatch    float64
-	HeaviestNode        string
-	HeaviestNodeTime    float64
+	Query            string
+	Dialect          string
+	PlanningTime     float64
+	ExecutionTime    float64
+	TotalCost        float64
+	Nodes            []FlatNode
+	Issues           []Issue
+	SequentialScans  int
+	IndexScans       int
+	TotalTableScans  int
+	HasRowMismatch   bool
+	WorstRowMismatch float64
+	HeaviestNode     string
+	HeaviestNodeTime float64
 }
 
 // ParsePlan parses a JSON EXPLAIN string into a Report.
@@ -276,10 +276,10 @@ func analyzeIssues(r *Report) {
 		rowThreshold := 100.0
 		if (n.NodeType == "Seq Scan" || n.NodeType == "Table Scan") && n.RelationName != "" && n.PlanRows > rowThreshold {
 			r.Issues = append(r.Issues, Issue{
-				Severity:  "warning",
-				NodeType:  n.NodeType,
-				TableName: n.RelationName,
-				Message:   fmt.Sprintf("Sequential scan on %s (%d estimated rows)", n.RelationName, int(n.PlanRows)),
+				Severity:   "warning",
+				NodeType:   n.NodeType,
+				TableName:  n.RelationName,
+				Message:    fmt.Sprintf("Sequential scan on %s (%d estimated rows)", n.RelationName, int(n.PlanRows)),
 				Suggestion: fmt.Sprintf("Consider adding an index on %s for columns used in WHERE or JOIN conditions", n.RelationName),
 			})
 		}
@@ -293,10 +293,10 @@ func analyzeIssues(r *Report) {
 					r.WorstRowMismatch = ratio
 				}
 				r.Issues = append(r.Issues, Issue{
-					Severity:  "warning",
-					NodeType:  n.NodeType,
-					TableName: n.RelationName,
-					Message:   fmt.Sprintf("Row estimate mismatch on %s: actual=%d, estimated=%d (%.1fx off)", n.RelationName, int(n.ActualRows), int(n.PlanRows), ratio),
+					Severity:   "warning",
+					NodeType:   n.NodeType,
+					TableName:  n.RelationName,
+					Message:    fmt.Sprintf("Row estimate mismatch on %s: actual=%d, estimated=%d (%.1fx off)", n.RelationName, int(n.ActualRows), int(n.PlanRows), ratio),
 					Suggestion: "Update table statistics with ANALYZE or adjust default_statistics_target",
 				})
 			}
@@ -305,10 +305,10 @@ func analyzeIssues(r *Report) {
 		// 3. Expensive filters (PostgreSQL only — MySQL JSON timing not available)
 		if r.Dialect == "PostgreSQL" && n.NodeType == "Seq Scan" && n.Filter != "" && n.ActualTotal > 1.0 {
 			r.Issues = append(r.Issues, Issue{
-				Severity:  "info",
-				NodeType:  n.NodeType,
-				TableName: n.RelationName,
-				Message:   fmt.Sprintf("Filter applied on sequential scan: %s (%.1fms)", n.Filter, n.ActualTotal),
+				Severity:   "info",
+				NodeType:   n.NodeType,
+				TableName:  n.RelationName,
+				Message:    fmt.Sprintf("Filter applied on sequential scan: %s (%.1fms)", n.Filter, n.ActualTotal),
 				Suggestion: "Consider an index on the filtered column(s)",
 			})
 		}
@@ -316,10 +316,10 @@ func analyzeIssues(r *Report) {
 		// 4. Nested Loop with many rows (potential missing index)
 		if strings.Contains(n.NodeType, "Nested Loop") && n.PlanRows > 1000 {
 			r.Issues = append(r.Issues, Issue{
-				Severity:  "info",
-				NodeType:  n.NodeType,
-				TableName: n.RelationName,
-				Message:   fmt.Sprintf("Nested Loop with %d rows — may benefit from index on inner table", int(n.PlanRows)),
+				Severity:   "info",
+				NodeType:   n.NodeType,
+				TableName:  n.RelationName,
+				Message:    fmt.Sprintf("Nested Loop with %d rows — may benefit from index on inner table", int(n.PlanRows)),
 				Suggestion: "Ensure inner table has an index on the join column",
 			})
 		}
@@ -327,10 +327,10 @@ func analyzeIssues(r *Report) {
 		// 5. Slow individual node (PostgreSQL only — MySQL JSON timing not available)
 		if r.Dialect == "PostgreSQL" && n.ActualTotal > 100 && n.NodeType != "" {
 			r.Issues = append(r.Issues, Issue{
-				Severity:  "critical",
-				NodeType:  n.NodeType,
-				TableName: n.RelationName,
-				Message:   fmt.Sprintf("Slow node: %s on %s (%.1fms)", n.NodeType, n.RelationNameOr("unknown"), n.ActualTotal),
+				Severity:   "critical",
+				NodeType:   n.NodeType,
+				TableName:  n.RelationName,
+				Message:    fmt.Sprintf("Slow node: %s on %s (%.1fms)", n.NodeType, n.RelationNameOr("unknown"), n.ActualTotal),
 				Suggestion: "Investigate this node — consider query rewrite or index strategy",
 			})
 		}

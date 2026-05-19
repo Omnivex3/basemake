@@ -13,16 +13,16 @@ import (
 
 // Entry represents a single query execution record.
 type Entry struct {
-	ID                int64     `json:"id"`
-	Question          string    `json:"question"`
-	SQLGenerated      string    `json:"sql_generated"`
-	DatabaseName      string    `json:"database_name"`
-	ExecutedAt        time.Time `json:"executed_at"`
-	ExecutionTimeMs   float64   `json:"execution_time_ms"`
-	RowCount          int       `json:"row_count"`
-	WasNaturalLanguage bool     `json:"was_natural_language"`
-	ProviderUsed      string    `json:"provider_used,omitempty"`
-	ModelUsed         string    `json:"model_used,omitempty"`
+	ID                 int64     `json:"id"`
+	Question           string    `json:"question"`
+	SQLGenerated       string    `json:"sql_generated"`
+	DatabaseName       string    `json:"database_name"`
+	ExecutedAt         time.Time `json:"executed_at"`
+	ExecutionTimeMs    float64   `json:"execution_time_ms"`
+	RowCount           int       `json:"row_count"`
+	WasNaturalLanguage bool      `json:"was_natural_language"`
+	ProviderUsed       string    `json:"provider_used,omitempty"`
+	ModelUsed          string    `json:"model_used,omitempty"`
 }
 
 var db *sql.DB

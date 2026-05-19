@@ -12,12 +12,12 @@ import (
 )
 
 var (
-	budgetTable    string
-	budgetPattern  string
-	budgetMaxSeq   int
-	budgetRequire  []string
+	budgetTable     string
+	budgetPattern   string
+	budgetMaxSeq    int
+	budgetRequire   []string
 	budgetThreshold string
-	budgetMessage  string
+	budgetMessage   string
 )
 
 var budgetCmd = &cobra.Command{
@@ -139,12 +139,12 @@ var budgetSetTableCmd = &cobra.Command{
 		}
 
 		rule := budget.BudgetRule{
-			Type:       budget.RuleTable,
-			Table:      args[0],
-			MaxSeqRows: budgetMaxSeq,
+			Type:         budget.RuleTable,
+			Table:        args[0],
+			MaxSeqRows:   budgetMaxSeq,
 			RequireIndex: budgetRequire,
-			Threshold:  budgetThreshold,
-			Message:    budgetMessage,
+			Threshold:    budgetThreshold,
+			Message:      budgetMessage,
 		}
 
 		bf.Rules = append(bf.Rules, rule)

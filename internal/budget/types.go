@@ -24,7 +24,7 @@ type BudgetFile struct {
 type BudgetRule struct {
 	Type RuleType `json:"type"`
 
-	Table  string `json:"table,omitempty"`
+	Table   string `json:"table,omitempty"`
 	Pattern string `json:"pattern,omitempty"`
 
 	MaxSeqRows   int      `json:"max_seq_rows,omitempty"`
@@ -97,7 +97,7 @@ func (bf *BudgetFile) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON deserializes a BudgetFile.
 func (bf *BudgetFile) UnmarshalJSON(data []byte) error {
 	var raw struct {
-		Version int            `json:"version"`
+		Version int               `json:"version"`
 		Rules   []json.RawMessage `json:"rules"`
 	}
 	if err := json.Unmarshal(data, &raw); err != nil {

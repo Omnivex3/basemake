@@ -364,9 +364,9 @@ func TestMySQL_AllAccessTypes(t *testing.T) {
 		t.Fatalf("nodes = %d, want 8", len(r.Nodes))
 	}
 	expected := []struct {
-		idx     int
+		idx      int
 		nodeType string
-		table   string
+		table    string
 	}{
 		{0, "Table Scan", "all_types"},
 		{1, "Ref Lookup", "t2"},

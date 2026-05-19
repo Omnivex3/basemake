@@ -1,5 +1,8 @@
 basemake
+basemake_new
 /basemake-demo.gif
 *.test
-basemake_new
 record-with-size.py
+coverage.out
+coverage.html
+release/

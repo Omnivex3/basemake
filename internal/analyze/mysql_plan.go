@@ -31,27 +31,27 @@ type MySQLCostInfo struct {
 // MySQLTableNode represents a table access in MySQL EXPLAIN.
 // Can be a simple table, a joined table, or contain subqueries.
 type MySQLTableNode struct {
-	TableName            string           `json:"table_name"`
-	AccessType           string           `json:"access_type"`
-	PossibleKeys         []string         `json:"possible_keys,omitempty"`
-	Key                  string           `json:"key,omitempty"`
-	KeyLength            string           `json:"key_length,omitempty"`
-	UsedKeyParts         []string         `json:"used_key_parts,omitempty"`
-	RowsExaminedPerScan  float64 `json:"rows_examined_per_scan"`
-	RowsProducedPerJoin  float64 `json:"rows_produced_per_join"`
-	Filtered             string  `json:"filtered,omitempty"`
-	CostInfo             *MySQLCostInfo   `json:"cost_info,omitempty"`
-	UsedColumns          []string         `json:"used_columns,omitempty"`
-	AttachedCondition    string           `json:"attached_condition,omitempty"`
-	IndexCondition       string           `json:"index_condition,omitempty"`
-	UsingIndex           *bool            `json:"using_index,omitempty"`
-	UsingIndexCondition  *bool            `json:"using_index_condition,omitempty"`
+	TableName           string         `json:"table_name"`
+	AccessType          string         `json:"access_type"`
+	PossibleKeys        []string       `json:"possible_keys,omitempty"`
+	Key                 string         `json:"key,omitempty"`
+	KeyLength           string         `json:"key_length,omitempty"`
+	UsedKeyParts        []string       `json:"used_key_parts,omitempty"`
+	RowsExaminedPerScan float64        `json:"rows_examined_per_scan"`
+	RowsProducedPerJoin float64        `json:"rows_produced_per_join"`
+	Filtered            string         `json:"filtered,omitempty"`
+	CostInfo            *MySQLCostInfo `json:"cost_info,omitempty"`
+	UsedColumns         []string       `json:"used_columns,omitempty"`
+	AttachedCondition   string         `json:"attached_condition,omitempty"`
+	IndexCondition      string         `json:"index_condition,omitempty"`
+	UsingIndex          *bool          `json:"using_index,omitempty"`
+	UsingIndexCondition *bool          `json:"using_index_condition,omitempty"`
 	// materialized_from_subquery and union_result contain query_block objects
 	// (not table nodes) — stored as raw JSON for now, not deeply analyzed
-	Materialized json.RawMessage `json:"materialized_from_subquery,omitempty"`
-	NestedLoop  []*MySQLJoinNode `json:"nested_loop,omitempty"`
-	HashJoin    []*MySQLJoinNode `json:"hash_join,omitempty"`
-	UnionResult json.RawMessage  `json:"union_result,omitempty"`
+	Materialized json.RawMessage  `json:"materialized_from_subquery,omitempty"`
+	NestedLoop   []*MySQLJoinNode `json:"nested_loop,omitempty"`
+	HashJoin     []*MySQLJoinNode `json:"hash_join,omitempty"`
+	UnionResult  json.RawMessage  `json:"union_result,omitempty"`
 }
 
 // MySQLJoinNode represents one side of a join in MySQL.

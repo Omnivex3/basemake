@@ -1,0 +1,38 @@
+# ── Integration Test Databases ────────────────────────────────────
+# Start:   docker compose up -d
+# Stop:    docker compose down
+#
+# PostgreSQL on :5433  — test PG driver + EXPLAIN
+# MySQL    on :3307  — test MySQL driver + EXPLAIN
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: basemake-pg-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: basemake_test
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+    tmpfs: /var/lib/postgresql/data
+
+  mysql-test:
+    image: mysql:8
+    container_name: basemake-mysql-test
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: basemake_test
+    ports:
+      - "127.0.0.1:3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+    tmpfs: /var/lib/mysql
