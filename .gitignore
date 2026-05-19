@@ -1,4 +1,5 @@
 basemake
-basemake-demo.gif
+/basemake-demo.gif
 *.test
 basemake_new
+record-with-size.py

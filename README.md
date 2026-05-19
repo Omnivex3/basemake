@@ -8,7 +8,7 @@
 > **All local. All private. All yours.**  
 > Talk to your database in plain English. Queries, performance analysis, and insights — no data leaves your machine.
 
-![basemake demo](basemake-demo.gif)
+![basemake demo](assets/basemake-demo.gif)
 
 ## Features
 
@@ -430,7 +430,7 @@ basemake completion powershell | Out-String | Invoke-Expression  # PowerShell
 |----------|--------|-------------------|
 | PostgreSQL | `lib/pq` | `postgres://user:pass@host:5432/dbname` |
 | MySQL | `go-sql-driver/mysql` | `mysql://user:pass@host:3306/dbname` |
-| SQLite | `modernc.org/sqlite` | `sqlite:/path/to/file.db` (coming soon) |
+| SQLite | `modernc.org/sqlite` | `sqlite:/path/to/file.db` |
 
 ## Documentation
 
