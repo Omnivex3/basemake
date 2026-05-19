@@ -3,8 +3,8 @@
 import subprocess, os, sys
 
 cast_path = "/tmp/basemake-demo.cast"
-gif_path = os.path.expanduser("~/dbai/basemake-demo.gif")
-script_path = os.path.expanduser("~/dbai/demo_gif.sh")
+gif_path = os.path.expanduser("~/.basemake/basemake-demo.gif")
+script_path = os.path.expanduser("~/.basemake/demo_gif.sh")
 
 # Record with asciinema
 env = os.environ.copy()

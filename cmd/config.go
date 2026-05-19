@@ -38,6 +38,21 @@ var configShowCmd = &cobra.Command{
 		printField(cfg.AnthropicBaseURL, "anthropic_base_url")
 		printField(cfg.OllamaModel, "ollama_model")
 		printField(cfg.OllamaBaseURL, "ollama_base_url")
+		fmt.Fprintf(os.Stderr, "\n  %-20s %s\n", "active_connection", cfg.ActiveConnection)
+		if len(cfg.Connections) > 0 {
+			fmt.Fprintf(os.Stderr, "  connections:\n")
+			for name, dsn := range cfg.Connections {
+				mark := " "
+				if name == cfg.ActiveConnection {
+					mark = "●"
+				}
+				masked := dsn
+				if len(dsn) > 50 {
+					masked = dsn[:47] + "..."
+				}
+				fmt.Fprintf(os.Stderr, "    %s %-20s %s\n", mark, name+":", masked)
+			}
+		}
 		return nil
 	},
 }

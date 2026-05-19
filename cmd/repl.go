@@ -14,9 +14,11 @@ import (
 )
 
 var replFormat string
+var replReadOnly bool
 
 func init() {
 	replCmd.Flags().StringVar(&replFormat, "format", "", "Output format (table, json, csv)")
+	replCmd.Flags().BoolVar(&replReadOnly, "readonly", false, "Block write queries (INSERT/UPDATE/DELETE)")
 	rootCmd.AddCommand(replCmd)
 }
 
@@ -63,8 +65,10 @@ Everything else is a question or SQL query.`,
 				dsn, _ = db.LoadDSN()
 			}
 			if dsn != "" {
+				fmt.Fprintf(os.Stderr, "  Reconnecting to %s...\n", cfg.ActiveConnection)
 				conn, err = db.Connect(dsn)
 				if err != nil {
+					fmt.Fprintf(os.Stderr, "  ⚠ Could not reconnect: %v\n", db.Friendly(err))
 					conn = nil
 				}
 			}
@@ -74,7 +78,8 @@ Everything else is a question or SQL query.`,
 		info := getBuildInfo()
 
 		// Launch bubbletea TUI
-		model := tui.NewModel(conn, format, info.version)
+		readonly := replReadOnly || sharedReadOnly
+		model := tui.NewModel(conn, format, info.version, readonly)
 		p := tea.NewProgram(model, tea.WithAltScreen())
 		if _, err := p.Run(); err != nil {
 			return fmt.Errorf("TUI error: %w", err)

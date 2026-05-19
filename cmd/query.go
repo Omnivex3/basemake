@@ -20,6 +20,7 @@ var queryCSV bool
 var queryDryRun bool
 var queryExplain bool
 var queryNoStream bool
+var queryReadOnly bool
 
 var queryCmd = &cobra.Command{
 	Use:   "query [question|sql]",
@@ -113,7 +114,7 @@ Uses your cached schema to generate accurate queries.
 			}
 			conn, err = db.Connect(dsn)
 			if err != nil {
-				return fmt.Errorf("reconnect: %w", err)
+				return fmt.Errorf("reconnect: %w", db.Friendly(err))
 			}
 		}
 		defer conn.Close()
@@ -140,11 +141,16 @@ Uses your cached schema to generate accurate queries.
 			}
 		}
 
+		// Read-only guard
+		if (queryReadOnly || sharedReadOnly) && isDML(sql) {
+			return fmt.Errorf("write queries are blocked in read-only mode — use --readonly=false or omit the flag to allow writes")
+		}
+
 		// Execute with timing
 		startTime := time.Now()
 		rows, err := conn.Query(cmd.Context(), sql)
 		if err != nil {
-			return fmt.Errorf("query: %w", err)
+			return fmt.Errorf("query: %w", db.Friendly(err))
 		}
 		defer rows.Close()
 
@@ -291,10 +297,12 @@ func init() {
 	queryCmd.Flags().BoolVar(&queryDryRun, "dry-run", false, "Generate SQL but don't execute")
 	queryCmd.Flags().BoolVar(&queryExplain, "explain", false, "Show execution plan alongside results")
 	queryCmd.Flags().BoolVar(&queryNoStream, "no-stream", false, "Disable streaming AI output (wait for full response)")
+	queryCmd.Flags().BoolVar(&queryReadOnly, "readonly", false, "Block write queries (INSERT/UPDATE/DELETE)")
 	// Register same flags on root so `basemake "question" --flag` works
 	rootCmd.Flags().BoolVar(&queryJSON, "json", false, "Output results as JSON")
 	rootCmd.Flags().BoolVar(&queryCSV, "csv", false, "Output results as CSV")
 	rootCmd.Flags().BoolVar(&queryDryRun, "dry-run", false, "Generate SQL but don't execute")
 	rootCmd.Flags().BoolVar(&queryExplain, "explain", false, "Show execution plan alongside results")
 	rootCmd.Flags().BoolVar(&queryNoStream, "no-stream", false, "Disable streaming AI output (wait for full response)")
+	rootCmd.Flags().BoolVar(&sharedReadOnly, "readonly", false, "Block write queries (INSERT/UPDATE/DELETE)")
 }

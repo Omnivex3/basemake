@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/DynamicKarabo/basemake/internal/config"
 	"github.com/DynamicKarabo/basemake/internal/tui"
 	"github.com/spf13/cobra"
 )
@@ -20,6 +21,9 @@ const BannerASCII = `█████                                            
 ▒▒▒▒▒▒▒▒   ▒▒▒▒▒▒▒▒ ▒▒▒▒▒▒   ▒▒▒▒▒▒  ▒▒▒▒▒ ▒▒▒ ▒▒▒▒▒  ▒▒▒▒▒▒▒▒ ▒▒▒▒ ▒▒▒▒▒  ▒▒▒▒▒▒`
 
 var cfgFile string
+
+// sharedReadOnly is the --readonly flag value for rootCmd, consumed by both the REPL and query commands.
+var sharedReadOnly bool
 
 var rootCmd = &cobra.Command{
 	Use:   "basemake",
@@ -53,7 +57,6 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default $HOME/.basemake/config.yaml)")
-	rootCmd.AddCommand(connectCmd)
 	rootCmd.AddCommand(queryCmd)
 	rootCmd.AddCommand(analyzeCmd)
 }
@@ -70,6 +73,24 @@ func init() {
 }
 
 func enterInteractiveMode() error {
+	// Check if this looks like a first run — no config or no connections
+	cfg, cfgErr := config.Load()
+	if cfgErr == nil && cfg.DefaultDSN == "" && len(cfg.Connections) == 0 {
+		// First run detection
+		fmt.Println()
+		fmt.Println("  ╭──────────────────────────────────────────────╮")
+		fmt.Println("  │  Welcome to basemake 🚀                      │")
+		fmt.Println("  │                                              │")
+		fmt.Println("  │  Query your database in plain English.       │")
+		fmt.Println("  │                                              │")
+		fmt.Println("  │  Get started:  basemake init                 │")
+		fmt.Println("  │  Quick demo:   basemake init --demo          │")
+		fmt.Println("  │  Just connect: basemake connect --detect     │")
+		fmt.Println("  ╰──────────────────────────────────────────────╯")
+		fmt.Println()
+		return nil
+	}
+
 	// Straight to the charm TUI — no banners, no onboarding, no noise.
 	// DSN loading and connection is handled inside replCmd.
 	return replCmd.RunE(replCmd, []string{})
