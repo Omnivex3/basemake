@@ -88,6 +88,11 @@ type Model struct {
 	tabPrefix  string   // the word being completed (reset on new word)
 	tabMatches []string // matching table names
 	tabIndex   int      // current cycle position
+
+	// History navigation (up/down arrow)
+	historyItems  []string // past queries, newest appended at end
+	historyIdx    int      // -1 = not browsing (fresh input), 0..len-1 = browsing
+	pendingInput  string   // saved input when entering browse mode
 }
 
 // ── Constructor ──
@@ -114,6 +119,25 @@ func NewModel(conn db.Database, format display.Format, version string, readonly 
 
 	aiLabel := aiProviderLabel()
 
+	// Load session history from DB if available
+	var historyItems []string
+	if entries, err := history.List(50); err == nil {
+		for _, e := range entries {
+			if e.SQLGenerated != "" {
+				historyItems = append(historyItems, e.SQLGenerated)
+			} else if e.Question != "" {
+				historyItems = append(historyItems, e.Question)
+			}
+		}
+		// Reverse so newest is at the end (will be accessed from end)
+		for i, j := 0, len(historyItems)-1; i < j; i, j = i+1, j-1 {
+		historyItems[i], historyItems[j] = historyItems[j], historyItems[i]
+		}
+	}
+
+	// Set initial cursor style (idle = white)
+	ti.Cursor.Style = lipgloss.NewStyle().Foreground(White)
+
 	return Model{
 		conn:    conn,
 		format:  format,
@@ -123,6 +147,8 @@ func NewModel(conn db.Database, format display.Format, version string, readonly 
 		version: version,
 		aiLabel: aiLabel,
 		readonly: readonly,
+		historyItems: historyItems,
+		historyIdx:   -1,
 		messages: []message{
 			{kind: msgBot, content: fullStartupView(conn, aiLabel, version)},
 		},
@@ -159,6 +185,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.state = stateIdle
 				m.messages = append(m.messages, message{kind: msgCmd, content: "  ⏹️  Query cancelled"})
+				m.updateCursorStyle()
 				return m, nil
 			}
 			return m, tea.Quit
@@ -171,8 +198,48 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				m.state = stateIdle
 				m.messages = append(m.messages, message{kind: msgCmd, content: "  ⏹️  Query cancelled"})
+				m.updateCursorStyle()
 				return m, nil
 			}
+			// Exit browse mode if browsing history
+			if m.historyIdx != -1 {
+				m.input.SetValue(m.pendingInput)
+				m.historyIdx = -1
+				m.pendingInput = ""
+				return m, nil
+			}
+
+		case "up":
+			if m.state != stateIdle || len(m.historyItems) == 0 {
+				break
+			}
+			// Move backward in history
+			if m.historyIdx == -1 {
+				m.pendingInput = m.input.Value()
+				m.historyIdx = len(m.historyItems) - 1
+			} else if m.historyIdx > 0 {
+				m.historyIdx--
+			} else {
+				break // already at oldest
+			}
+			m.input.SetValue(m.historyItems[m.historyIdx])
+			return m, nil
+
+		case "down":
+			if m.state != stateIdle || m.historyIdx == -1 {
+				break
+			}
+			// Move forward in history
+			if m.historyIdx < len(m.historyItems)-1 {
+				m.historyIdx++
+				m.input.SetValue(m.historyItems[m.historyIdx])
+			} else {
+				// Back to fresh input
+				m.input.SetValue(m.pendingInput)
+				m.historyIdx = -1
+				m.pendingInput = ""
+			}
+			return m, nil
 
 		case "enter":
 			if m.state != stateIdle {
@@ -199,8 +266,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
+			// Add to history for up/down navigation
+			m.historyItems = append(m.historyItems, input)
+			m.historyIdx = -1
+			m.pendingInput = ""
+
 			m.messages = append(m.messages, message{kind: msgUser, content: input})
 			m.state = stateThinking
+			m.updateCursorStyle()
 
 			// Create cancellable context for this query
 			ctx, cancel := context.WithCancel(context.Background())
@@ -230,6 +303,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case queryResultMsg:
 		m.state = stateIdle
 		m.queryCancel = nil // query completed, cancel is no-op now
+		m.updateCursorStyle()
 		if msg.err != nil {
 			m.messages = append(m.messages, message{kind: msgError, content: errorBubble(msg.err.Error())})
 		} else {
@@ -247,11 +321,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.messages = append(m.messages, message{kind: msgCmd, content: successBubble(msg.name)})
 			// Auto-introspect and cache schema after connect so NL queries work immediately
 			m.state = stateThinking
+			m.updateCursorStyle()
 			return m, m.syncIntrospectCmd()
 		}
 
 	case introspectResultMsg:
 		m.state = stateIdle
+		m.updateCursorStyle()
 		if msg.err != nil {
 			m.messages = append(m.messages, message{kind: msgError, content: errorBubble(msg.err.Error())})
 		} else {
@@ -328,6 +404,7 @@ func (m Model) handleDotCommand(input string) (tea.Model, tea.Cmd) {
 			status = "ON"
 		}
 		m.messages = append(m.messages, message{kind: msgCmd, content: successBubble("Read-only mode: " + status)})
+		m.updateCursorStyle()
 		return m, nil
 
 	case strings.HasPrefix(input, ".save "):
@@ -832,7 +909,7 @@ func (m Model) handleTabCompletion() Model {
 	}
 
 	// Find the current word (last whitespace-delimited token)
-	trimmed := strings.TrimRight(input, " \t")
+	trimmed := strings.TrimRight(input, " 	")
 	var currentWord string
 	lastSpace := strings.LastIndex(trimmed, " ")
 	if lastSpace >= 0 {
@@ -1211,6 +1288,24 @@ func errorBubble(msg string) string {
 
 func successBubble(msg string) string {
 	return "  " + lipgloss.NewStyle().Foreground(Green).Render("✅") + " " + lipgloss.NewStyle().Foreground(Text).Render(msg)
+}
+
+// updateCursorStyle changes the cursor color based on current state
+func (m *Model) updateCursorStyle() {
+	switch m.state {
+	case stateThinking:
+		m.input.Cursor.Style = lipgloss.NewStyle().Foreground(Red)
+		m.input.Cursor.Blink = true
+	default:
+		if m.readonly {
+			m.input.Cursor.Style = lipgloss.NewStyle().Foreground(Orange)
+		} else if m.conn != nil {
+			m.input.Cursor.Style = lipgloss.NewStyle().Foreground(Green)
+		} else {
+			m.input.Cursor.Style = lipgloss.NewStyle().Foreground(White)
+		}
+		m.input.Cursor.Blink = true
+	}
 }
 
 func sqlPreview(sql string) string {
