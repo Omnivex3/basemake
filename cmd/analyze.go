@@ -57,28 +57,36 @@ func analyzeQuery(ctx context.Context, conn db.Database, query string) error {
 		report, parseErr := analyze.ParsePlan(jsonPlan)
 		if parseErr != nil {
 			fmt.Fprintf(os.Stderr, "⚠ Could not parse plan: %v\n", parseErr)
-			// Fall through to text explain below
 		} else {
 			duration := time.Since(start)
 			fmt.Fprintf(os.Stderr, "Analysis completed in %v\n\n", duration.Round(time.Millisecond))
 
-			// Print the full analysis
 			fmt.Println(report.String())
 
 			// Check for index suggestions
+			var allSuggestions []analyze.IndexSuggestion
 			tables := collectTablesFromReport(report)
 			if len(tables) > 0 {
 				stats, statsErr := FetchTableStats(ctx, conn, tables)
 				if statsErr == nil && stats != nil {
-					var allSuggestions []analyze.IndexSuggestion
 					for _, n := range report.Nodes {
 						if (n.NodeType == "Seq Scan" || n.NodeType == "Table Scan") && n.Filter != "" {
 							sugs := analyze.SuggestIndexesForScan(n.RelationName, n.Filter, n.PlanRows, stats[n.RelationName])
 							allSuggestions = append(allSuggestions, sugs...)
 						}
 					}
-					if idxOutput := FormatSuggestions(allSuggestions); idxOutput != "" {
-						fmt.Println(idxOutput)
+				}
+			}
+
+			if idxOutput := analyze.FormatSuggestions(allSuggestions); idxOutput != "" {
+				fmt.Println(idxOutput)
+
+				// Persist recommendations
+				store, loadErr := analyze.LoadRecs()
+				if loadErr == nil {
+					store.Merge(allSuggestions)
+					if saveErr := store.Save(); saveErr != nil {
+						fmt.Fprintf(os.Stderr, "⚠ Could not save recommendations: %v\n", saveErr)
 					}
 				}
 			}
@@ -111,7 +119,6 @@ func runAnalyzeAll(ctx context.Context, conn db.Database) error {
 	hasIssues := false
 
 	for _, table := range schema.Tables {
-		// Generate a sample query for each table
 		sampleQuery := fmt.Sprintf("SELECT * FROM %s LIMIT 1000", table.Name)
 		fmt.Fprintf(os.Stderr, "── %s ──\n", table.Name)
 
@@ -127,7 +134,6 @@ func runAnalyzeAll(ctx context.Context, conn db.Database) error {
 			continue
 		}
 
-		// Only show if there are issues
 		if len(report.Issues) > 0 {
 			hasIssues = true
 			fmt.Printf("%s (%.0fms):\n", table.Name, report.ExecutionTime)
@@ -154,10 +160,6 @@ func runAnalyzeAll(ctx context.Context, conn db.Database) error {
 	return nil
 }
 
-// init registers commands — called from root.go's init
-// Note: we keep this separate so root.go can call analyzeCmd directly
-// and we register flags here.
 func init() {
-	// No need to add to rootCmd — root.go already does that via AddCommand
 	analyzeCmd.Flags().BoolVar(&analyzeAll, "all", false, "Analyze all cached tables")
 }

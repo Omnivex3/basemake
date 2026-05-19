@@ -17,6 +17,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 
 	"github.com/DynamicKarabo/basemake/internal/ai"
+	"github.com/DynamicKarabo/basemake/internal/analyze"
 	"github.com/DynamicKarabo/basemake/internal/config"
 	"github.com/DynamicKarabo/basemake/internal/db"
 	"github.com/DynamicKarabo/basemake/internal/display"
@@ -96,6 +97,11 @@ type explainResultMsg struct {
 	err     error
 }
 
+type analyzeResultMsg struct {
+	content string
+	err     error
+}
+
 // ── Model ──
 
 type Model struct {
@@ -165,6 +171,9 @@ type Model struct {
 	// Chat mode flag: persists through thinking/idle transitions so
 	// aiStreamEndMsg knows to keep the response as chat, not SQL.
 	inChat bool
+
+	// Index suggestion flag: set when analyze finds suggestions, shown as 💡 badge
+	hasIndexSuggestion bool
 }
 
 // ── Constructor ──
@@ -610,6 +619,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case analyzeResultMsg:
+		m.state = stateIdle
+		m.queryCancel = nil
+		m.updateCursorStyle()
+		if msg.err != nil {
+			(&m).addMessage(msgError, errorBubble(msg.err.Error()))
+		} else if msg.content != "" {
+			(&m).addMessage(msgBot, msg.content)
+			m.hasIndexSuggestion = strings.Contains(msg.content, "💡")
+		}
+		return m, nil
+
 	case animCompleteMsg:
 		// Logo reveal animation
 		if m.animFrame >= 0 && m.animFrame < len(m.logoLines)-1 {
@@ -745,6 +766,20 @@ func (m Model) handleDotCommand(input string) (tea.Model, tea.Cmd) {
 		m.thinkingMsg = "Analyzing results..."
 		m.updateCursorStyle()
 		return m, m.explainLastResult()
+
+	case input == ".analyze":
+		if m.lastResult.cols == nil && m.lastResult.sql == "" {
+			(&m).addMessage(msgError, errorBubble("No query to analyze — run a query first"))
+			return m, nil
+		}
+		if m.conn == nil {
+			(&m).addMessage(msgError, errorBubble("No database connection"))
+			return m, nil
+		}
+		m.state = stateThinking
+		m.thinkingMsg = "Running EXPLAIN ANALYZE..."
+		m.updateCursorStyle()
+		return m, m.analyzeLastQuery()
 
 	case input == ".sql":
 		if m.state == stateChat {
@@ -1199,6 +1234,74 @@ func (m Model) explainLastResult() tea.Cmd {
 	}
 }
 
+// analyzeLastQuery runs EXPLAIN ANALYZE on the last query and returns index suggestions.
+func (m Model) analyzeLastQuery() tea.Cmd {
+	return func() tea.Msg {
+		if m.conn == nil {
+			return analyzeResultMsg{err: fmt.Errorf("no database connection")}
+		}
+		sqlStr := m.lastResult.sql
+		if sqlStr == "" {
+			return analyzeResultMsg{err: fmt.Errorf("no query to analyze")}
+		}
+
+		// Run EXPLAIN JSON
+		jsonPlan, err := m.conn.ExplainJSON(context.Background(), sqlStr)
+		if err != nil {
+			return analyzeResultMsg{err: fmt.Errorf("EXPLAIN failed: %w", err)}
+		}
+
+		// Parse the plan
+		report, err := analyze.ParsePlan(jsonPlan)
+		if err != nil {
+			return analyzeResultMsg{err: fmt.Errorf("parse plan: %w", err)}
+		}
+
+		// Build output: report + suggestions
+		var b strings.Builder
+		b.WriteString(report.String())
+
+		// Check for index suggestions
+		tables := analyze.CollectTablesFromIssues(report.Issues)
+		if len(tables) > 0 {
+			stats, statsErr := analyze.FetchPgStats(context.Background(), func(ctx context.Context, q string) (analyze.PgStatsRows, error) {
+				rows, err := m.conn.Query(ctx, q)
+				if err != nil {
+					return nil, err
+				}
+				return &tuiRowAdapter{rows: rows}, nil
+			}, tables)
+			if statsErr == nil && stats != nil {
+				var allSuggestions []analyze.IndexSuggestion
+				for _, n := range report.Nodes {
+					if (n.NodeType == "Seq Scan" || n.NodeType == "Table Scan") && n.Filter != "" {
+						sugs := analyze.SuggestIndexesForScan(n.RelationName, n.Filter, n.PlanRows, stats[n.RelationName])
+						allSuggestions = append(allSuggestions, sugs...)
+					}
+				}
+				if idxOutput := analyze.FormatSuggestions(allSuggestions); idxOutput != "" {
+					b.WriteString(idxOutput)
+				}
+			}
+		}
+
+		return analyzeResultMsg{content: b.String()}
+	}
+}
+
+// tuiRowAdapter adapts db.Rows to analyze.PgStatsRows interface.
+type tuiRowAdapter struct {
+	rows interface {
+		Next() bool
+		Scan(dest ...any) error
+		Close() error
+	}
+}
+
+func (a *tuiRowAdapter) Next() bool             { return a.rows.Next() }
+func (a *tuiRowAdapter) Scan(dest ...any) error { return a.rows.Scan(dest...) }
+func (a *tuiRowAdapter) Close() error           { return a.rows.Close() }
+
 func (m Model) exportCmd(filename string) tea.Cmd {
 	return func() tea.Msg {
 		// Load last entry from history to get the SQL and results
@@ -1597,13 +1700,18 @@ func (m Model) View() string {
 	if m.inChat {
 		modeTag = "  │  💬 CHAT"
 	}
-	statusBar := fmt.Sprintf("%s v%s  │  %s %s  │  %s%s%s",
+	indexTag := ""
+	if m.hasIndexSuggestion {
+		indexTag = "  │  💡 INDEX"
+	}
+	statusBar := fmt.Sprintf("%s v%s  │  %s %s  │  %s%s%s%s",
 		lipgloss.NewStyle().Foreground(Red).Render("basemake"),
 		m.version,
 		dot, dbName,
 		strings.ToUpper(provider),
 		ro,
 		modeTag,
+		indexTag,
 	)
 	b.WriteString(lipgloss.NewStyle().Foreground(DimText).Render(statusBar) + "\n")
 
@@ -1835,6 +1943,7 @@ func helpBox() string {
 		"    " + HelpCmdStyle.Render(".ask") + "     " + HelpDescStyle.Render("Free-form chat mode (no SQL)"),
 		"    " + HelpCmdStyle.Render(".sql") + "     " + HelpDescStyle.Render("Return to query mode (from .ask)"),
 		"    " + HelpCmdStyle.Render(".explain") + " " + HelpDescStyle.Render("Explain last query result in plain English"),
+		"    " + HelpCmdStyle.Render(".analyze") + " " + HelpDescStyle.Render("Run EXPLAIN ANALYZE + index suggestions on last query"),
 		"",
 		HelpHeaderStyle.Render("  ⌨️  Keyboard"),
 		"",
@@ -1884,6 +1993,7 @@ var dotCommands = []dotCmd{
 	{".ask", "Free-form chat mode (no SQL generated)"},
 	{".sql", "Return to query mode (from .ask)"},
 	{".explain", "Explain last query result in plain English"},
+	{".analyze", "Run EXPLAIN ANALYZE + index suggestions on last query"},
 	{".tables", "List tables in the current database"},
 	{".schema", "Show full database schema"},
 	{".connect", "Connect to a database: .connect <dsn>"},
