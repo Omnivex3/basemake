@@ -432,7 +432,7 @@ function PricingCard({ plan, annual }: { plan: Plan; annual: boolean }) {
       {/* Badge */}
       {plan.badge && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <Badge className="bg-[#e63946] text-white border-none px-4 py-1 text-[11px] font-semibold tracking-wide uppercase shadow-lg shadow-[#e63946]/30">
+          <Badge variant="destructive" className="bg-[#e63946] text-white border-none px-4 py-1 text-[11px] font-semibold tracking-wide uppercase shadow-lg shadow-[#e63946]/30">
             {plan.badge}
           </Badge>
         </div>
