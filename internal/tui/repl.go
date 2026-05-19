@@ -47,9 +47,10 @@ type message struct {
 	content string
 }
 
-// addMessage appends a message and refreshes the viewport.
+// addMessage appends a message, renders it incrementally, and refreshes the viewport.
 func (m *Model) addMessage(kind msgKind, content string) {
 	m.messages = append(m.messages, message{kind: kind, content: content})
+	m.vpContent += renderOneMessage(kind, content)
 	m.refreshViewport()
 }
 
@@ -121,7 +122,8 @@ type Model struct {
 	pendingInput string   // saved input when entering browse mode
 
 	// Dot command autocomplete
-	autocompleteMatches []string // filtered dot commands matching current input
+	autocompleteMatches    []string // filtered dot commands matching current input
+	autocompleteSuggestion string   // first raw match for inline ghost text
 
 	// Eye candy
 	flashEnd time.Time // when read-only shake ends (zero = no flash)
@@ -131,8 +133,9 @@ type Model struct {
 	logoLines []string // pre-split logo lines for animation
 
 	// Scrollable viewport for messages
-	vp      viewport.Model
-	vpReady bool
+	vp        viewport.Model
+	vpReady   bool
+	vpContent string // accumulated rendered content, rebuilt incrementally
 }
 
 // ── Constructor ──
@@ -163,10 +166,12 @@ func NewModel(conn db.Database, format display.Format, version string, readonly 
 	var historyItems []string
 	if entries, err := history.List(50); err == nil {
 		for _, e := range entries {
-			if e.SQLGenerated != "" {
-				historyItems = append(historyItems, e.SQLGenerated)
-			} else if e.Question != "" {
+			// Prefer the original natural language question so up-arrow
+			// recalls "show me users" not "SELECT * FROM users..."
+			if e.Question != "" {
 				historyItems = append(historyItems, e.Question)
+			} else if e.SQLGenerated != "" {
+				historyItems = append(historyItems, e.SQLGenerated)
 			}
 		}
 		// Reverse so newest is at the end (will be accessed from end)
@@ -197,6 +202,7 @@ func NewModel(conn db.Database, format display.Format, version string, readonly 
 		messages: []message{
 			{kind: msgBot, content: ColoriseLogo(logoLines[0])},
 		},
+		vpContent: renderOneMessage(msgBot, ColoriseLogo(logoLines[0])),
 	}
 }
 
@@ -232,7 +238,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Initialize or resize viewport
 		// Leave room for: separator line + input line + status bar + a line of padding
-		vpHeight := msg.Height - 4
+		vpHeight := msg.Height - m.viewportReservedHeight()
 		if vpHeight < 5 {
 			vpHeight = 5
 		}
@@ -246,11 +252,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.vp.Height = vpHeight
 		}
 		m.vp.SetContent(buildViewportContent(&m))
+		m.vpContent = buildViewportContent(&m)
 
 	case tea.MouseMsg:
 		if m.vpReady {
-			m.vp.Update(msg)
-			return m, nil
+			var cmd tea.Cmd
+			m.vp, cmd = m.vp.Update(msg)
+			return m, cmd
 		}
 
 	case tea.KeyMsg:
@@ -346,6 +354,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.state != stateIdle {
 				break
 			}
+			// Cancel any orphaned AI stream before starting fresh
+			if m.aiCtx != nil {
+				if cancel := m.queryCancel; cancel != nil {
+					cancel()
+				}
+				m.aiCtx = nil
+			}
 			m.autocompleteMatches = nil
 			input := strings.TrimSpace(m.input.Value())
 			m.input.SetValue("")
@@ -402,6 +417,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.state != stateIdle {
 				break
 			}
+			// If there's a dot-command ghost suggestion, accept it
+			if m.autocompleteSuggestion != "" {
+				m.input.SetValue(m.autocompleteSuggestion + " ")
+				m.autocompleteSuggestion = ""
+				m.autocompleteMatches = nil
+				return m, nil
+			}
 			m = m.handleTabCompletion()
 			return m, nil
 		}
@@ -425,8 +447,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.conn = conn
 			}
 			// Refresh the startup screen so it reflects the new connection
-			if len(m.messages) > 0 {
+			// Only touch messages[0] if the logo animation has finished
+			if len(m.messages) > 0 && m.animFrame < 0 {
 				m.messages[0].content = fullStartupView(m.conn, m.aiLabel, m.version)
+				m.vpContent = buildViewportContent(&m)
 			}
 			// Update input placeholder now that we're connected
 			m.input.Placeholder = "Type .help for commands  ·  ask your question or enter SQL"
@@ -448,12 +472,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case aiTokenMsg:
 		m.generatingSQL += msg.token
+		m.refreshViewport() // update SQL preview in real-time
 		return m, m.pollAIStream(msg.ch)
 
 	case aiStreamEndMsg:
 		// AI streaming complete — validate SQL then execute
+		sqlStr := m.generatingSQL // capture BEFORE clearing
 		m.thinkingMsg = "Running query..."
-		sqlStr := m.generatingSQL
+		m.generatingSQL = ""
+		m.refreshViewport() // clear SQL preview, show just spinner
 		return m, func() tea.Msg {
 			return m.validateAndExecSQL(m.aiCtx, m.pendingQuestion, sqlStr)
 		}
@@ -469,17 +496,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Show more logo lines
 			partial := strings.Join(m.logoLines[:m.animFrame+1], "\n")
 			m.messages[0].content = ColoriseLogo(partial)
+			m.vpContent = buildViewportContent(&m)
 			return m, m.animNextTick()
 		}
 		// Animation complete — show full startup
 		m.animFrame = -1
 		m.messages[0].content = fullStartupView(m.conn, m.aiLabel, m.version)
+		m.vpContent = buildViewportContent(&m)
 		return m, nil
 
 	case spinner.TickMsg:
 		if m.state != stateIdle {
 			var cmd tea.Cmd
 			m.spinner, cmd = m.spinner.Update(msg)
+			if m.state == stateThinking {
+				m.refreshViewport() // animate spinner in thinking block
+			}
 			return m, cmd
 		}
 	}
@@ -1282,18 +1314,19 @@ func (m Model) View() string {
 
 	prompt := UserPromptStyle.Render("  You > ")
 	// Flash prompt red briefly when write blocked in read-only mode
-	if !m.flashEnd.IsZero() && time.Now().Before(m.flashEnd) {
+	if !m.flashEnd.IsZero() {
 		prompt = lipgloss.NewStyle().Foreground(Red).Bold(true).Render("  ⛔ You > ")
 	}
 	b.WriteString(prompt + m.input.View())
-	b.WriteString("\n")
-
-	// Dot command autocomplete suggestions
-	if len(m.autocompleteMatches) > 0 {
-		for _, match := range m.autocompleteMatches {
-			b.WriteString("  " + match + "\n")
+	// Inline ghost suggestion for dot commands (fish-style)
+	if m.autocompleteSuggestion != "" {
+		typed := m.input.Value()
+		if strings.HasPrefix(m.autocompleteSuggestion, typed) && len(m.autocompleteSuggestion) > len(typed) {
+			ghost := m.autocompleteSuggestion[len(typed):]
+			b.WriteString(lipgloss.NewStyle().Foreground(DimText).Render(ghost))
 		}
 	}
+	b.WriteString("\n")
 
 	// Persistent status bar (tmux-style)
 	dbName := "disconnected"
@@ -1325,55 +1358,69 @@ func (m Model) View() string {
 
 // ── View helpers ──
 
+// viewportReservedHeight returns the number of terminal lines reserved
+// below the viewport (separator + input + autocomplete + status bar).
+func (m Model) viewportReservedHeight() int {
+	// separator line (1) + input line (1) + status bar (1) + padding (1)
+	h := 4
+	if len(m.autocompleteMatches) > 0 {
+		h += len(m.autocompleteMatches)
+	}
+	return h
+}
+
 // refreshViewport rebuilds the viewport content and scrolls to bottom.
 // Call after any messages are added or modified.
 func (m *Model) refreshViewport() {
 	if !m.vpReady {
 		return
 	}
-	m.vp.SetContent(buildViewportContent(m))
+	m.vp.SetContent(m.vpContent + m.thinkingBlock())
 	m.vp.GotoBottom()
 }
 
+// thinkingBlock returns the spinner + generating SQL preview when in thinking state.
+func (m *Model) thinkingBlock() string {
+	if m.state != stateThinking {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("\n  " + m.spinner.View() + " " + ThinkingStyle.Render(m.thinkingMsg) + "\n")
+	if m.thinkingMsg == "Generating SQL..." && m.generatingSQL != "" {
+		preview := m.generatingSQL
+		if len(preview) > 80 {
+			preview = preview[:77] + "..."
+		}
+		preview = strings.ReplaceAll(preview, "\n", " ")
+		b.WriteString(lipgloss.NewStyle().Foreground(DimText).Italic(true).Render("  ─╴"+preview) + "\n")
+	}
+	return b.String()
+}
+
+// renderOneMessage returns the styled string for a single message.
+func renderOneMessage(kind msgKind, content string) string {
+	switch kind {
+	case msgUser:
+		return UserPromptStyle.Render("  You > ") + lipgloss.NewStyle().Foreground(Text).Render(content) + "\n"
+	case msgBot:
+		return content + "\n"
+	case msgResult:
+		return SubBoxStyle.Render(content) + "\n"
+	case msgCmd:
+		return BoxStyle.Render(content) + "\n"
+	case msgError:
+		return BoxStyle.Render(content) + "\n"
+	}
+	return content + "\n"
+}
+
 // buildViewportContent renders all messages into a single string for the viewport.
+// Used for initial load; after that addMessage increments vpContent directly.
 func buildViewportContent(m *Model) string {
 	var b strings.Builder
-
 	for _, msg := range m.messages {
-		switch msg.kind {
-		case msgUser:
-			b.WriteString(UserPromptStyle.Render("  You > "))
-			b.WriteString(lipgloss.NewStyle().Foreground(Text).Render(msg.content))
-			b.WriteString("\n")
-		case msgBot:
-			b.WriteString(msg.content)
-			b.WriteString("\n")
-		case msgResult:
-			b.WriteString(SubBoxStyle.Render(msg.content))
-			b.WriteString("\n")
-		case msgCmd:
-			b.WriteString(msg.content)
-			b.WriteString("\n")
-		case msgError:
-			b.WriteString(msg.content)
-			b.WriteString("\n")
-		}
+		b.WriteString(renderOneMessage(msg.kind, msg.content))
 	}
-
-	if m.state == stateThinking {
-		b.WriteString("\n  " + m.spinner.View() + " " + ThinkingStyle.Render(m.thinkingMsg) + "\n")
-
-		// Show AI-generated SQL tokens streaming in real-time
-		if m.thinkingMsg == "Generating SQL..." && m.generatingSQL != "" {
-			preview := m.generatingSQL
-			if len(preview) > 80 {
-				preview = preview[:77] + "..."
-			}
-			preview = strings.ReplaceAll(preview, "\n", " ")
-			b.WriteString(lipgloss.NewStyle().Foreground(DimText).Italic(true).Render("  ─╴"+preview) + "\n")
-		}
-	}
-
 	return b.String()
 }
 
@@ -1569,12 +1616,16 @@ var dotCommands = []dotCmd{
 func (m *Model) updateAutocomplete() {
 	val := strings.TrimSpace(m.input.Value())
 	m.autocompleteMatches = nil
+	m.autocompleteSuggestion = ""
 	if !strings.HasPrefix(val, ".") || len(val) < 2 || m.state != stateIdle {
 		return
 	}
 	for _, dc := range dotCommands {
 		if strings.HasPrefix(dc.cmd, val) {
 			m.autocompleteMatches = append(m.autocompleteMatches, dc.cmd+"  "+lipgloss.NewStyle().Foreground(DimText).Render(dc.desc))
+			if m.autocompleteSuggestion == "" {
+				m.autocompleteSuggestion = dc.cmd
+			}
 		}
 	}
 }
