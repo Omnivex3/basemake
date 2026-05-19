@@ -181,8 +181,14 @@ func (m *mysqlDB) Query(ctx context.Context, query string) (*Rows, error) {
 }
 
 func (m *mysqlDB) Explain(ctx context.Context, query string) (string, error) {
+	tx, err := m.conn.BeginTx(ctx, nil)
+	if err != nil {
+		return "", fmt.Errorf("mysql begin tx: %w", err)
+	}
+	defer tx.Rollback() // always rollback — safe for EXPLAIN
+
 	var plan string
-	err := m.conn.QueryRowContext(ctx, "EXPLAIN ANALYZE "+query).Scan(&plan)
+	err = tx.QueryRowContext(ctx, "EXPLAIN ANALYZE "+query).Scan(&plan)
 	if err != nil {
 		return "", fmt.Errorf("mysql explain: %w", err)
 	}

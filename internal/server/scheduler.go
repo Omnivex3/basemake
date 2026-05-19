@@ -21,8 +21,14 @@ func (s *Server) scheduleWatches() {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		s.checkWatches()
+	for {
+		select {
+		case <-ticker.C:
+			s.checkWatches()
+		case <-s.done:
+			log.Printf("[watcher] Shutting down watch scheduler")
+			return
+		}
 	}
 }
 

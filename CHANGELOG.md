@@ -1,3 +1,18 @@
+# v0.2.1 — Bug Fixes (2025-05-19)
+
+## Fixed
+
+- **Merged duplicate `init()` in `cmd/root.go`** — Two separate `init()` functions doing different things in the same file. Go's init ordering by declaration order is fragile; consolidated into one.
+- **History lazy init race** — `Record()`, `Recent()`, and `List()` each had a racy `if db == nil { Init() }` pattern. Wrapped in `sync.Mutex` via `ensureDB()` — safe for concurrent access from server or future parallel callers.
+- **Server goroutine leak** — `scheduleWatches()` ran an infinite `for range ticker.C` with no shutdown mechanism. Added `done chan struct{}` + `Shutdown()` method, refactored to `select` for clean exit.
+- **MySQL EXPLAIN ANALYZE DML risk** — Unlike PostgreSQL (which wraps EXPLAIN in a transaction with rollback), MySQL's `Explain()` ran bare `EXPLAIN ANALYZE` which actually executes DML. Wrapped in `BeginTx` + `defer tx.Rollback()`.
+
+## Internal
+
+- `go build ./...` ✅ | `go vet ./...` ✅ | `go test ./...` ✅
+
+---
+
 # basemake v0.2.0 — Multi-Provider, Streaming, History
 
 This release fundamentally upgrades basemake's AI layer from a single-vendor blocking call to a pluggable, streaming, context-aware engine.

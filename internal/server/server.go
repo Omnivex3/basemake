@@ -13,10 +13,11 @@ import (
 
 // Server is the basemake team server.
 type Server struct {
-	store  *Store
-	port   int
+	store   *Store
+	port    int
 	version string
 	started time.Time
+	done    chan struct{}
 }
 
 // NewServer creates a new server with the given store and options.
@@ -26,7 +27,14 @@ func NewServer(store *Store, port int, version string) *Server {
 		port:    port,
 		version: version,
 		started: time.Now(),
+		done:    make(chan struct{}),
 	}
+}
+
+// Shutdown gracefully stops the server, its watch scheduler, and the store.
+func (s *Server) Shutdown() {
+	close(s.done)
+	s.store.Close()
 }
 
 // Start runs the HTTP server on the configured port and starts the watch scheduler.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -25,6 +26,16 @@ type Entry struct {
 }
 
 var db *sql.DB
+var mu sync.Mutex
+
+func ensureDB() error {
+	mu.Lock()
+	defer mu.Unlock()
+	if db != nil {
+		return nil
+	}
+	return Init()
+}
 
 func dbPath() string {
 	home, _ := os.UserHomeDir()
@@ -73,10 +84,8 @@ func Init() error {
 
 // Record saves a query execution to history.
 func Record(e Entry) error {
-	if db == nil {
-		if err := Init(); err != nil {
-			return err
-		}
+	if err := ensureDB(); err != nil {
+		return err
 	}
 
 	_, err := db.Exec(
@@ -94,10 +103,8 @@ func Record(e Entry) error {
 // Recent returns the most recent queries for context compounding.
 // Used to prepend recent query patterns to AI prompts.
 func Recent(limit int) ([]Entry, error) {
-	if db == nil {
-		if err := Init(); err != nil {
-			return nil, nil
-		}
+	if err := ensureDB(); err != nil {
+		return nil, nil
 	}
 
 	rows, err := db.Query(
@@ -134,10 +141,8 @@ func Recent(limit int) ([]Entry, error) {
 
 // List returns the most recent N entries regardless of type.
 func List(limit int) ([]Entry, error) {
-	if db == nil {
-		if err := Init(); err != nil {
-			return nil, nil
-		}
+	if err := ensureDB(); err != nil {
+		return nil, nil
 	}
 
 	rows, err := db.Query(
