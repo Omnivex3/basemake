@@ -11,6 +11,10 @@ APP_NAME = basemake
 build:           ## Build binary (default)
 	go build -ldflags="-s -w" -o $(BINARY) .
 
+install: build   ## Build and install to /usr/local/bin
+	sudo cp $(BINARY) /usr/local/bin/$(BINARY)
+	@echo "  ✅ Installed $(BINARY) to /usr/local/bin/"
+
 build-race:      ## Build with race detector
 	go build -race -ldflags="-s -w" -o $(BINARY) .
 
