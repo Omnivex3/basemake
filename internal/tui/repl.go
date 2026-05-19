@@ -93,6 +93,9 @@ type Model struct {
 	historyItems  []string // past queries, newest appended at end
 	historyIdx    int      // -1 = not browsing (fresh input), 0..len-1 = browsing
 	pendingInput  string   // saved input when entering browse mode
+
+	// Dot command autocomplete
+	autocompleteMatches []string // filtered dot commands matching current input
 }
 
 // ── Constructor ──
@@ -245,6 +248,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.state != stateIdle {
 				break
 			}
+			m.autocompleteMatches = nil
 			input := strings.TrimSpace(m.input.Value())
 			m.input.SetValue("")
 			if input == "" {
@@ -345,6 +349,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Always feed non-control keys into the text input
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
+	m.updateAutocomplete()
 	return m, cmd
 }
 
@@ -429,7 +434,12 @@ func (m Model) handleDotCommand(input string) (tea.Model, tea.Cmd) {
 		return m, m.savedListCmd()
 
 	default:
-		m.messages = append(m.messages, message{kind: msgError, content: errorBubble("unknown command: " + input + "\n  Type .help for available commands")})
+		// Check if it looks like a typo of a known command
+		if best, dist := fuzzyMatchLevenshtein(input); dist <= 2 {
+			m.messages = append(m.messages, message{kind: msgCmd, content: "  " + lipgloss.NewStyle().Foreground(Yellow).Render("💡 Did you mean") + " " + HelpCmdStyle.Render(best) + "?"})
+		} else {
+			m.messages = append(m.messages, message{kind: msgError, content: errorBubble("unknown command: " + input + "\n  Type .help for available commands")})
+		}
 		return m, nil
 	}
 }
@@ -1122,6 +1132,13 @@ func (m Model) View() string {
 	b.WriteString(prompt + m.input.View())
 	b.WriteString("\n")
 
+	// Dot command autocomplete suggestions
+	if len(m.autocompleteMatches) > 0 {
+		for _, match := range m.autocompleteMatches {
+			b.WriteString("  " + match + "\n")
+		}
+	}
+
 	return b.String()
 }
 
@@ -1288,6 +1305,90 @@ func errorBubble(msg string) string {
 
 func successBubble(msg string) string {
 	return "  " + lipgloss.NewStyle().Foreground(Green).Render("✅") + " " + lipgloss.NewStyle().Foreground(Text).Render(msg)
+}
+
+// ── Dot Command Autocomplete ──
+
+type dotCmd struct {
+	cmd  string
+	desc string
+}
+
+var dotCommands = []dotCmd{
+	{".help", "Show this help"},
+	{".quit", "Exit basemake"},
+	{".exit", "Exit basemake"},
+	{".tables", "List tables in the current database"},
+	{".schema", "Show full database schema"},
+	{".connect", "Connect to a database: .connect <dsn>"},
+	{".refresh", "Re-introspect and cache schema"},
+	{".history", "Show past questions"},
+	{".replay", "Re-run query from history: .replay <N>"},
+	{".export", "Save last result: .export <.csv|.json|.md>"},
+	{".info", "Show connection and AI status"},
+	{".readonly", "Toggle write protection on/off"},
+	{".save", "Save last query as a bookmark: .save <name>"},
+	{".run", "Run a saved query: .run <name>"},
+	{".saved", "List all saved queries"},
+}
+
+// updateAutocomplete filters dot commands matching the current input prefix
+func (m *Model) updateAutocomplete() {
+	val := strings.TrimSpace(m.input.Value())
+	m.autocompleteMatches = nil
+	if !strings.HasPrefix(val, ".") || len(val) < 2 || m.state != stateIdle {
+		return
+	}
+	for _, dc := range dotCommands {
+		if strings.HasPrefix(dc.cmd, val) {
+			m.autocompleteMatches = append(m.autocompleteMatches, dc.cmd+"  "+lipgloss.NewStyle().Foreground(DimText).Render(dc.desc))
+		}
+	}
+}
+
+// fuzzyMatchLevenshtein returns the closest matching command and its distance
+func fuzzyMatchLevenshtein(input string) (string, int) {
+	bestCmd := ""
+	bestDist := 3 // only suggest if distance <= 2
+	for _, dc := range dotCommands {
+		dist := levenshtein(input, dc.cmd)
+		if dist < bestDist {
+			bestDist = dist
+			bestCmd = dc.cmd
+		}
+	}
+	return bestCmd, bestDist
+}
+
+func levenshtein(a, b string) int {
+	if len(a) == 0 {
+		return len(b)
+	}
+	if len(b) == 0 {
+		return len(a)
+	}
+	// Optimize: use shorter string as columns
+	if len(a) > len(b) {
+		a, b = b, a
+	}
+	la, lb := len(a), len(b)
+	row := make([]int, la+1)
+	for i := range row {
+		row[i] = i
+	}
+	for i := 1; i <= lb; i++ {
+		prev := i
+		for j := 1; j <= la; j++ {
+			cur := row[j-1]
+			if b[i-1] != a[j-1] {
+				cur = min(prev, min(row[j], row[j-1])) + 1
+			}
+			row[j-1] = prev
+			prev = cur
+		}
+		row[la] = prev
+	}
+	return row[la]
 }
 
 // updateCursorStyle changes the cursor color based on current state
