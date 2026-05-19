@@ -103,3 +103,14 @@ func LoadSchema() (*Schema, error) {
 func (s *Schema) Save() error {
 	return SaveSchema(s)
 }
+
+// ClearSchemaCache removes the cached schema from disk.
+func ClearSchemaCache() error {
+	if err := os.Remove(cachePath()); err != nil {
+		if os.IsNotExist(err) {
+			return nil // no cache is fine
+		}
+		return fmt.Errorf("remove schema cache: %w", err)
+	}
+	return nil
+}

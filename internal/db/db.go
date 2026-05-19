@@ -81,6 +81,14 @@ func ActiveConnection() (Database, error) {
 	return active, nil
 }
 
+// ClearActiveConnection closes the in-memory active connection and sets it to nil.
+func ClearActiveConnection() {
+	if active != nil {
+		active.Close()
+		active = nil
+	}
+}
+
 // Connect establishes a new database connection from a DSN
 func Connect(dsn string) (Database, error) {
 	driver, err := detectDriver(dsn)

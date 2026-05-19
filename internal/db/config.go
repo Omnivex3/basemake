@@ -125,6 +125,18 @@ func SetActiveConnection(name string) error {
 	return cfg.Save()
 }
 
+// ClearActive clears the active connection and default DSN from config
+// but keeps saved connections intact.
+func ClearActive() error {
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+	cfg.ActiveConnection = ""
+	cfg.DefaultDSN = ""
+	return cfg.Save()
+}
+
 // maskConnDSN hides the password portion of a DSN for display.
 func maskConnDSN(dsn string) string {
 	// Try postgres://user:pass@host/db → postgres://user:***@host/db
