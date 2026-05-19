@@ -58,8 +58,13 @@ func (m *Model) addMessage(kind msgKind, content string) {
 // ── Bubbletea Messages ──
 
 type queryResultMsg struct {
-	content string
-	err     error
+	content  string
+	err      error
+	cols     []string
+	rows     [][]string
+	question string
+	sql      string
+	elapsed  float64
 }
 
 type connResultMsg struct {
@@ -86,6 +91,11 @@ type flashEndMsg struct{}
 // Startup animation tick
 type animCompleteMsg struct{}
 
+type explainResultMsg struct {
+	content string
+	err     error
+}
+
 // ── Model ──
 
 type Model struct {
@@ -109,6 +119,15 @@ type Model struct {
 	pendingQuestion string          // original NL question (for retry/exec)
 	chatResponse    string          // accumulated chat response in .ask mode
 	aiCtx           context.Context // context for AI stream
+
+	// Last query result (for .explain)
+	lastResult struct {
+		cols     []string
+		rows     [][]string
+		question string
+		sql      string
+		elapsed  float64
+	}
 
 	// Read-only guard
 	readonly bool
@@ -481,7 +500,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			(&m).addMessage(msgError, errorBubble(msg.err.Error()))
 		} else {
+			// Store last result for .explain
+			m.lastResult.cols = msg.cols
+			m.lastResult.rows = msg.rows
+			m.lastResult.question = msg.question
+			m.lastResult.sql = msg.sql
+			m.lastResult.elapsed = msg.elapsed
+
 			(&m).addMessage(msgResult, msg.content)
+
+			// Auto-explain small result sets (≤ 10 rows, only for NL queries)
+			if len(msg.rows) <= 10 && msg.rows != nil && msg.question != "" {
+				m.state = stateThinking
+				m.thinkingMsg = "Analyzing results..."
+				m.updateCursorStyle()
+				return m, m.explainLastResult()
+			}
 		}
 
 	case connResultMsg:
@@ -553,6 +587,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case flashEndMsg:
 		m.flashEnd = time.Time{} // clear flash
+		return m, nil
+
+	case explainResultMsg:
+		m.state = stateIdle
+		m.queryCancel = nil
+		m.updateCursorStyle()
+		if msg.err != nil {
+			(&m).addMessage(msgError, errorBubble(msg.err.Error()))
+		} else if msg.content != "" {
+			(&m).addMessage(msgBot, insightBubble(msg.content))
+		}
 		return m, nil
 
 	case animCompleteMsg:
@@ -679,6 +724,16 @@ func (m Model) handleDotCommand(input string) (tea.Model, tea.Cmd) {
 		(&m).addMessage(msgCmd, "  💬 Chat mode — type naturally, I'll answer without SQL")
 		(&m).addMessage(msgCmd, "  📝 Type .sql or press Esc to return to query mode")
 		return m, nil
+
+	case input == ".explain":
+		if m.lastResult.cols == nil {
+			(&m).addMessage(msgError, errorBubble("No query result to explain — run a query first"))
+			return m, nil
+		}
+		m.state = stateThinking
+		m.thinkingMsg = "Analyzing results..."
+		m.updateCursorStyle()
+		return m, m.explainLastResult()
 
 	case input == ".sql":
 		if m.state == stateChat {
@@ -877,7 +932,14 @@ func (m Model) execQueryWithCtx(ctx context.Context, sql string, isNL bool) tea.
 		b.WriteString(lipgloss.NewStyle().Foreground(DimText).Render("\n  💡 Wide results — try .export results.csv"))
 	}
 
-	return queryResultMsg{content: b.String()}
+	return queryResultMsg{
+		content:  b.String(),
+		cols:     cols,
+		rows:     resultRows,
+		question: "", // execQueryWithCtx doesn't track original question
+		sql:      sql,
+		elapsed:  elapsed,
+	}
 }
 
 // ── AI Streaming Methods ──
@@ -1062,10 +1124,68 @@ func (m Model) validateAndExecSQL(ctx context.Context, question, sqlStr string) 
 		b.WriteString(lipgloss.NewStyle().Foreground(DimText).Render("\n  💡 Wide results — try .export results.csv"))
 	}
 
-	return queryResultMsg{content: b.String()}
+	return queryResultMsg{
+		content:  b.String(),
+		cols:     cols,
+		rows:     resultRows,
+		question: question,
+		sql:      sqlStr,
+		elapsed:  elapsed,
+	}
 }
 
 // ── New Dot Command Methods ──
+
+// explainLastResult sends the last query result to the AI for plain-English analysis.
+func (m Model) explainLastResult() tea.Cmd {
+	return func() tea.Msg {
+		schema, _ := db.LoadSchema()
+		prompt := "You are a data analyst. Given the following query, its results, and the user's question, explain what the data means in plain English.\n\n"
+		if schema != nil {
+			prompt += "Database schema:\n" + schema.SchemaForPrompt() + "\n\n"
+		}
+
+		question := m.lastResult.question
+		if question == "" {
+			question = "(direct SQL)"
+		}
+		prompt += fmt.Sprintf("Question: %s\n\nSQL: %s\n\nResults (%.0fms, %d rows):\n",
+			question, m.lastResult.sql, m.lastResult.elapsed, len(m.lastResult.rows))
+
+		// Include column headers
+		for i, col := range m.lastResult.cols {
+			if i > 0 {
+				prompt += " | "
+			}
+			prompt += col
+		}
+		prompt += "\n"
+
+		// Include rows (cap at 10 for token efficiency)
+		maxRows := 10
+		if len(m.lastResult.rows) < maxRows {
+			maxRows = len(m.lastResult.rows)
+		}
+		for _, row := range m.lastResult.rows[:maxRows] {
+			for i, val := range row {
+				if i > 0 {
+					prompt += " | "
+				}
+				prompt += val
+			}
+			prompt += "\n"
+		}
+
+		prompt += "\nProvide a concise, insightful explanation. Highlight any patterns, anomalies, outliers, or notable observations. Use a friendly but professional tone."
+
+		result, err := ai.QuestionToSQL(context.Background(), prompt, "Explain these results")
+		if err != nil {
+			return explainResultMsg{err: fmt.Errorf("AI error: %w", err)}
+		}
+		// Strip any SQL the AI might accidentally generate — we only want prose
+		return explainResultMsg{content: result}
+	}
+}
 
 func (m Model) exportCmd(filename string) tea.Cmd {
 	return func() tea.Msg {
@@ -1702,6 +1822,7 @@ func helpBox() string {
 		"    " + HelpCmdStyle.Render(".saved") + "   " + HelpDescStyle.Render("List all saved queries"),
 		"    " + HelpCmdStyle.Render(".ask") + "     " + HelpDescStyle.Render("Free-form chat mode (no SQL)"),
 		"    " + HelpCmdStyle.Render(".sql") + "     " + HelpDescStyle.Render("Return to query mode (from .ask)"),
+		"    " + HelpCmdStyle.Render(".explain") + " " + HelpDescStyle.Render("Explain last query result in plain English"),
 		"",
 		HelpHeaderStyle.Render("  ⌨️  Keyboard"),
 		"",
@@ -1731,6 +1852,11 @@ func successBubble(msg string) string {
 	return "  " + lipgloss.NewStyle().Foreground(Green).Render("✅") + " " + lipgloss.NewStyle().Foreground(Text).Render(msg)
 }
 
+func insightBubble(msg string) string {
+	return "  " + lipgloss.NewStyle().Foreground(Green).Bold(true).Render("💡") + "\n" +
+		lipgloss.NewStyle().Foreground(Text).Padding(0, 2).Render(msg)
+}
+
 // ── Dot Command Autocomplete ──
 
 type dotCmd struct {
@@ -1742,8 +1868,10 @@ var dotCommands = []dotCmd{
 	{".help", "Show this help"},
 	{".quit", "Exit basemake"},
 	{".exit", "Exit basemake"},
+	{".saved", "List all saved queries"},
 	{".ask", "Free-form chat mode (no SQL generated)"},
 	{".sql", "Return to query mode (from .ask)"},
+	{".explain", "Explain last query result in plain English"},
 	{".tables", "List tables in the current database"},
 	{".schema", "Show full database schema"},
 	{".connect", "Connect to a database: .connect <dsn>"},
