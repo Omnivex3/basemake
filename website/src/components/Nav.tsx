@@ -36,7 +36,7 @@ export default function Nav() {
             </Link>
           ))}
           <Link to="/docs/quickstart">
-            <Button size="sm" className="ml-2 bg-[#FC0E22] hover:bg-[#d90c18] text-white border-none">Get Started</Button>
+            <Button size="sm" variant="destructive" className="ml-2 bg-[#FC0E22] hover:bg-[#d90c18] text-white">Get Started</Button>
           </Link>
         </nav>
       </div>

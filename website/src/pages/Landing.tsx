@@ -136,12 +136,12 @@ export default function Landing() {
 
             <motion.div variants={fadeUp} custom={3} className="flex flex-wrap gap-4 mb-12">
               <Link to="/docs/quickstart">
-                <Button size="lg" className="bg-[#FC0E22] hover:bg-[#d90c18] text-white shadow-lg shadow-[#FC0E22]/20">
+                <Button size="lg" variant="destructive" className="bg-[#FC0E22] hover:bg-[#d90c18] text-white shadow-lg shadow-[#FC0E22]/20">
                   Get Started
                 </Button>
               </Link>
               <Link to="/docs/quickstart">
-                <Button size="lg" variant="outline" className="border-white/10 hover:bg-white/5">View Docs</Button>
+                <Button size="lg" variant="outline" className="border-white/20 text-white/80 hover:bg-white/10 hover:text-white">View Docs</Button>
               </Link>
             </motion.div>
 
@@ -518,12 +518,12 @@ export default function Landing() {
             </motion.div>
             <motion.div variants={fadeUp} custom={1} className="flex flex-wrap justify-center gap-4">
               <Link to="/docs/quickstart">
-                <Button size="lg" className="bg-[#FC0E22] hover:bg-[#d90c18] text-white shadow-lg shadow-[#FC0E22]/20">
+                <Button size="lg" variant="destructive" className="bg-[#FC0E22] hover:bg-[#d90c18] text-white shadow-lg shadow-[#FC0E22]/20">
                   Get Started
                 </Button>
               </Link>
               <Link to="/pricing">
-                <Button size="lg" variant="outline" className="border-white/10 hover:bg-white/5">See Pricing</Button>
+                <Button size="lg" variant="outline" className="border-white/20 text-white/80 hover:bg-white/10 hover:text-white">See Pricing</Button>
               </Link>
             </motion.div>
             <motion.p variants={fadeUp} custom={2} className="mt-6 text-xs text-white/20">

@@ -575,6 +575,7 @@ function EnterpriseCTA() {
 
         <Button
           size="lg"
+          variant="destructive"
           className="shrink-0 bg-[#e63946] text-white shadow-lg shadow-[#e63946]/25 hover:bg-[#e63946]/90 hover:shadow-[#e63946]/35"
         >
           {enterprise.cta}
