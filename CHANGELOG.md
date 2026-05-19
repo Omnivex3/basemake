@@ -1,5 +1,139 @@
 # Changelog
 
+## v0.7.0 — License System, Pro/Team Feature Gates (2025-05-19)
+
+### 🔐 License System
+
+basemake now has an offline-verifiable license key system that gates Pro and Team features while keeping the Free tier fully functional.
+
+#### Key Format
+
+```
+bmk_<tier>_<base64(email)>_<hmac hex signature>
+```
+
+- **Tier**: `pro` or `team`
+- **Email**: base64-encoded customer email
+- **Signature**: HMAC-SHA256 of `"tier:email"` using a compiled-in secret key
+- **Tamper-proof**: any modification to tier, email, or signature invalidates the key
+
+#### Architecture
+
+**`internal/license/license.go`** — complete license lifecycle:
+
+| Function | Purpose | Used by |
+|----------|---------|---------|
+| `Generate(tier, email, duration)` | Create a signed key | License server (server-side) |
+| `Validate(key)` | Parse + verify signature + return license | CLI client (offline) |
+| `ParseKey(key)` | Extract tier/email without validation | Display before validation |
+| `License.HasFeature(feature)` | Check if tier allows a feature | Feature gates |
+
+**19 tests** covering:
+- Generate + validate round-trip (Pro and Team)
+- Invalid format rejection (empty, too short, wrong prefix, garbage)
+- Invalid tier rejection
+- Tampered signature detection
+- Tampered email detection
+- ParseKey success and failure
+- License.IsValid (perpetual — always valid)
+- HasFeature for all tier/feature combinations
+- Generate with invalid tier / empty email
+
+#### Feature Tiers
+
+| Feature | Free | Pro | Team |
+|---------|:----:|:---:|:----:|
+| Full TUI / REPL | ✅ | ✅ | ✅ |
+| NL→SQL (BYOK) | ✅ | ✅ | ✅ |
+| Query execution | ✅ | ✅ | ✅ |
+| EXPLAIN / analyze | ✅ | ✅ | ✅ |
+| Index recommendations (list) | ✅ | ✅ | ✅ |
+| `basemake check` (CI/CD gate) | ❌ | ✅ | ✅ |
+| `basemake budget` (policy engine) | ❌ | ✅ | ✅ |
+| `basemake watch` (query monitoring) | ❌ | ✅ | ✅ |
+| `basemake diff` (schema diff) | ❌ | ✅ | ✅ |
+| Index apply / dismiss | ❌ | ✅ | ✅ |
+| `basemake server` (team sync) | ❌ | ❌ | ✅ |
+
+#### Commands
+
+**`basemake license`** — show current license status
+```
+$ basemake license
+License: pro tier — activated for dev@example.com
+
+  Unlocked features:
+    ✓ check
+    ✓ budget
+    ✓ watch
+    ✓ diff
+    ✓ index-apply
+      server
+```
+
+**`basemake license <key>`** — activate a license key directly
+```
+$ basemake license bmk_pro_ZGV2QGV4YW1wbGUuY29t_f956590f...
+✓ License activated: pro — dev@example.com
+```
+
+**`basemake config set license_key <key>`** — alternative activation method
+
+#### Gate Behaviour
+
+When a Free user runs a Pro feature:
+```
+$ basemake check "SELECT * FROM users"
+Error: check requires a Pro license.
+  Run 'basemake config set license_key <key>' or 'basemake license <key>'
+  Get a license at https://basemake.dev/pricing
+```
+
+When a Pro user runs a Team feature:
+```
+$ basemake server start
+Error: server requires team tier.
+  Your current license is pro, which does not include this feature.
+```
+
+#### Implementation Details
+
+- **Offline verification**: keys are validated locally using HMAC — no phone-home required
+- **Perpetual keys (v1)**: no embedded expiry; expiry managed by key re-issuance
+- **Compiled-in secret**: shared secret in binary for offline verification; production uses per-customer secrets
+- **Graceful degradation**: Free tier is a complete, usable product — gates only block the Pro-specific features
+
+### 📋 Pricing Page
+
+`docs/pricing.md` — complete landing-page-ready pricing document:
+
+- **Free**: $0 — full TUI, NL→SQL, analysis, unlimited local use
+- **Pro**: $15/mo ($150/yr) — CI/CD gates, budgets, monitoring, schema diff, index apply
+- **Team**: $39/seat/mo — team server, shared AI proxy, RBAC, audit log
+- **Enterprise**: Custom — on-prem, SSO, dedicated support
+
+Includes comparison tables against DataGrip, TablePlus, DBeaver, and competitive positioning.
+
+### Files Changed
+
+**New:**
+- `internal/license/license.go` — License system (213 lines)
+- `internal/license/license_test.go` — 19 tests
+- `cmd/license.go` — `basemake license` command
+- `docs/pricing.md` — Pricing tiers page
+
+**Modified:**
+- `internal/config/config.go` — Added `LicenseKey` field
+- `cmd/config.go` — `license_key` in get/set/show/valid keys
+- `cmd/check.go` — Feature gate + license import
+- `cmd/budget.go` — Feature gate + license import
+- `cmd/diff.go` — Feature gate + license import
+- `cmd/watch.go` — Feature gate + license import
+- `cmd/index.go` — Feature gate (apply only) + license import
+- `cmd/server.go` — Feature gate + license import
+
+---
+
 ## v0.6.0 — Index Engine, Multi-Provider, TUI Overhaul (2025-05-19)
 
 ### 🔮 AI Provider System

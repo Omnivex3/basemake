@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DynamicKarabo/basemake/internal/license"
 	"github.com/DynamicKarabo/basemake/internal/server"
 	"github.com/spf13/cobra"
 )
@@ -56,6 +57,10 @@ var watchAddCmd = &cobra.Command{
   basemake watch add "SELECT * FROM users" --every 10m --label "User count check"`,
 
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if !requireLicense(license.FeatureWatch) {
+			os.Exit(1)
+			return nil
+		}
 		input := args[0]
 
 		// Resolve SQL — inline string or file path
