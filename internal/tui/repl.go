@@ -247,6 +247,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.vp.SetContent(buildViewportContent(&m))
 
+	case tea.MouseMsg:
+		if m.vpReady {
+			m.vp.Update(msg)
+			return m, nil
+		}
+
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c":
