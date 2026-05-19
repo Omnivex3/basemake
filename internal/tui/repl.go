@@ -161,6 +161,10 @@ type Model struct {
 	// Startup phase guard: suppress auto-scroll until introspection/animation
 	// completes so the ASCII logo stays visible on launch.
 	startupDone bool
+
+	// Chat mode flag: persists through thinking/idle transitions so
+	// aiStreamEndMsg knows to keep the response as chat, not SQL.
+	inChat bool
 }
 
 // ── Constructor ──
@@ -308,6 +312,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "escape":
 			if m.state == stateChat {
 				m.state = stateIdle
+				m.inChat = false
 				m.updateCursorStyle()
 				(&m).addMessage(msgCmd, "  🔤 Back to query mode — type a question or SQL")
 				return m, nil
@@ -552,7 +557,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.startupDone = true
 
 	case aiTokenMsg:
-		if m.state == stateChat {
+		if m.inChat {
 			m.chatResponse += msg.token
 		} else {
 			m.generatingSQL += msg.token
@@ -562,7 +567,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case aiStreamEndMsg:
 		// Chat mode: add response as bot message and return to chat
-		if m.state == stateChat {
+		if m.inChat {
 			response := m.chatResponse
 			m.chatResponse = ""
 			m.queryCancel = nil
@@ -720,6 +725,7 @@ func (m Model) handleDotCommand(input string) (tea.Model, tea.Cmd) {
 
 	case input == ".ask":
 		m.state = stateChat
+		m.inChat = true
 		m.updateCursorStyle()
 		(&m).addMessage(msgCmd, "  💬 Chat mode — type naturally, I'll answer without SQL")
 		(&m).addMessage(msgCmd, "  📝 Type .sql or press Esc to return to query mode")
@@ -738,6 +744,7 @@ func (m Model) handleDotCommand(input string) (tea.Model, tea.Cmd) {
 	case input == ".sql":
 		if m.state == stateChat {
 			m.state = stateIdle
+			m.inChat = false
 			m.updateCursorStyle()
 			(&m).addMessage(msgCmd, "  🔤 Back to query mode — type a question or SQL")
 		}
@@ -1551,7 +1558,7 @@ func (m Model) View() string {
 	// Flash prompt red briefly when write blocked in read-only mode
 	if !m.flashEnd.IsZero() {
 		prompt = lipgloss.NewStyle().Foreground(Red).Bold(true).Render("  ⛔ You > ")
-	} else if m.state == stateChat {
+	} else if m.inChat {
 		prompt = lipgloss.NewStyle().Foreground(Green).Bold(true).Render("  💬 You > ")
 	}
 	b.WriteString(prompt + m.input.View())
@@ -1582,7 +1589,7 @@ func (m Model) View() string {
 		ro = "  │  🔒 read-only"
 	}
 	modeTag := ""
-	if m.state == stateChat {
+	if m.inChat {
 		modeTag = "  │  💬 CHAT"
 	}
 	statusBar := fmt.Sprintf("%s v%s  │  %s %s  │  %s%s%s",
