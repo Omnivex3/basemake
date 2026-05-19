@@ -368,6 +368,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err == nil {
 				m.conn = conn
 			}
+			// Refresh the startup screen so it reflects the new connection
+			if len(m.messages) > 0 {
+				m.messages[0].content = fullStartupView(m.conn, m.aiLabel, m.version)
+			}
+			// Update input placeholder now that we're connected
+			m.input.Placeholder = "Type .help for commands  ·  ask your question or enter SQL"
 			m.messages = append(m.messages, message{kind: msgCmd, content: successBubble(msg.name)})
 			// Auto-introspect and cache schema after connect so NL queries work immediately
 			m.state = stateThinking

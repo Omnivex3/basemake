@@ -6,6 +6,7 @@
 - **History lazy init race** — `Record()`, `Recent()`, and `List()` each had a racy `if db == nil { Init() }` pattern. Wrapped in `sync.Mutex` via `ensureDB()` — safe for concurrent access from server or future parallel callers.
 - **Server goroutine leak** — `scheduleWatches()` ran an infinite `for range ticker.C` with no shutdown mechanism. Added `done chan struct{}` + `Shutdown()` method, refactored to `select` for clean exit.
 - **MySQL EXPLAIN ANALYZE DML risk** — Unlike PostgreSQL (which wraps EXPLAIN in a transaction with rollback), MySQL's `Explain()` ran bare `EXPLAIN ANALYZE` which actually executes DML. Wrapped in `BeginTx` + `defer tx.Rollback()`.
+- **TUI status bar not refreshing after `.connect`** — `connResultMsg` updated `m.conn` but never refreshed the startup screen (`m.messages[0].content`) or input placeholder. After `.connect`, the top still showed "Not connected" until exit/re-enter. Fixed by re-rendering `fullStartupView()` and updating the placeholder on successful connect.
 
 ## Internal
 
