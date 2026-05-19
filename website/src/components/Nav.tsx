@@ -35,9 +35,9 @@ export default function Nav() {
               {l.label}
             </Link>
           ))}
-          <a href="#download">
-            <Button size="sm" className="ml-2">Download</Button>
-          </a>
+          <Link to="/docs/quickstart">
+            <Button size="sm" className="ml-2 bg-[#FC0E22] hover:bg-[#d90c18] text-white border-none">Get Started</Button>
+          </Link>
         </nav>
       </div>
     </header>

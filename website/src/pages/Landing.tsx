@@ -135,9 +135,11 @@ export default function Landing() {
             </motion.p>
 
             <motion.div variants={fadeUp} custom={3} className="flex flex-wrap gap-4 mb-12">
-              <Button size="lg" className="bg-[#e63946] hover:bg-[#d32f3f] text-white shadow-lg shadow-[#e63946]/20">
-                Download Now
-              </Button>
+              <Link to="/docs/quickstart">
+                <Button size="lg" className="bg-[#FC0E22] hover:bg-[#d90c18] text-white shadow-lg shadow-[#FC0E22]/20">
+                  Get Started
+                </Button>
+              </Link>
               <Link to="/docs/quickstart">
                 <Button size="lg" variant="outline" className="border-white/10 hover:bg-white/5">View Docs</Button>
               </Link>
@@ -515,9 +517,11 @@ export default function Landing() {
               </p>
             </motion.div>
             <motion.div variants={fadeUp} custom={1} className="flex flex-wrap justify-center gap-4">
-              <Button size="lg" className="bg-[#e63946] hover:bg-[#d32f3f] text-white shadow-lg shadow-[#e63946]/20">
-                Download basemake
-              </Button>
+              <Link to="/docs/quickstart">
+                <Button size="lg" className="bg-[#FC0E22] hover:bg-[#d90c18] text-white shadow-lg shadow-[#FC0E22]/20">
+                  Get Started
+                </Button>
+              </Link>
               <Link to="/pricing">
                 <Button size="lg" variant="outline" className="border-white/10 hover:bg-white/5">See Pricing</Button>
               </Link>

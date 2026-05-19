@@ -5,7 +5,7 @@ const footerLinks = {
     { label: "Features", to: "/#features" },
     { label: "Pricing", to: "/pricing" },
     { label: "Docs", to: "/docs/quickstart" },
-    { label: "Changelog", to: "https://github.com/DynamicKarabo/basemake/releases" },
+    { label: "Changelog", to: "/docs/changelog" },
   ],
   Docs: [
     { label: "Quickstart", to: "/docs/quickstart" },
@@ -15,7 +15,6 @@ const footerLinks = {
     { label: "FAQ", to: "/docs/faq" },
   ],
   Company: [
-    { label: "GitHub", to: "https://github.com/DynamicKarabo/basemake" },
     { label: "License", to: "/docs/licensing" },
   ],
 }
