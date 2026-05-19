@@ -1910,12 +1910,26 @@ func fullStartupView(conn db.Database, aiLabel, version string) string {
 	// Use the spec startup screen layout
 	screen := StartupScreen(logoASCII, version, provider, model, dbName, connected)
 
-	// Add contextual hint
-	var hint string
+	// Add contextual hint + stale recs alert
+	var hints []string
 	if !connected {
-		hint = "\n\n  💡 Not connected to a database.\n     Use .connect postgres://user@localhost/mydb or run basemake init"
+		hints = append(hints, "💡 Not connected to a database.\n     Use .connect postgres://user@localhost/mydb or run basemake init")
 	} else if _, err := ai.SelectedProvider(); err != nil {
-		hint = "\n\n  💡 AI queries need an API key.\n     Run 'basemake init' to set one up, or use raw SQL queries"
+		hints = append(hints, "💡 AI queries need an API key.\n     Run 'basemake init' to set one up, or use raw SQL queries")
+	}
+
+	// Check for stale index recommendations
+	if store, err := analyze.LoadRecs(); err == nil {
+		if stale := store.StaleReport(30); len(stale) > 0 {
+			hints = append(hints, fmt.Sprintf("⏰ %d index recommendation(s) are 30+ days old — run '.index list' to review", len(stale)))
+		} else if stale := store.StaleReport(7); len(stale) > 0 {
+			hints = append(hints, fmt.Sprintf("⏰ %d index recommendation(s) are 7+ days old — run '.index list' to review", len(stale)))
+		}
+	}
+
+	hint := ""
+	if len(hints) > 0 {
+		hint = "\n\n" + strings.Join(hints, "\n\n")
 	}
 
 	// Wrap in the TUI welcome
