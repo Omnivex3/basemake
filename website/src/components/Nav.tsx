@@ -16,7 +16,7 @@ export default function Nav() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         <Link to="/" className="flex items-center">
           <span className="text-lg font-semibold tracking-tight">
-            <span className="text-[#FC0E22]">b</span>asemake
+            <span className="text-[#ff3131]">b</span>asemake
           </span>
         </Link>
 
@@ -36,7 +36,7 @@ export default function Nav() {
             </Link>
           ))}
           <Link to="/docs/quickstart">
-            <Button size="sm" variant="destructive" className="ml-2 bg-[#FC0E22] hover:bg-[#d90c18] text-white">Get Started</Button>
+            <Button size="sm" variant="destructive" className="ml-2 bg-[#ff3131] hover:bg-[#d90c18] text-white">Get Started</Button>
           </Link>
         </nav>
       </div>

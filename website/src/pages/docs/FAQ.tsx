@@ -19,7 +19,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded-md border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 text-sm font-mono text-[#e63946]">
+    <code className="rounded-md border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 text-sm font-mono text-[#ff3131]">
       {children}
     </code>
   )
@@ -30,7 +30,7 @@ function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: strin
     <div className="group relative mb-6 overflow-hidden rounded-xl border border-white/[0.06] bg-black/60 backdrop-blur-sm">
       <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
         <div className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#ff3131]/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
         </div>
@@ -90,7 +90,7 @@ export default function FAQ() {
     <div className="pb-24">
       {/* Header */}
       <div className="mb-10">
-        <Badge variant="outline" className="mb-3 border-[#e63946]/30 text-[#e63946] text-xs tracking-wide uppercase">
+        <Badge variant="outline" className="mb-3 border-[#ff3131]/30 text-[#ff3131] text-xs tracking-wide uppercase">
           Help
         </Badge>
         <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
@@ -143,7 +143,7 @@ export default function FAQ() {
           </P>
           <P>
             See the{' '}
-            <Link to="/docs/licensing" className="text-[#e63946] hover:underline">
+            <Link to="/docs/licensing" className="text-[#ff3131] hover:underline">
               Licensing page
             </Link>{' '}
             for pricing details.
@@ -164,7 +164,7 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
             This means you use your existing API credits, you can switch providers at
             any time, and with Ollama you can run everything offline with zero API costs.
             See the{' '}
-            <Link to="/docs/ai-providers" className="text-[#e63946] hover:underline">
+            <Link to="/docs/ai-providers" className="text-[#ff3131] hover:underline">
               AI Providers page
             </Link>{' '}
             for details.
@@ -192,7 +192,7 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
           <P>
             The Team Server includes role-based access control and full audit logging
             for compliance requirements. See the{' '}
-            <Link to="/docs/team-server" className="text-[#e63946] hover:underline">
+            <Link to="/docs/team-server" className="text-[#ff3131] hover:underline">
               Team Server page
             </Link>{' '}
             for details.
@@ -202,7 +202,7 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
         <FAQItem question="Does the AI proxy actually save money?">
           <P>
             Yes. Teams using the{' '}
-            <Link to="/docs/team-server" className="text-[#e63946] hover:underline">
+            <Link to="/docs/team-server" className="text-[#ff3131] hover:underline">
               Team Server
             </Link>{' '}
             typically see <strong className="text-white">40–60% reduction</strong> in AI
@@ -210,15 +210,15 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
           </P>
           <ul className="mb-4 space-y-2">
             <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e63946]/60" />
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
               <span><strong className="text-white">Semantic caching:</strong> When one person asks "show me monthly revenue," the result is cached. If a colleague asks "what's our monthly revenue trend?" they get the cached result — no new API call.</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e63946]/60" />
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
               <span><strong className="text-white">Single API key:</strong> One key for the whole team means you benefit from provider tier discounts and consolidated billing.</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e63946]/60" />
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
               <span><strong className="text-white">Rate limiting:</strong> Prevents a single user from accidentally running up the bill.</span>
             </li>
           </ul>
@@ -237,19 +237,19 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
           </P>
           <ul className="mb-4 space-y-2">
             <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e63946]/60" />
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
               <span><strong className="text-white">Natural language first:</strong> Describe what you want in English — basemake generates the SQL. You don't need to know table names, column types, or JOIN syntax.</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e63946]/60" />
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
               <span><strong className="text-white">CLI-native:</strong> Designed for the terminal, not a GUI. Perfect for SSH sessions, CI/CD pipelines, and developer workflows.</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e63946]/60" />
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
               <span><strong className="text-white">Built-in performance analysis:</strong> Every query comes with execution insights — no separate EXPLAIN step needed.</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e63946]/60" />
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
               <span><strong className="text-white">CI/CD gates:</strong> basemake check slots into your pipeline to catch bad SQL before it ships.</span>
             </li>
           </ul>
@@ -285,7 +285,7 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
             basemake auto-detects each database's dialect, so the same natural language
             question generates correct SQL for your specific database. Need support for
             another database?{' '}
-            <Link to="https://github.com/DynamicKarabo/basemake/issues" className="text-[#e63946] hover:underline">
+            <Link to="https://github.com/DynamicKarabo/basemake/issues" className="text-[#ff3131] hover:underline">
               Open an issue
             </Link>
             .
@@ -325,7 +325,7 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
           </ul>
           <P>
             See the{' '}
-            <Link to="/docs/ai-providers" className="text-[#e63946] hover:underline">
+            <Link to="/docs/ai-providers" className="text-[#ff3131] hover:underline">
               AI Providers page
             </Link>{' '}
             for detailed privacy information per provider.
@@ -338,25 +338,25 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
           </P>
           <ul className="mb-4 space-y-2">
             <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e63946]/60" />
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
               <span><strong className="text-white">GitHub Issues</strong> — report bugs
               and request features at{' '}
-              <Link to="https://github.com/DynamicKarabo/basemake/issues" className="text-[#e63946] hover:underline">
+              <Link to="https://github.com/DynamicKarabo/basemake/issues" className="text-[#ff3131] hover:underline">
                 github.com/DynamicKarabo/basemake
               </Link></span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e63946]/60" />
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
               <span><strong className="text-white">Documentation</strong> — this site
               covers Quickstart, Commands, Configuration, and more.</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e63946]/60" />
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
               <span><strong className="text-white">Pro / Team</strong> — priority email
               support with guaranteed response times.</span>
             </li>
             <li className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e63946]/60" />
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
               <span><strong className="text-white">basemake doctor</strong> — built-in
               diagnostics that can help you troubleshoot common issues.</span>
             </li>
@@ -375,7 +375,7 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
         <CardContent className="text-sm text-white/60">
           <P>
             Check out the other documentation pages or{' '}
-            <Link to="https://github.com/DynamicKarabo/basemake/issues" className="text-[#e63946] hover:underline">
+            <Link to="https://github.com/DynamicKarabo/basemake/issues" className="text-[#ff3131] hover:underline">
               open a GitHub issue
             </Link>
             . We're actively building basemake and love hearing from users.

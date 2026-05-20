@@ -36,7 +36,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded-md border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 text-sm font-mono text-[#e63946]">
+    <code className="rounded-md border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 text-sm font-mono text-[#ff3131]">
       {children}
     </code>
   )
@@ -47,7 +47,7 @@ function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: strin
     <div className="group relative mb-6 overflow-hidden rounded-xl border border-white/[0.06] bg-black/60 backdrop-blur-sm">
       <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
         <div className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#ff3131]/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
         </div>
@@ -73,7 +73,7 @@ function UL({ children }: { children: React.ReactNode }) {
 function LI({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2 leading-relaxed">
-      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e63946]/60" />
+      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
       <span>{children}</span>
     </li>
   )
@@ -95,7 +95,7 @@ export default function Quickstart() {
     <div className="pb-24">
       {/* Header */}
       <div className="mb-10">
-        <Badge variant="outline" className="mb-3 border-[#e63946]/30 text-[#e63946] text-xs tracking-wide uppercase">
+        <Badge variant="outline" className="mb-3 border-[#ff3131]/30 text-[#ff3131] text-xs tracking-wide uppercase">
           Getting Started
         </Badge>
         <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
@@ -114,7 +114,7 @@ export default function Quickstart() {
       <P>
         basemake ships as a single static binary — no runtime dependencies, no Node.js, no
         Python runtime. Download the latest release for your platform from the{' '}
-        <Link to="https://github.com/DynamicKarabo/basemake/releases" className="text-[#e63946] hover:underline">
+        <Link to="https://github.com/DynamicKarabo/basemake/releases" className="text-[#ff3131] hover:underline">
           releases page
         </Link>
         , make it executable, and move it into your PATH.
@@ -195,7 +195,7 @@ basemake connect sqlite:///path/to/db.sqlite`}
       <P>
         basemake supports PostgreSQL, MySQL, and SQLite. Wire-compatible databases like
         and ClickHouse. See the full list in{' '}
-        <Link to="/docs/configuration" className="text-[#e63946] hover:underline">Configuration</Link>.
+        <Link to="/docs/configuration" className="text-[#ff3131] hover:underline">Configuration</Link>.
       </P>
 
       {/* 4. First Query */}
@@ -262,7 +262,7 @@ basemake connect sqlite:///path/to/db.sqlite`}
       <P>
         Inside the REPL you can use dot-commands like <Code>.connect</Code>,{' '}
         <Code>.tables</Code>, <Code>.schema</Code>, and <Code>.help</Code>. See the{' '}
-        <Link to="/docs/commands" className="text-[#e63946] hover:underline">Commands Reference</Link> for the full list.
+        <Link to="/docs/commands" className="text-[#ff3131] hover:underline">Commands Reference</Link> for the full list.
       </P>
 
       {/* Next steps */}
@@ -275,19 +275,19 @@ basemake connect sqlite:///path/to/db.sqlite`}
         <CardContent className="space-y-3 text-sm text-white/60">
           <p>
             🚀 <strong className="text-white">Set up CI/CD</strong> —{' '}
-            <Link to="/docs/ci-cd" className="text-[#e63946] hover:underline">
+            <Link to="/docs/ci-cd" className="text-[#ff3131] hover:underline">
               Integrate basemake check into your pipeline
             </Link>
           </p>
           <p>
             🔑 <strong className="text-white">Configure AI providers</strong> —{' '}
-            <Link to="/docs/ai-providers" className="text-[#e63946] hover:underline">
+            <Link to="/docs/ai-providers" className="text-[#ff3131] hover:underline">
               Bring your own API key or use local models
             </Link>
           </p>
           <p>
             👥 <strong className="text-white">Team Server</strong> —{' '}
-            <Link to="/docs/team-server" className="text-[#e63946] hover:underline">
+            <Link to="/docs/team-server" className="text-[#ff3131] hover:underline">
               Share queries and AI credits with your team
             </Link>
           </p>

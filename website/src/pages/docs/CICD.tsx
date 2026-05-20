@@ -36,7 +36,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Code({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <code className={`rounded-md border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 text-sm font-mono text-[#e63946] ${className}`}>
+    <code className={`rounded-md border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 text-sm font-mono text-[#ff3131] ${className}`}>
       {children}
     </code>
   )
@@ -47,7 +47,7 @@ function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: strin
     <div className="group relative mb-6 overflow-hidden rounded-xl border border-white/[0.06] bg-black/60 backdrop-blur-sm">
       <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
         <div className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
+          <span className="h-2.5 w-2.5 rounded-full bg-[#ff3131]/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
         </div>
@@ -73,7 +73,7 @@ function UL({ children }: { children: React.ReactNode }) {
 function LI({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex items-start gap-2 leading-relaxed">
-      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e63946]/60" />
+      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
       <span>{children}</span>
     </li>
   )
@@ -103,7 +103,7 @@ export default function CICD() {
     <div className="pb-24">
       {/* Header */}
       <div className="mb-10">
-        <Badge variant="outline" className="mb-3 border-[#e63946]/30 text-[#e63946] text-xs tracking-wide uppercase">
+        <Badge variant="outline" className="mb-3 border-[#ff3131]/30 text-[#ff3131] text-xs tracking-wide uppercase">
           Integration
         </Badge>
         <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
@@ -148,7 +148,7 @@ export default function CICD() {
                   <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Queries exceed latency or cost budget</td>
                 </tr>
                 <tr>
-                  <td className="border-b border-white/[0.04] px-4 py-3"><Code className="text-red-400">2</Code></td>
+                  <td className="border-b border-white/[0.04] px-4 py-3"><Code className="text-[#ff3131]">2</Code></td>
                   <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Dangerous</td>
                   <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Dangerous patterns (full table scans, Cartesian joins, etc.)</td>
                 </tr>

@@ -24,8 +24,8 @@ const stagger = {
 function Label({ children }: { children: string }) {
   return (
     <div className="flex items-center gap-3 mb-6">
-      <span className="h-px w-8 bg-[#e63946]" />
-      <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[#e63946]">{children}</span>
+      <span className="h-px w-8 bg-[#ff3131]" />
+      <span className="text-xs font-semibold tracking-[0.15em] uppercase text-[#ff3131]">{children}</span>
     </div>
   )
 }
@@ -107,8 +107,8 @@ export default function Landing() {
         <div className="relative mx-auto max-w-6xl px-6 py-24 w-full">
           <motion.div initial="hidden" animate="visible" className="max-w-3xl">
             <motion.div variants={fadeUp} custom={0}>
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#e63946]/30 bg-[#e63946]/5 px-4 py-1.5 text-xs font-medium text-[#e63946] mb-8">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#e63946] animate-pulse" />
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#ff3131]/30 bg-[#ff3131]/5 px-4 py-1.5 text-xs font-medium text-[#ff3131] mb-8">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#ff3131] animate-pulse" />
                 v0.7.1 — just shipped
               </span>
             </motion.div>
@@ -119,7 +119,7 @@ export default function Landing() {
               className="text-5xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] mb-6"
             >
               Talk to your database{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#e63946] to-[#ff6b6b]">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff3131] to-[#ff6b6b]">
                 in plain English
               </span>
               .
@@ -136,7 +136,7 @@ export default function Landing() {
 
             <motion.div variants={fadeUp} custom={3} className="flex flex-wrap gap-4 mb-12">
               <Link to="/docs/quickstart">
-                <Button size="lg" variant="destructive" className="bg-[#FC0E22] hover:bg-[#d90c18] text-white shadow-lg shadow-[#FC0E22]/20">
+                <Button size="lg" variant="destructive" className="bg-[#ff3131] hover:bg-[#d90c18] text-white shadow-lg shadow-[#ff3131]/20">
                   Get Started
                 </Button>
               </Link>
@@ -169,7 +169,7 @@ export default function Landing() {
             className="absolute -right-20 top-1/2 -translate-y-1/2 hidden xl:block"
           >
             <div className="relative">
-              <div className="absolute inset-0 bg-[#e63946]/5 blur-3xl rounded-full" />
+              <div className="absolute inset-0 bg-[#ff3131]/5 blur-3xl rounded-full" />
               <svg width="320" height="320" viewBox="0 0 320 320" fill="none" className="relative">
                 {/* 3D database icon — isometric cylinders */}
                 <ellipse cx="160" cy="100" rx="90" ry="30" stroke="rgba(230,57,70,0.3)" strokeWidth="1" />
@@ -184,12 +184,12 @@ export default function Landing() {
                 <path d="M70 160v60" stroke="rgba(230,57,70,0.4)" strokeWidth="1.5" />
                 <path d="M250 160v60" stroke="rgba(230,57,70,0.4)" strokeWidth="1.5" />
                 {/* data flow dots */}
-                <circle cx="160" cy="130" r="2" fill="#e63946" opacity="0.6" />
-                <circle cx="140" cy="140" r="1.5" fill="#e63946" opacity="0.4" />
-                <circle cx="180" cy="140" r="1.5" fill="#e63946" opacity="0.4" />
-                <circle cx="160" cy="190" r="2" fill="#e63946" opacity="0.6" />
-                <circle cx="145" cy="200" r="1.5" fill="#e63946" opacity="0.4" />
-                <circle cx="175" cy="200" r="1.5" fill="#e63946" opacity="0.4" />
+                <circle cx="160" cy="130" r="2" fill="#ff3131" opacity="0.6" />
+                <circle cx="140" cy="140" r="1.5" fill="#ff3131" opacity="0.4" />
+                <circle cx="180" cy="140" r="1.5" fill="#ff3131" opacity="0.4" />
+                <circle cx="160" cy="190" r="2" fill="#ff3131" opacity="0.6" />
+                <circle cx="145" cy="200" r="1.5" fill="#ff3131" opacity="0.4" />
+                <circle cx="175" cy="200" r="1.5" fill="#ff3131" opacity="0.4" />
               </svg>
             </div>
           </motion.div>
@@ -246,8 +246,8 @@ export default function Landing() {
               return (
                 <motion.div key={i} variants={fadeUp} custom={i}>
                   <TiltCard tiltDegree={5} glare={false}>
-                    <div className="group relative rounded-2xl border border-white/[0.06] bg-white/[0.02] p-7 h-full transition-all duration-300 hover:border-[#e63946]/20 hover:bg-white/[0.04]">
-                      <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-[#e63946] group-hover:border-[#e63946]/20 group-hover:bg-[#e63946]/5 transition-colors">
+                    <div className="group relative rounded-2xl border border-white/[0.06] bg-white/[0.02] p-7 h-full transition-all duration-300 hover:border-[#ff3131]/20 hover:bg-white/[0.04]">
+                      <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-[#ff3131] group-hover:border-[#ff3131]/20 group-hover:bg-[#ff3131]/5 transition-colors">
                         <Icon className="h-5 w-5" />
                       </div>
                       <h3 className="text-base font-semibold mb-2">{f.title}</h3>
@@ -320,7 +320,7 @@ export default function Landing() {
                       <span className="absolute -top-3 -right-3 text-5xl font-bold text-white/[0.03] select-none">
                         {item.step}
                       </span>
-                      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-[#e63946]">
+                      <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-[#ff3131]">
                         <Icon className="h-5 w-5" />
                       </div>
                       <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
@@ -409,7 +409,7 @@ export default function Landing() {
                   <ul className="space-y-3">
                     {group.points.map((p, j) => (
                       <li key={j} className="flex items-start gap-3 text-sm text-white/40">
-                        <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#e63946]/60" />
+                        <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
                         {p}
                       </li>
                     ))}
@@ -521,7 +521,7 @@ export default function Landing() {
             </motion.div>
             <motion.div variants={fadeUp} custom={1} className="flex flex-wrap justify-center gap-4">
               <Link to="/docs/quickstart">
-                <Button size="lg" variant="destructive" className="bg-[#FC0E22] hover:bg-[#d90c18] text-white shadow-lg shadow-[#FC0E22]/20">
+                <Button size="lg" variant="destructive" className="bg-[#ff3131] hover:bg-[#d90c18] text-white shadow-lg shadow-[#ff3131]/20">
                   Get Started
                 </Button>
               </Link>

@@ -63,8 +63,8 @@ const scaleIn: import('framer-motion').Variants = {
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <motion.div variants={fadeUp} className="mb-6 flex items-center gap-3">
-      <span className="h-px w-8 bg-[#e63946]" />
-      <span className="text-[11px] font-semibold tracking-[0.2em] text-[#e63946] uppercase">
+      <span className="h-px w-8 bg-[#ff3131]" />
+      <span className="text-[11px] font-semibold tracking-[0.2em] text-[#ff3131] uppercase">
         {children}
       </span>
     </motion.div>
@@ -425,14 +425,14 @@ function PricingCard({ plan, annual }: { plan: Plan; annual: boolean }) {
       variants={scaleIn}
       className={`relative flex flex-col rounded-2xl border transition-all duration-300 ${
         plan.highlighted
-          ? 'border-[#e63946]/40 bg-[#e63946]/[0.03] shadow-xl shadow-[#e63946]/10 scale-[1.02] md:scale-105 z-10'
+          ? 'border-[#ff3131]/40 bg-[#ff3131]/[0.03] shadow-xl shadow-[#ff3131]/10 scale-[1.02] md:scale-105 z-10'
           : 'border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12]'
       }`}
     >
       {/* Badge */}
       {plan.badge && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <Badge variant="destructive" className="bg-[#e63946] text-white border-none px-4 py-1 text-[11px] font-semibold tracking-wide uppercase shadow-lg shadow-[#e63946]/30">
+          <Badge variant="destructive" className="bg-[#ff3131] text-white border-none px-4 py-1 text-[11px] font-semibold tracking-wide uppercase shadow-lg shadow-[#ff3131]/30">
             {plan.badge}
           </Badge>
         </div>
@@ -440,7 +440,7 @@ function PricingCard({ plan, annual }: { plan: Plan; annual: boolean }) {
 
       {/* Header */}
       <div className={`px-6 pt-8 pb-6 ${plan.highlighted ? 'pt-10' : ''}`}>
-        <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#e63946]/10 text-[#e63946] ring-1 ring-[#e63946]/20">
+        <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#ff3131]/10 text-[#ff3131] ring-1 ring-[#ff3131]/20">
           <Icon className="h-5 w-5" />
         </div>
         <CardTitle className="text-xl font-bold text-white">{plan.name}</CardTitle>
@@ -516,7 +516,7 @@ function PricingCard({ plan, annual }: { plan: Plan; annual: boolean }) {
           to={plan.ctaLink}
           className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg px-8 text-base font-semibold transition-all ${
             plan.highlighted
-              ? 'bg-[#e63946] text-white shadow-lg shadow-[#e63946]/25 hover:bg-[#e63946]/90 hover:shadow-[#e63946]/35'
+              ? 'bg-[#ff3131] text-white shadow-lg shadow-[#ff3131]/25 hover:bg-[#ff3131]/90 hover:shadow-[#ff3131]/35'
               : 'border border-white/10 text-white/70 hover:bg-white/5 hover:text-white'
           }`}
         >
@@ -549,10 +549,10 @@ function EnterpriseCTA() {
           backgroundSize: '40px 40px',
         }}
       />
-      <div className="pointer-events-none absolute right-0 top-0 -z-10 h-72 w-72 rounded-full bg-[#e63946]/5 blur-[100px]" />
+      <div className="pointer-events-none absolute right-0 top-0 -z-10 h-72 w-72 rounded-full bg-[#ff3131]/5 blur-[100px]" />
 
       <div className="flex flex-col items-center gap-8 px-8 py-12 text-center lg:flex-row lg:text-left">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#e63946]/10 text-[#e63946] ring-1 ring-[#e63946]/20">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#ff3131]/10 text-[#ff3131] ring-1 ring-[#ff3131]/20">
           <Building2 className="h-7 w-7" />
         </div>
 
@@ -566,7 +566,7 @@ function EnterpriseCTA() {
                 key={feat}
                 className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.06] bg-white/[0.03] px-3 py-1 text-xs text-white/50"
               >
-                <Shield className="h-3 w-3 text-[#e63946]/60" />
+                <Shield className="h-3 w-3 text-[#ff3131]/60" />
                 {feat}
               </span>
             ))}
@@ -576,7 +576,7 @@ function EnterpriseCTA() {
         <Button
           size="lg"
           variant="destructive"
-          className="shrink-0 bg-[#e63946] text-white shadow-lg shadow-[#e63946]/25 hover:bg-[#e63946]/90 hover:shadow-[#e63946]/35"
+          className="shrink-0 bg-[#ff3131] text-white shadow-lg shadow-[#ff3131]/25 hover:bg-[#ff3131]/90 hover:shadow-[#ff3131]/35"
         >
           {enterprise.cta}
           <ArrowRight className="ml-1.5 h-4 w-4" />
@@ -622,8 +622,8 @@ export default function Pricing() {
           }}
         />
         {/* Glow */}
-        <div className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-[#e63946]/5 blur-[120px]" />
-        <div className="pointer-events-none absolute -bottom-40 right-0 -z-10 h-[400px] w-[600px] rounded-full bg-[#e63946]/3 blur-[100px]" />
+        <div className="pointer-events-none absolute -top-40 left-1/2 -z-10 h-[600px] w-[800px] -translate-x-1/2 rounded-full bg-[#ff3131]/5 blur-[120px]" />
+        <div className="pointer-events-none absolute -bottom-40 right-0 -z-10 h-[400px] w-[600px] rounded-full bg-[#ff3131]/3 blur-[100px]" />
 
         <div className="mx-auto max-w-7xl px-6 pb-16 pt-20 md:pt-28 lg:pb-20">
           <motion.div
@@ -639,7 +639,7 @@ export default function Pricing() {
               className="mt-2 text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl"
             >
               Pricing that scales with{' '}
-              <span className="text-[#e63946]">your team.</span>
+              <span className="text-[#ff3131]">your team.</span>
             </motion.h1>
 
             <motion.p
@@ -666,7 +666,7 @@ export default function Pricing() {
                 onClick={() => setAnnual(!annual)}
                 className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full border transition-colors ${
                   annual
-                    ? 'border-[#e63946]/40 bg-[#e63946]/20'
+                    ? 'border-[#ff3131]/40 bg-[#ff3131]/20'
                     : 'border-white/[0.12] bg-white/[0.04]'
                 }`}
                 role="switch"
@@ -1020,7 +1020,7 @@ export default function Pricing() {
             backgroundSize: '40px 40px',
           }}
         />
-        <div className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e63946]/8 blur-[120px]" />
+        <div className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#ff3131]/8 blur-[120px]" />
 
         <motion.div
           initial="hidden"

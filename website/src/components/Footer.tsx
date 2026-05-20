@@ -27,7 +27,7 @@ export default function Footer() {
           <div>
             <Link to="/" className="flex items-center mb-4">
               <span className="text-base font-semibold">
-                <span className="text-[#FC0E22]">b</span>asemake
+                <span className="text-[#ff3131]">b</span>asemake
               </span>
             </Link>
             <p className="text-sm text-muted-foreground max-w-xs">
