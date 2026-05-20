@@ -17,6 +17,7 @@ type PlanNode struct {
 	IndexName    string     `json:"Index Name"`
 	IndexCond    string     `json:"Index Cond"`
 	Filter       string     `json:"Filter"`
+	PlanRows     float64    `json:"Plan Rows"`
 	Plans        []PlanNode `json:"Plans"`
 }
 

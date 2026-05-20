@@ -11,11 +11,14 @@ import (
 	"github.com/DynamicKarabo/basemake/internal/budget"
 	"github.com/DynamicKarabo/basemake/internal/db"
 	"github.com/DynamicKarabo/basemake/internal/license"
+	"github.com/DynamicKarabo/basemake/internal/migration"
 	"github.com/spf13/cobra"
 )
 
 var checkThreshold string
 var checkDryRun bool
+var checkMigrate bool
+var checkApprove bool
 
 var checkCmd = &cobra.Command{
 	Use:   "check <sql|file.sql>",
@@ -44,6 +47,11 @@ Examples:
 			return nil
 		}
 		input := args[0]
+
+		// Migration impact check mode
+		if checkMigrate {
+			return runMigrationCheck(input)
+		}
 
 		// Resolve SQL — inline string or file path
 		sql, err := readSQL(input)
@@ -270,4 +278,48 @@ func init() {
 	rootCmd.AddCommand(checkCmd)
 	checkCmd.Flags().StringVar(&checkThreshold, "threshold", "1s", "Max query time (e.g. 500ms, 2s)")
 	checkCmd.Flags().BoolVar(&checkDryRun, "dry-run", false, "Analyze only — don't execute query")
+	checkCmd.Flags().BoolVar(&checkMigrate, "migrate", false, "Analyze migration SQL against profile history")
+	checkCmd.Flags().BoolVar(&checkApprove, "approve", false, "Approve HIGH risk migration changes (exit 0)")
+}
+
+// runMigrationCheck analyzes a migration file against stored query profiles
+// and reports the estimated performance impact.
+func runMigrationCheck(filepath string) error {
+	sql, err := readSQL(filepath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "⚠ Error reading migration: %v\n", err)
+		os.Exit(3)
+		return nil
+	}
+
+	changes, err := migration.ParseMigration(sql)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "⚠ Error parsing migration: %v\n", err)
+		os.Exit(3)
+		return nil
+	}
+
+	if len(changes) == 0 {
+		fmt.Fprintf(os.Stderr, "No impactful DDL changes detected in migration.\n")
+		return nil
+	}
+
+	profileDir := migration.ProfileDir()
+	profileCount := migration.ProfileCount(profileDir)
+
+	results, err := migration.AnalyzeImpact(changes, profileDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "⚠ Error analyzing impact: %v\n", err)
+		os.Exit(3)
+		return nil
+	}
+
+	output := migration.FormatImpactReport(results, profileCount, profileDir)
+	fmt.Print(output)
+
+	if migration.HasHighRisk(results) && !checkApprove {
+		os.Exit(2)
+	}
+
+	return nil
 }
