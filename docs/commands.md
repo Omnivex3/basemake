@@ -146,9 +146,56 @@ When `--explain` is specified:
 - Shows the plan on stderr, then executes the query and shows results on stdout
 - If EXPLAIN fails (e.g., DDL statement), the error is printed but query still runs
 
-### AI Validation
+### Profile Integration (--explain)
 
-For AI-generated SQL (not raw SQL input), the generated query is validated with `EXPLAIN` before execution. If validation fails:
+Every query run with `--explain` is **automatically profiled** and stored in `~/.basemake/profiles/<query_hash>.json`. The profile includes:
+
+| Field | Source |
+|---|---|
+| Normalized SQL | SQL stripped of literals (`WHERE id = 1` → `WHERE id = ?`) |
+| Execution time | `time.Since()` around `conn.Query()` |
+| Row count | Length of result set |
+| Plan JSON | `EXPLAIN (FORMAT JSON)` from `ExplainNoAnalyze` |
+| Plan hash | SHA-256 of normalized plan JSON |
+| DB fingerprint | Database name + host (e.g., `PostgreSQL (***@localhost:5432/mydb)`) |
+
+On repeated runs, the profile comparison shows:
+
+```
+⚡ Profiled 3 times. Avg: 124ms. This run: 287ms (+131% vs avg)
+   Last run: Tue 14:32
+   ⚠ Plan changed:
+     → The planner stopped using idx_status_id on orders. Run ANALYZE.
+```
+
+The profile comparison detects:
+- **Timing regression** — how does this run compare to the historical average?
+- **Plan structure change** — did the planner switch from Index Scan to Seq Scan?
+- **Index change** — did the planner stop using a specific index?
+
+### PlanCheck
+
+For **natural language queries** (not raw SQL, not `--explain` mode), basemake runs PlanCheck before executing. PlanCheck compares the current execution plan against the profile history and returns warnings if something changed:
+
+```
+You > show me orders with status 0
+
+⚠ idx_status_id was dropped since the last profile.
+  This query may be slower. Run ANALYZE or recreate the index.
+
+Run anyway? [Y/n]:
+```
+
+PlanCheck runs three checks in priority order:
+1. **Index dropped** — the current plan no longer uses an index that was used in the last profile
+2. **Plan → Seq Scan** — the planner switched to a sequential scan (only if not already covered by #1)
+3. **Historical regression** — the last profile run was 2x+ slower than the average of earlier runs
+
+PlanCheck uses `ExplainNoAnalyze` (no execution) to get the current plan. It does NOT save to the profile — that happens after execution.
+
+### Guardrails
+
+For AI-generated SQL (not raw SQL input), the generated query is validated with `EXPLAIN` before execution. If validation fails, the AI retries once with the error message as additional context:
 
 ```
 Error: generated SQL is invalid — try rephrasing your question:
