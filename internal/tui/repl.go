@@ -21,6 +21,7 @@ import (
 	"github.com/DynamicKarabo/basemake/internal/db"
 	"github.com/DynamicKarabo/basemake/internal/display"
 	"github.com/DynamicKarabo/basemake/internal/history"
+	"github.com/DynamicKarabo/basemake/internal/observe"
 )
 
 // ── Types ──
@@ -75,6 +76,10 @@ type connResultMsg struct {
 type introspectResultMsg struct {
 	content string
 	err     error
+}
+
+type observeMsg struct {
+	brief string
 }
 
 // AI streaming messages
@@ -569,6 +574,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			(&m).addMessage(msgCmd, msg.content)
 		}
 		m.startupDone = true
+		// Fire non-blocking observe check (reads local state only)
+		return m, m.observeCmd()
+
+	case observeMsg:
+		if msg.brief != "" {
+			(&m).addMessage(msgCmd, "  "+msg.brief)
+		}
 
 	case aiTokenMsg:
 		if m.inChat {
@@ -867,6 +879,15 @@ func (m Model) syncIntrospectCmd() tea.Cmd {
 			return introspectResultMsg{content: fmt.Sprintf("  📦 %d tables — schema read ✅ (cache write: %v)", len(schema.Tables), err)}
 		}
 		return introspectResultMsg{content: fmt.Sprintf("  📦 %d tables — schema cached ✅", len(schema.Tables))}
+	}
+}
+
+// observeCmd checks for noteworthy database observations without making
+// any live database calls. Returns an empty brief when there's nothing
+// worth reporting — the observe module is silent by design.
+func (m Model) observeCmd() tea.Cmd {
+	return func() tea.Msg {
+		return observeMsg{brief: observe.Brief()}
 	}
 }
 
