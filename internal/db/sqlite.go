@@ -178,6 +178,32 @@ func (s *sqliteDB) Introspect(ctx context.Context) (*Schema, error) {
 			table.Indexes = append(table.Indexes, index)
 		}
 
+		// Get foreign keys for this table
+		fkRows, err := s.conn.QueryContext(ctx, fmt.Sprintf("PRAGMA foreign_key_list(%q)", tblName))
+		if err == nil {
+			type fkInfo struct {
+				id       int
+				seq      int
+				table    string
+				from     string
+				to       string
+				onUpdate string
+				onDelete string
+				match    string
+			}
+			for fkRows.Next() {
+				var fk fkInfo
+				if err := fkRows.Scan(&fk.id, &fk.seq, &fk.table, &fk.from, &fk.to, &fk.onUpdate, &fk.onDelete, &fk.match); err == nil {
+					table.ForeignKeys = append(table.ForeignKeys, ForeignKeyInfo{
+						Column:    fk.from,
+						RefTable:  fk.table,
+						RefColumn: fk.to,
+					})
+				}
+			}
+			fkRows.Close()
+		}
+
 		schema.Tables = append(schema.Tables, table)
 	}
 

@@ -51,9 +51,16 @@ type Schema struct {
 }
 
 type TableInfo struct {
-	Name    string       `json:"name"`
-	Columns []ColumnInfo `json:"columns"`
-	Indexes []IndexInfo  `json:"indexes"`
+	Name        string           `json:"name"`
+	Columns     []ColumnInfo     `json:"columns"`
+	Indexes     []IndexInfo      `json:"indexes"`
+	ForeignKeys []ForeignKeyInfo `json:"foreign_keys"`
+}
+
+type ForeignKeyInfo struct {
+	Column    string `json:"column"`
+	RefTable  string `json:"ref_table"`
+	RefColumn string `json:"ref_column"`
 }
 
 type ColumnInfo struct {

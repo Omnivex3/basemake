@@ -146,6 +146,42 @@ func (p *postgresDB) Introspect(ctx context.Context) (*Schema, error) {
 		}
 	}
 
+	// Get foreign keys
+	for i, t := range s.Tables {
+		fkRows, err := p.conn.QueryContext(ctx, `
+			SELECT
+				kcu.column_name,
+				ccu.table_name   AS ref_table,
+				ccu.column_name  AS ref_column
+			FROM information_schema.table_constraints tc
+			JOIN information_schema.key_column_usage kcu
+				ON tc.constraint_name = kcu.constraint_name
+				AND tc.table_schema = kcu.table_schema
+			JOIN information_schema.constraint_column_usage ccu
+				ON ccu.constraint_name = tc.constraint_name
+				AND ccu.table_schema = tc.table_schema
+			WHERE tc.constraint_type = 'FOREIGN KEY'
+				AND tc.table_schema = 'public'
+				AND tc.table_name = $1
+		`, t.Name)
+		if err != nil {
+			continue
+		}
+
+		for fkRows.Next() {
+			var col, refTbl, refCol string
+			if err := fkRows.Scan(&col, &refTbl, &refCol); err != nil {
+				continue
+			}
+			s.Tables[i].ForeignKeys = append(s.Tables[i].ForeignKeys, ForeignKeyInfo{
+				Column:    col,
+				RefTable:  refTbl,
+				RefColumn: refCol,
+			})
+		}
+		fkRows.Close()
+	}
+
 	return s, nil
 }
 

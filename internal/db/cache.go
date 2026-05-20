@@ -42,6 +42,12 @@ func (s *Schema) SchemaForPrompt() string {
 			}
 			result += fmt.Sprintf("    - %s %s%s%s\n", c.Name, c.Type, pk, nullable)
 		}
+		if len(t.ForeignKeys) > 0 {
+			result += "    Foreign Keys:\n"
+			for _, fk := range t.ForeignKeys {
+				result += fmt.Sprintf("      - %s → %s.%s\n", fk.Column, fk.RefTable, fk.RefColumn)
+			}
+		}
 		if len(t.Indexes) > 0 {
 			result += "    Indexes:\n"
 			for _, idx := range t.Indexes {

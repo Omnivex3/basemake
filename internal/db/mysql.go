@@ -162,6 +162,33 @@ func (m *mysqlDB) Introspect(ctx context.Context) (*Schema, error) {
 		}
 	}
 
+	// Get foreign keys
+	for i, t := range s.Tables {
+		fkRows, err := m.conn.QueryContext(ctx, `
+			SELECT COLUMN_NAME, REFERENCED_TABLE_NAME, REFERENCED_COLUMN_NAME
+			FROM information_schema.KEY_COLUMN_USAGE
+			WHERE TABLE_SCHEMA = DATABASE()
+				AND TABLE_NAME = ?
+				AND REFERENCED_TABLE_NAME IS NOT NULL
+		`, t.Name)
+		if err != nil {
+			continue
+		}
+
+		for fkRows.Next() {
+			var col, refTbl, refCol string
+			if err := fkRows.Scan(&col, &refTbl, &refCol); err != nil {
+				continue
+			}
+			s.Tables[i].ForeignKeys = append(s.Tables[i].ForeignKeys, ForeignKeyInfo{
+				Column:    col,
+				RefTable:  refTbl,
+				RefColumn: refCol,
+			})
+		}
+		fkRows.Close()
+	}
+
 	return s, nil
 }
 
