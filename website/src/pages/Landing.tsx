@@ -420,6 +420,11 @@ export default function Landing() {
                 desc: "Check every migration against your profile history. Know which queries will break before you run the change.",
                 gif: "/demos/demo-migrate.gif",
               },
+              {
+                title: "Query Profile",
+                desc: "Built-in query history with plan change detection. See when a query gets slower and why.",
+                gif: "/demos/demo-profile.gif",
+              },
             ].map((demo, i) => (
               <motion.div key={i} variants={fadeUp} custom={i}>
                 <div className="group rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden transition-all duration-300 hover:border-[#ff3131]/20 hover:bg-white/[0.04]">
