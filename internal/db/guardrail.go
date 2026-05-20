@@ -12,10 +12,6 @@ import (
 // It aims for the outermost SELECT — subqueries and CTEs are not matched.
 var selectStarRE = regexp.MustCompile(`(?i)\bSELECT\s+(?:ALL\s+|DISTINCT\s+)?\*`)
 
-// selectStarPrefixRE matches SELECT followed by a column list ending in .*
-// e.g. SELECT col1, col2, t.* FROM ...
-var selectStarPrefixRE = regexp.MustCompile(`(?i)\bSELECT\s+.+?\b\w+\.\*\s`)
-
 // GuardrailResult describes the outcome of a guardrail check.
 type GuardrailResult struct {
 	SQL     string // possibly modified SQL
