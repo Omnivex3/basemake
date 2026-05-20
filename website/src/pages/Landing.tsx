@@ -136,41 +136,21 @@ export default function Landing() {
             </motion.div>
           </motion.div>
 
-          {/* 3D floating cube */}
+          {/* Demo GIF */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.5 }}
             className="absolute -right-20 top-1/2 -translate-y-1/2 hidden xl:block"
           >
-            <div className="relative">
-              <div className="absolute inset-0 bg-[#ff3131]/5 blur-3xl rounded-full" />
-              <svg width="320" height="320" viewBox="0 0 320 320" fill="none" className="relative">
-                {/* 3D database icon — isometric cylinders */}
-                <ellipse cx="160" cy="100" rx="90" ry="30" stroke="rgba(230,57,70,0.3)" strokeWidth="1" />
-                <ellipse cx="160" cy="100" rx="90" ry="30" stroke="rgba(230,57,70,0.15)" strokeWidth="1" strokeDasharray="4 4" />
-                <path d="M70 100v60c0 16.6 40.3 30 90 30s90-13.4 90-30v-60" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-                <ellipse cx="160" cy="160" rx="90" ry="30" stroke="rgba(230,57,70,0.3)" strokeWidth="1" />
-                <path d="M70 160v60c0 16.6 40.3 30 90 30s90-13.4 90-30v-60" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-                <ellipse cx="160" cy="220" rx="90" ry="30" stroke="rgba(230,57,70,0.3)" strokeWidth="1" />
-                {/* red accent lines */}
-                <path d="M70 100v60" stroke="rgba(230,57,70,0.4)" strokeWidth="1.5" />
-                <path d="M250 100v60" stroke="rgba(230,57,70,0.4)" strokeWidth="1.5" />
-                <path d="M70 160v60" stroke="rgba(230,57,70,0.4)" strokeWidth="1.5" />
-                <path d="M250 160v60" stroke="rgba(230,57,70,0.4)" strokeWidth="1.5" />
-                {/* data flow dots */}
-                <circle cx="160" cy="130" r="2" fill="#ff3131" opacity="0.6" />
-                <circle cx="140" cy="140" r="1.5" fill="#ff3131" opacity="0.4" />
-                <circle cx="180" cy="140" r="1.5" fill="#ff3131" opacity="0.4" />
-                <circle cx="160" cy="190" r="2" fill="#ff3131" opacity="0.6" />
-                <circle cx="145" cy="200" r="1.5" fill="#ff3131" opacity="0.4" />
-                <circle cx="175" cy="200" r="1.5" fill="#ff3131" opacity="0.4" />
-              </svg>
-            </div>
+            <img
+              src="/basemake-demo.gif"
+              alt="basemake demo — natural language query and analysis"
+              className="w-[480px] rounded-xl border border-white/[0.08] shadow-2xl shadow-[#ff3131]/5"
+            />
           </motion.div>
         </div>
       </section>
-
       {/* ─── LOGO CLOUD ─── */}
       <section className="border-b border-white/[0.06] py-16">
         <div className="mx-auto max-w-6xl px-6 text-center">

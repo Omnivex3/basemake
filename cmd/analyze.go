@@ -8,6 +8,7 @@ import (
 
 	"github.com/DynamicKarabo/basemake/internal/analyze"
 	"github.com/DynamicKarabo/basemake/internal/db"
+	"github.com/DynamicKarabo/basemake/internal/profile"
 	"github.com/spf13/cobra"
 )
 
@@ -62,6 +63,33 @@ func analyzeQuery(ctx context.Context, conn db.Database, query string) error {
 			fmt.Fprintf(os.Stderr, "Analysis completed in %v\n\n", duration.Round(time.Millisecond))
 
 			fmt.Println(report.String())
+
+			// Wire profile history
+			normSQL := profile.NormalizeSQL(query)
+			hash := profile.QueryHash(normSQL)
+			planHash := profile.PlanHash(jsonPlan)
+
+			var rowsReturned float64 = 0
+			if len(report.Nodes) > 0 {
+				rowsReturned = report.Nodes[0].ActualRows
+			}
+
+			run := profile.QueryRun{
+				Hash:          hash,
+				NormalizedSQL: normSQL,
+				Timestamp:     time.Now(),
+				DurationMS:    int64(report.ExecutionTime),
+				RowsReturned:  int64(rowsReturned),
+				PlanText:      jsonPlan,
+				PlanHash:      planHash,
+				DBFingerprint: conn.Name(),
+			}
+
+			if result, cmpErr := profile.Compare(hash, run); cmpErr == nil {
+				if output := profile.FormatComparison(result); output != "" {
+					fmt.Println(output)
+				}
+			}
 
 			// Check for index suggestions
 			var allSuggestions []analyze.IndexSuggestion

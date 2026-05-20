@@ -2,9 +2,9 @@ import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
-  NaturalLangIcon, DatabaseIcon, ShieldIcon,
-  IndexIcon, DiffIcon, MonitorIcon,
-  TerminalIcon, PromptIcon, BoltIcon,
+  BrainIcon, BoltIcon, DatabaseIcon, ShieldIcon,
+  CompareIcon, EyeIcon,
+  TerminalIcon, PromptIcon,
 } from '@/components/icons'
 
 const fadeUp = {
@@ -51,7 +51,7 @@ function FeatureCard({
 
 const features = [
   {
-    icon: NaturalLangIcon, tag: "QUERY",
+    icon: BrainIcon, BoltIcon, tag: "QUERY",
     title: "Natural Language → SQL",
     desc: "Describe what you need in plain English. basemake generates production-ready SQL — with the right dialect, joins, and filtering — every time.",
   },
@@ -66,17 +66,17 @@ const features = [
     desc: "`basemake check` exits 0, 1, or 2. Plug it into your pipeline. Block slow queries, detect dangerous patterns, enforce budgets.",
   },
   {
-    icon: IndexIcon, tag: "PERFORMANCE",
+    icon: BoltIcon, tag: "PERFORMANCE",
     title: "Index Recommendations",
     desc: "Not just \"add an index.\" It tells you which columns, in what order, and why. Apply with one command or review the diff first.",
   },
   {
-    icon: DiffIcon, tag: "SCHEMA",
+    icon: CompareIcon, tag: "SCHEMA",
     title: "Schema Diffing",
     desc: "Compare dev, staging, and prod in seconds. Catch drift before it becomes an incident. Works offline, no server needed.",
   },
   {
-    icon: MonitorIcon, tag: "OBSERVABILITY",
+    icon: EyeIcon, tag: "OBSERVABILITY",
     title: "Query Monitoring",
     desc: "Schedule recurring checks. Get alerted when a query slows down. Track regressions over time — built in, no Datadog bill.",
   },

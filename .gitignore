@@ -6,3 +6,4 @@ record-with-size.py
 coverage.out
 coverage.html
 release/
+.vercel
