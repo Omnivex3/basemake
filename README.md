@@ -1,4 +1,4 @@
-# basemake — AI-powered database CLI
+# basemake — a DBA that checks its own work
 
 [![Release](https://img.shields.io/github/v/release/DynamicKarabo/basemake?style=flat&label=release)](https://github.com/DynamicKarabo/basemake/releases)
 [![CI](https://github.com/DynamicKarabo/basemake/actions/workflows/release.yml/badge.svg)](https://github.com/DynamicKarabo/basemake/actions/workflows/release.yml)
@@ -6,82 +6,91 @@
 [![GitHub Downloads](https://img.shields.io/github/downloads/DynamicKarabo/basemake/total?style=flat&label=downloads)](https://github.com/DynamicKarabo/basemake/releases)
 
 > **All local. All private. All yours.**  
-> Talk to your database in plain English. Queries, performance analysis, and insights — no data leaves your machine.
+> Talk to your database in plain English. No data leaves your machine.
+
+Most database AI tools are translators: schema in, SQL out. They don't know if the query they just wrote is slow, whether an index was dropped since last week, or if the plan changed since yesterday's deploy.
+
+Basemake is different. It watches your database over time, remembers how queries behaved before, and checks its own work before showing you results. It's a DBA that double-checks every query, learns from each run, and stays quiet when everything's fine.
 
 ![basemake demo](assets/basemake-demo.gif)
 
-## Features
+## The real product isn't chat — it's memory
 
-### 🧠 Natural Language → SQL
-- **Natural language queries** — `basemake "show me users who signed up last week"` → SQL → results
-- **Multi-dialect** — PostgreSQL, MySQL, SQLite with automatic SQL generation for each dialect
-- **History compounding** — past queries inform future AI responses for context-aware SQL generation
-- **Streaming AI** — watch SQL generate token by token, or use `--no-stream` for instant results
-- **Output formats** — table (default), `--json`, `--csv`
-- **EXPLAIN mode** — `basemake "top products" --explain` shows execution plan alongside results
-- **Performance analysis** — `basemake analyze` surfaces slow scans and missing indexes
+Basemake doesn't just translate questions into SQL. It builds a **profile history** for every query you run — storing execution plans, timings, row counts, plan changes. That history powers four capabilities that get smarter the longer you use the tool:
 
-### 🚀 Zero-Friction Onboarding
-- **`basemake init`** — one-command setup wizard: detects your database, picks AI provider, runs test query
-- **`basemake doctor`** — diagnose connections, schema, AI config, and permissions in one command
-- **First-run detection** — fresh install → `basemake` with no args shows a welcome screen with next steps
-- **Auto-connect on startup** — REPL opens already connected to your last-used database
-- **Contextual REPL hints** — the input placeholder changes based on your state ("no database", "need API key", "ready to query")
+| Capability | What it does | Why it matters |
+|---|---|---|
+| **Schema** | Knows your tables, columns, types, foreign keys, indexes | Generates accurate SQL with correct joins, not guesswork |
+| **Profile** | Remembers every query's plan and timing across runs | Detects when a query changed behavior — even if you didn't ask |
+| **PlanCheck** | Compares current plan against history before executing | Warns you if an index was dropped or the plan regressed *before* you run the query |
+| **Observe** | Scans all profiles on REPL startup, surfaces the one thing worth knowing | Your database talks to you before you type anything — or stays silent if nothing's wrong |
 
-### 🔗 Smart Connections
-- **`basemake connect --detect`** — scans localhost + Docker containers, shows a menu of running databases
-- **Saved named connections** — `basemake connect --save prod <dsn>` then switch with `basemake use prod`
-- **Connection listing** — `basemake connect --list` shows all saved connections with active indicator
-- **`.refresh` in the REPL** — re-introspect schema without disconnecting
-- **Auto-reconnect** — if your connection drops, basemake replays the saved DSN automatically
+These aren't features bolted on top of a chatbot. They're four tools that know your database's reality — not just its structure, but its behavior over time.
 
-### 🛡️ Self-Healing & Safety
-- **Friendly errors** — 12 error patterns mapped to human-readable fixes ("Is PostgreSQL running?" not "pq: connection refused")
-- **Auto-LIMIT** — AI-generated `SELECT` queries cap at 100 rows so you never freeze your terminal
-- **SQL validation + AI retry** — generated SQL is validated with `EXPLAIN` before execution; if invalid, the AI self-corrects once silently
-- **Differentiated spinner** — shows "Generating SQL…" during AI generation and "Running query…" during execution
-- **Auto-LIMIT safety** — prevents million-row result sets from AI queries
-- **Query cancellation** — `Ctrl+C` or `Esc` cancels mid-flight queries (cancels both AI generation and DB execution)
-- **Read-only mode** — `--readonly` flag blocks INSERT/UPDATE/DELETE/DROP/ALTER/CREATE/TRUNCATE
+The AI uses all four. It checks its work. It notices regressions. It taps you on the shoulder when something changed. And when nothing's wrong, it stays out of your way.
 
-### 🎮 Interactive REPL
-- **Tab completion** — press Tab to cycle through matching table and column names
-- **`.export`** — save last result as CSV, JSON, or Markdown
-- **`.replay`** — re-run any query from history
-- **`.info`** — dashboard showing database, AI provider, version, read-only status
-- **`.readonly`** — toggle write protection on/off mid-session
-- **`.save` / `.run` / `.saved`** — bookmark named queries, replay them later
-- **`.help`** — full command reference with keyboard shortcuts
+---
 
-### 🔧 DevOps & Team
-- **CI/CD gate** — `basemake check "query"` exits 0 if fast, 1 if slow, 2 if dangerous
-- **Policy as code** — `basemake budget` defines performance rules that travel with your code
-- **Schema diffing** — `basemake diff` catches schema drift between dev, staging, and prod
-- **Query monitoring** — `basemake watch` schedules queries and alerts on slow-downs or data changes
-- **Team sync** — `basemake server` + `sync` share query history and budgets
-- **Zero data exfiltration** — works with Ollama locally or your own API keys
+### What this looks like in practice
+
+**You ask a question. Basemake generates SQL, then checks the plan:**
+
+```
+You > show me orders with status 0
+
+⚠ idx_status_id was dropped since the last profile.
+  This query may be slower. Run ANALYZE or recreate the index.
+
+Run anyway? [Y/n]:
+```
+
+The AI caught that the plan changed before executing — because it compared the current plan against the last time this query ran. It warned you. You chose whether to proceed.
+
+**You start the REPL. Basemake surfaces what changed:**
+
+```
+📦 1 tables — schema cached ✅
+
+══════════════════════════════════════
+  ⚠ Plan changed: The planner stopped
+  using idx_status_id on orders.
+  Run ANALYZE.
+══════════════════════════════════════
+
+Type .help for commands  ·  ask your question or enter SQL
+>
+```
+
+It noticed a plan regression while you weren't looking. One line. Then it got out of the way.
+
+**Nothing changed. Basemake says nothing:**
+
+No "everything looks good!" confirmation. No dashboard. Silence is the signal that the database is healthy.
+
+---
+
+### What it is not
+
+- Not a chatbot. The AI doesn't wait for questions — it notices things and surfaces the most important one.
+- Not a dashboard. A dashboard shows you everything. Basemake shows you the one thing that changed.
+- Not a SaaS. Your queries, profiles, and history stay on your machine. Bring your own API key or run Ollama locally.
+- Not a toy. It handles PostgreSQL, MySQL, and SQLite with real query profiling, plan parsing, CI/CD gating, and team sync.
 
 ## Quick Start
 
 ```bash
 # Connect to any database
-basemake connect postgres://user:password@localhost:5432/mydb
+basemake connect postgres://user:***@localhost:5432/mydb
 
-# Ask questions in plain English
+# Ask questions in plain English — basemake checks before executing
 basemake "show me users who signed up last week"
 
-# Analyze query performance
-basemake analyze "SELECT * FROM orders WHERE status = 'pending'"
-
-# See execution plans alongside results
+# Profile a query (saves plan + timing for future comparisons)
 basemake "top 5 products by revenue" --explain
 
-# Output as JSON or CSV
-basemake "recent orders" --json
-basemake "slow queries from yesterday" --csv
+# Start the REPL — see observations on startup, ask questions interactively
+basemake
 ```
-
-That's it. Two commands to go from zero to querying with AI.
 
 ### Interactive REPL
 
