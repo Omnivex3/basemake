@@ -1003,7 +1003,7 @@ func (m Model) startAIStream(ctx context.Context, question string) tea.Cmd {
 		}
 
 		dialect := m.conn.Dialect()
-		prompt := history.BuildPromptWithHistory(schema.SchemaForPrompt(), 5, dialect)
+		prompt := history.BuildPromptWithHistory(schema.SchemaForPrompt(question), 5, dialect)
 
 		ch, err := ai.QuestionToSQLStream(ctx, prompt, question)
 		if err != nil {
@@ -1027,7 +1027,7 @@ func (m Model) startChatStream(ctx context.Context, question string) tea.Cmd {
 		// Build a chat-oriented system prompt
 		prompt := "You are a helpful database assistant. You have access to the following database schema:\n\n"
 		if schema != nil {
-			prompt += schema.SchemaForPrompt() + "\n\n"
+			prompt += schema.SchemaForPrompt(question) + "\n\n"
 		}
 		prompt += `Answer the user's questions about their database, data, or queries. Be concise and helpful.
 
@@ -1080,7 +1080,7 @@ func (m Model) validateAndExecSQL(ctx context.Context, question, sqlStr string) 
 					return queryResultMsg{err: fmt.Errorf("validation retry failed: no schema: %w", err)}
 				}
 				dialect := m.conn.Dialect()
-				prompt := history.BuildPromptWithHistory(schema.SchemaForPrompt(), 5, dialect)
+				prompt := history.BuildPromptWithHistory(schema.SchemaForPrompt(question), 5, dialect)
 				retryPrompt := prompt + "\n\nThe previous SQL was invalid. Error: " + err.Error() + "\nPlease fix the SQL query for this question: " + question
 				ch, err := ai.QuestionToSQLStream(ctx, retryPrompt, question)
 				if err != nil {
@@ -1187,15 +1187,15 @@ func (m Model) validateAndExecSQL(ctx context.Context, question, sqlStr string) 
 func (m Model) explainLastResult() tea.Cmd {
 	return func() tea.Msg {
 		schema, _ := db.LoadSchema()
-		prompt := "You are a data analyst. Given the following query, its results, and the user's question, explain what the data means in plain English.\n\n"
-		if schema != nil {
-			prompt += "Database schema:\n" + schema.SchemaForPrompt() + "\n\n"
-		}
-
 		question := m.lastResult.question
 		if question == "" {
 			question = "(direct SQL)"
 		}
+		prompt := "You are a data analyst. Given the following query, its results, and the user's question, explain what the data means in plain English.\n\n"
+		if schema != nil {
+			prompt += "Database schema:\n" + schema.SchemaForPrompt(question) + "\n\n"
+		}
+
 		prompt += fmt.Sprintf("Question: %s\n\nSQL: %s\n\nResults (%.0fms, %d rows):\n",
 			question, m.lastResult.sql, m.lastResult.elapsed, len(m.lastResult.rows))
 

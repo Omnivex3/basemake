@@ -71,7 +71,7 @@ Uses your cached schema to generate accurate queries.
 			// Build prompt with recent history for context compounding
 			dialect := detectDialect()
 			// Pass dialect so the AI generates correct SQL for the connected DB
-			prompt := history.BuildPromptWithHistory(s.SchemaForPrompt(), 5, dialect)
+			prompt := history.BuildPromptWithHistory(s.SchemaForPrompt(input), 5, dialect)
 
 			if queryNoStream {
 				// Blocking mode — wait for full response

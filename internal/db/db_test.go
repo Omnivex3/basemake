@@ -97,7 +97,7 @@ func TestSchemaForPrompt(t *testing.T) {
 		},
 	}
 
-	prompt := s.SchemaForPrompt()
+	prompt := s.SchemaForPrompt("")
 
 	if !contains(prompt, "Database: mydb") {
 		t.Error("missing database name in prompt")
