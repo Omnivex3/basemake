@@ -59,6 +59,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default $HOME/.basemake/config.yaml)")
 	rootCmd.AddCommand(queryCmd)
 	rootCmd.AddCommand(analyzeCmd)
+	rootCmd.AddCommand(profileCmd)
 
 	originalHelp := rootCmd.HelpFunc()
 	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {
