@@ -2,7 +2,6 @@ package profile
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/DynamicKarabo/basemake/internal/db"
@@ -20,6 +19,9 @@ func (m *mockDB) ExplainNoAnalyze(ctx context.Context, sql string) (string, erro
 }
 
 func TestPlanCheck_IndexDropped(t *testing.T) {
+	overrideProfileDir = t.TempDir()
+	t.Cleanup(func() { overrideProfileDir = "" })
+
 	// Setup profile
 	hash := QueryHash(NormalizeSQL("SELECT * FROM users"))
 	p := &QueryProfile{
@@ -32,7 +34,6 @@ func TestPlanCheck_IndexDropped(t *testing.T) {
 		},
 	}
 	Save(hash, p)
-	defer os.Remove(ProfilePath(hash))
 
 	// Setup current plan returning Seq Scan
 	conn := &mockDB{
@@ -58,6 +59,9 @@ func TestPlanCheck_IndexDropped(t *testing.T) {
 }
 
 func TestPlanCheck_Regression(t *testing.T) {
+	overrideProfileDir = t.TempDir()
+	t.Cleanup(func() { overrideProfileDir = "" })
+
 	hash := QueryHash(NormalizeSQL("SELECT * FROM users"))
 	p := &QueryProfile{
 		Runs: []QueryRun{
@@ -67,7 +71,6 @@ func TestPlanCheck_Regression(t *testing.T) {
 		},
 	}
 	Save(hash, p)
-	defer os.Remove(ProfilePath(hash))
 
 	conn := &mockDB{
 		planJSON: `[{"Plan": {"Node Type": "Limit", "Plans": []}}]`, // plan doesn't matter for this check
