@@ -2,58 +2,88 @@ package agent
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/DynamicKarabo/basemake/internal/ai"
 )
 
-// Agent runs the tool-calling loop using the Anthropic Messages API.
-// It holds the client, tool specs, and iteration cap.
+// Agent runs the tool-calling loop using an LLM provider.
 type Agent struct {
-	client     *anthropicClient
+	provider   provider
 	tools      []toolSpec
 	maxIter    int
 	iterations int
 }
 
-// New creates a new Agent, reading API config from env and config file.
+// New creates a new Agent, reading provider config from env vars.
+// Supports "anthropic" (default) and "openai" providers.
 func New() (*Agent, error) {
-	// Read config the same way as the existing ai package
-	apiKey := os.Getenv("ANTHROPIC_API_KEY")
-	baseURL := os.Getenv("ANTHROPIC_BASE_URL")
-	model := os.Getenv("ANTHROPIC_MODEL")
+	providerName := os.Getenv("AI_PROVIDER")
+	if providerName == "" {
+		providerName = "anthropic" // default
+	}
 
-	// Fall back to config defaults from the ai package constants
-	if apiKey == "" {
-		return nil, fmt.Errorf("ANTHROPIC_API_KEY not set. Set it to use the agent path.\n  export ANTHROPIC_API_KEY=sk-ant-...")
+	var prov provider
+	var err error
+
+	switch providerName {
+	case "openai":
+		prov, err = newOpenAIProvider()
+	case "anthropic":
+		prov, err = newAnthropicProvider()
+	default:
+		return nil, fmt.Errorf("unsupported agent provider: %s (use 'anthropic' or 'openai')", providerName)
 	}
-	if baseURL == "" {
-		baseURL = "https://api.anthropic.com"
-	}
-	if model == "" {
-		model = "claude-sonnet-4-20250514"
+	if err != nil {
+		return nil, err
 	}
 
 	return &Agent{
-		client:  newAnthropicClient(apiKey, baseURL, model),
-		tools:   agentTools(),
-		maxIter: 5,
+		provider: prov,
+		tools:    agentTools(),
+		maxIter:  5,
 	}, nil
 }
 
 // Run executes the agent loop for a single user question.
-// It returns the final text response and an estimate of tokens used.
+// It returns the final text response.
 func (a *Agent) Run(ctx context.Context, question string) (string, *ai.ModelPricing, error) {
-	messages := []anthropicMessage{
-		newTextMessage(question),
+	messages := []providerMessage{
+		{Role: "user", Text: question},
 	}
 
-	// Convert tool specs to API format
-	var toolDefs []toolDefinition
+	// Convert tool specs to provider-agnostic tool definitions
+	var toolDefs []toolDef
 	for _, t := range a.tools {
-		toolDefs = append(toolDefs, toDefinition(t))
+		params := map[string]any{
+			"type": "object",
+		}
+		if len(t.InputSchema.Properties) > 0 {
+			props := make(map[string]any)
+			for k, v := range t.InputSchema.Properties {
+				p := map[string]any{
+					"type": v.Type,
+				}
+				if v.Description != "" {
+					p["description"] = v.Description
+				}
+				if v.Items != nil {
+					p["items"] = map[string]string{"type": v.Items.Type}
+				}
+				props[k] = p
+			}
+			params["properties"] = props
+		}
+		if len(t.InputSchema.Required) > 0 {
+			params["required"] = t.InputSchema.Required
+		}
+
+		toolDefs = append(toolDefs, toolDef{
+			Name:        t.Name,
+			Description: t.Description,
+			Parameters:  params,
+		})
 	}
 
 	a.iterations = 0
@@ -61,67 +91,57 @@ func (a *Agent) Run(ctx context.Context, question string) (string, *ai.ModelPric
 	for a.iterations < a.maxIter {
 		a.iterations++
 
-		resp, err := a.client.send(ctx, systemPrompt, messages, toolDefs)
+		resp, err := a.provider.send(ctx, systemPrompt, messages, toolDefs)
 		if err != nil {
 			return "", nil, fmt.Errorf("iteration %d: %w", a.iterations, err)
 		}
 
-		// Append assistant's response to message history
-		assistantContent, _ := json.Marshal(resp.Content)
-		messages = append(messages, anthropicMessage{
-			Role:    "assistant",
-			Content: assistantContent,
-		})
+		// Build assistant message from response
+		assistantMsg := providerMessage{Role: "assistant"}
+		if resp.Text != "" {
+			assistantMsg.Text = resp.Text
+		}
+		if len(resp.ToolCalls) > 0 {
+			assistantMsg.ToolCalls = resp.ToolCalls
+		}
+		messages = append(messages, assistantMsg)
 
 		switch resp.StopReason {
-		case "end_turn":
-			// Done — extract and return text
-			text := extractText(resp)
+		case "stop", "end_turn":
 			pricing := estimatePricing(resp)
-			return text, pricing, nil
+			return resp.Text, pricing, nil
 
-		case "tool_use":
-			// Execute each tool_use block
-			for _, block := range resp.Content {
-				if block.Type != "tool_use" {
-					continue
-				}
-
+		case "tool_calls", "tool_use":
+			// Execute each tool call
+			for _, tc := range resp.ToolCalls {
 				// Find the tool spec
 				var spec *toolSpec
 				for i := range a.tools {
-					if a.tools[i].Name == block.Name {
+					if a.tools[i].Name == tc.Name {
 						spec = &a.tools[i]
 						break
 					}
 				}
 				if spec == nil {
-					return "", nil, fmt.Errorf("unknown tool called: %s", block.Name)
-				}
-
-				// Parse input
-				var input map[string]any
-				if block.Input != nil {
-					if err := json.Unmarshal(block.Input, &input); err != nil {
-						return "", nil, fmt.Errorf("tool %s: parse input: %w", block.Name, err)
-					}
-				} else {
-					input = map[string]any{}
+					return "", nil, fmt.Errorf("unknown tool called: %s", tc.Name)
 				}
 
 				// Execute
-				result, err := spec.Execute(ctx, input)
+				result, err := spec.Execute(ctx, tc.Input)
 				if err != nil {
 					result = fmt.Sprintf("Error: %v", err)
 				}
 
 				// Append tool result
-				messages = append(messages, newToolResultMessage(block.ID, result))
+				messages = append(messages, providerMessage{
+					Role:       "tool",
+					ToolCallID: tc.ID,
+					Text:       result,
+				})
 			}
 
 		case "max_tokens":
-			// Hit token limit — return what we have
-			text := extractText(resp)
+			text := resp.Text
 			if text == "" {
 				text = "Reached the maximum token limit. Try asking a more specific question."
 			}
@@ -142,12 +162,46 @@ func (a *Agent) Iterations() int {
 }
 
 // estimatePricing returns default pricing for the agent model.
-func estimatePricing(resp *anthropicResponse) *ai.ModelPricing {
+func estimatePricing(resp *providerResponse) *ai.ModelPricing {
 	if resp.Usage == nil {
 		return nil
 	}
 	return &ai.ModelPricing{
-		InputCents:  0.3,  // claude-sonnet-4-20250514
+		InputCents:  0.3,
 		OutputCents: 1.5,
 	}
+}
+
+// ── Provider constructors ──
+
+func newAnthropicProvider() (*anthropicProvider, error) {
+	apiKey := os.Getenv("ANTHROPIC_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("ANTHROPIC_API_KEY not set. Set it to use the agent path.")
+	}
+	baseURL := os.Getenv("ANTHROPIC_BASE_URL")
+	if baseURL == "" {
+		baseURL = "https://api.anthropic.com"
+	}
+	model := os.Getenv("ANTHROPIC_MODEL")
+	if model == "" {
+		model = "claude-sonnet-4-20250514"
+	}
+	return &anthropicProvider{apiKey: apiKey, baseURL: baseURL, model: model}, nil
+}
+
+func newOpenAIProvider() (*openAIProvider, error) {
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("OPENAI_API_KEY not set. Set it to use the agent path.")
+	}
+	baseURL := os.Getenv("OPENAI_BASE_URL")
+	if baseURL == "" {
+		baseURL = "https://api.openai.com/v1"
+	}
+	model := os.Getenv("OPENAI_MODEL")
+	if model == "" {
+		model = "gpt-4o"
+	}
+	return &openAIProvider{apiKey: apiKey, baseURL: baseURL, model: model}, nil
 }

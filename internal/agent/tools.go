@@ -79,15 +79,6 @@ func agentTools() []toolSpec {
 	}
 }
 
-// toDefinition converts a toolSpec to the Anthropic API tool definition format.
-func toDefinition(s toolSpec) toolDefinition {
-	return toolDefinition{
-		Name:        s.Name,
-		Description: s.Description,
-		InputSchema: s.InputSchema,
-	}
-}
-
 // ── Tool implementations ──
 
 func toolGetSchema(ctx context.Context, input map[string]any) (string, error) {
