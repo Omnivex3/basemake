@@ -47,17 +47,20 @@ func ExtractPlanNodes(planJSON string) ([]PlanNode, error) {
 	}
 
 	var nodes []PlanNode
-	collectLeaves(results[0].Plan, &nodes)
+	collectTableAccessNodes(results[0].Plan, &nodes)
 	return nodes, nil
 }
 
-func collectLeaves(node PlanNode, nodes *[]PlanNode) {
-	if len(node.Plans) == 0 {
+// collectTableAccessNodes collects all nodes that access a table (have a
+// Relation Name). Intermediate nodes like Sort, Hash, Bitmap Index Scan,
+// Aggregate, Limit are skipped — they don't tell us about table access patterns.
+func collectTableAccessNodes(node PlanNode, nodes *[]PlanNode) {
+	if node.RelationName != "" {
 		*nodes = append(*nodes, node)
-		return
+		return // don't descend — children of a table access are index scans, not new tables
 	}
 	for _, child := range node.Plans {
-		collectLeaves(child, nodes)
+		collectTableAccessNodes(child, nodes)
 	}
 }
 
@@ -159,16 +162,29 @@ func isIndexScan(nt string) bool {
 }
 
 // ExplainChange returns a one-line plain English description of a plan change.
+// Handles the key patterns that make developers say "oh, I know what to do next."
 func ExplainChange(c PlanChange) string {
+	// Case: index scan was removed entirely (replaced by non-index access)
+	if isIndexScan(c.OldNodeType) && c.OldIndexName != "" {
+		switch {
+		case c.NewNodeType == "Seq Scan":
+			return fmt.Sprintf("The planner stopped using %s on %s. Run ANALYZE.", c.OldIndexName, c.RelationName)
+		case c.NewNodeType == "":
+			return fmt.Sprintf("Index scan %s on %s removed from plan. The index may have been dropped.", c.OldIndexName, c.RelationName)
+		default:
+			return fmt.Sprintf("Was using %s on %s. Now using %s.", c.OldIndexName, c.RelationName, c.NewNodeType)
+		}
+	}
+
 	switch {
 	case c.IsNew:
-		return fmt.Sprintf("%s on %s (new — didn't appear in previous plan)", c.NewNodeType, c.RelationName)
+		return fmt.Sprintf("New %s on %s.", c.NewNodeType, c.RelationName)
 	case c.IsRemoved:
-		return fmt.Sprintf("%s on %s (removed from plan)", c.OldNodeType, c.RelationName)
-	case c.NewNodeType == "Seq Scan" && c.OldNodeType != "Seq Scan":
 		if c.OldIndexName != "" {
-			return fmt.Sprintf("The planner stopped using %s on %s. Run ANALYZE.", c.OldIndexName, c.RelationName)
+			return fmt.Sprintf("Index scan %s on %s removed from plan.", c.OldIndexName, c.RelationName)
 		}
+		return fmt.Sprintf("%s on %s removed from plan.", c.OldNodeType, c.RelationName)
+	case c.NewNodeType == "Seq Scan":
 		return fmt.Sprintf("Seq Scan replaced %s on %s. Check for missing index.", c.OldNodeType, c.RelationName)
 	case c.OldNodeType == "Seq Scan":
 		return fmt.Sprintf("Now using %s on %s (was Seq Scan — better).", c.NewNodeType, c.RelationName)
