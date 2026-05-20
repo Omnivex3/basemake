@@ -159,6 +159,28 @@ Uses your cached schema to generate accurate queries.
 			return fmt.Errorf("write queries are blocked in read-only mode — use --readonly=false or omit the flag to allow writes")
 		}
 
+		// PlanCheck: compare current plan against profile history
+		// Only runs for NL-generated queries (not raw SQL or --explain)
+		if isNL && !queryExplain {
+			warnings := profile.PlanCheck(cmd.Context(), sql, conn)
+			if profile.HasWarnings(warnings) {
+				fmt.Fprintf(os.Stderr, "\nGenerated SQL: %s\n\n", sql)
+				for _, w := range warnings {
+					icon := "⚠"
+					if w.Severity == "info" {
+						icon = "ℹ"
+					}
+					fmt.Fprintf(os.Stderr, "%s %s\n", icon, w.Message)
+				}
+				fmt.Fprint(os.Stderr, "\nRun anyway? [Y/n]: ")
+				var resp string
+				fmt.Scanln(&resp)
+				if resp != "" && resp != "y" && resp != "Y" && resp != "yes" && resp != "Yes" {
+					return fmt.Errorf("cancelled")
+				}
+			}
+		}
+
 		// Execute with timing
 		startTime := time.Now()
 		rows, err := conn.Query(cmd.Context(), sql)

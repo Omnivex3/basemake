@@ -22,6 +22,7 @@ import (
 	"github.com/DynamicKarabo/basemake/internal/display"
 	"github.com/DynamicKarabo/basemake/internal/history"
 	"github.com/DynamicKarabo/basemake/internal/observe"
+	"github.com/DynamicKarabo/basemake/internal/profile"
 )
 
 // ── Types ──
@@ -1130,6 +1131,17 @@ func (m Model) validateAndExecSQL(ctx context.Context, question, sqlStr string) 
 			(&m).addMessage(msgCmd, insightBubble(result.Warning))
 		}
 		sqlStr = result.SQL
+	}
+
+	// PlanCheck: surface regressions against profile history
+	// Warnings appear in the viewport before query results.
+	warnings := profile.PlanCheck(ctx, sqlStr, m.conn)
+	for _, w := range warnings {
+		icon := "⚠ "
+		if w.Severity == "info" {
+			icon = "ℹ "
+		}
+		(&m).addMessage(msgCmd, "  "+icon+w.Message)
 	}
 
 	// Execute the query
