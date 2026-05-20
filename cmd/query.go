@@ -99,6 +99,18 @@ Uses your cached schema to generate accurate queries.
 			}
 		}
 
+		// SELECT * guardrail — rewrite or warn
+		if s, err := db.LoadSchema(); err == nil {
+			result := db.GuardrailSelectStar(sql, s)
+			if result.Warning != "" {
+				fmt.Fprintf(os.Stderr, "%s\n\n", result.Warning)
+			}
+			if result.Blocked {
+				return fmt.Errorf("query blocked by guardrail")
+			}
+			sql = result.SQL
+		}
+
 		// Dry-run: show SQL and exit
 		if queryDryRun {
 			cmd.Println(sql)

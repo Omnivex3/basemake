@@ -189,6 +189,15 @@ func (m *mysqlDB) Introspect(ctx context.Context) (*Schema, error) {
 		fkRows.Close()
 	}
 
+	// Get estimated row counts from information_schema
+	for i, t := range s.Tables {
+		err := m.conn.QueryRowContext(ctx,
+			"SELECT TABLE_ROWS FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?", t.Name).Scan(&s.Tables[i].EstimatedRows)
+		if err != nil {
+			s.Tables[i].EstimatedRows = 0
+		}
+	}
+
 	return s, nil
 }
 

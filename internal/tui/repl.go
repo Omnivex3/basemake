@@ -1099,6 +1099,18 @@ func (m Model) validateAndExecSQL(ctx context.Context, question, sqlStr string) 
 		break
 	}
 
+	// SELECT * guardrail — rewrite or warn before executing
+	if schema, err := db.LoadSchema(); err == nil {
+		result := db.GuardrailSelectStar(sqlStr, schema)
+		if result.Blocked {
+			return queryResultMsg{err: fmt.Errorf("%s", result.Warning)}
+		}
+		if result.Warning != "" {
+			(&m).addMessage(msgCmd, insightBubble(result.Warning))
+		}
+		sqlStr = result.SQL
+	}
+
 	// Execute the query
 	startTime := time.Now()
 	rows, err := m.conn.Query(ctx, sqlStr)

@@ -182,6 +182,15 @@ func (p *postgresDB) Introspect(ctx context.Context) (*Schema, error) {
 		fkRows.Close()
 	}
 
+	// Get estimated row counts from pg_class
+	for i, t := range s.Tables {
+		err := p.conn.QueryRowContext(ctx,
+			"SELECT reltuples::bigint FROM pg_class WHERE relname = $1", t.Name).Scan(&s.Tables[i].EstimatedRows)
+		if err != nil {
+			s.Tables[i].EstimatedRows = 0
+		}
+	}
+
 	return s, nil
 }
 

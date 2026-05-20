@@ -51,10 +51,11 @@ type Schema struct {
 }
 
 type TableInfo struct {
-	Name        string           `json:"name"`
-	Columns     []ColumnInfo     `json:"columns"`
-	Indexes     []IndexInfo      `json:"indexes"`
-	ForeignKeys []ForeignKeyInfo `json:"foreign_keys"`
+	Name          string           `json:"name"`
+	Columns       []ColumnInfo     `json:"columns"`
+	Indexes       []IndexInfo      `json:"indexes"`
+	ForeignKeys   []ForeignKeyInfo `json:"foreign_keys"`
+	EstimatedRows int64            `json:"estimated_rows"`
 }
 
 type ForeignKeyInfo struct {
