@@ -135,7 +135,7 @@ var indexApplyCmd = &cobra.Command{
 		fmt.Print("Apply this index? This creates a real index on your database. [y/N]: ")
 
 		var response string
-		fmt.Scanln(&response)
+		_, _ = fmt.Scanln(&response)
 		response = strings.TrimSpace(strings.ToLower(response))
 		if response != "y" && response != "yes" {
 			fmt.Println("Cancelled.")

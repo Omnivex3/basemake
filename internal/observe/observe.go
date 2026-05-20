@@ -73,15 +73,15 @@ func loadState() observeState {
 		return observeState{}
 	}
 	var st observeState
-	json.Unmarshal(data, &st)
+	_ = json.Unmarshal(data, &st)
 	return st
 }
 
 func saveState(st observeState) {
 	dir := filepath.Dir(statePath())
-	os.MkdirAll(dir, 0755)
+	_ = os.MkdirAll(dir, 0755)
 	data, _ := json.Marshal(st)
-	os.WriteFile(statePath(), data, 0644)
+	_ = os.WriteFile(statePath(), data, 0600)
 }
 
 // ── signal: plan changes ──
@@ -226,7 +226,7 @@ func checkSchemaDrift(st *observeState) string {
 		schemaPath := schemaCachePath() + ".bak"
 		prevData, err := os.ReadFile(schemaPath)
 		if err == nil {
-			json.Unmarshal(prevData, &prev)
+			_ = json.Unmarshal(prevData, &prev)
 		}
 
 		if diff := diffSchema(&prev, &current); diff != "" {

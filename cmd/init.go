@@ -467,7 +467,7 @@ func saveProviderConfigWithKey(name, model, baseURL, key string) {
 	}
 
 	// Also set AI_PROVIDER env var for immediate use
-	os.Setenv("AI_PROVIDER", cfg.AIProvider)
+	_ = os.Setenv("AI_PROVIDER", cfg.AIProvider)
 
 	_ = cfg.Save()
 }

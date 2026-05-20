@@ -62,7 +62,7 @@ func RunSQL(ctx context.Context, conn db.Database, sqlStr string) error {
 		// Drain and close
 		for rows.Next() {
 			var buf sql.NullString
-			rows.Scan(&buf)
+			_ = rows.Scan(&buf)
 		}
 		rows.Close()
 	}()

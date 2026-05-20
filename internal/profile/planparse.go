@@ -165,7 +165,7 @@ func isIndexScan(nt string) bool {
 // Handles the key patterns that make developers say "oh, I know what to do next."
 func ExplainChange(c PlanChange) string {
 	// Case: index scan was removed entirely (replaced by non-index access)
-	if isIndexScan(c.OldNodeType) && c.OldIndexName != "" {
+	if isIndexScan(c.OldNodeType) && c.OldIndexName != "" && c.OldNodeType != c.NewNodeType {
 		switch {
 		case c.NewNodeType == "Seq Scan":
 			return fmt.Sprintf("The planner stopped using %s on %s. Run ANALYZE.", c.OldIndexName, c.RelationName)

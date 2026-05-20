@@ -34,7 +34,7 @@ func NewServer(store *Store, port int, version string) *Server {
 // Shutdown gracefully stops the server, its watch scheduler, and the store.
 func (s *Server) Shutdown() {
 	close(s.done)
-	s.store.Close()
+	_ = s.store.Close()
 }
 
 // Start runs the HTTP server on the configured port and starts the watch scheduler.
@@ -215,7 +215,7 @@ func (s *Server) handleBudgetsLatest(w http.ResponseWriter, r *http.Request) {
 func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
+	_ = json.NewEncoder(w).Encode(v)
 }
 
 func writeError(w http.ResponseWriter, status int, msg string) {

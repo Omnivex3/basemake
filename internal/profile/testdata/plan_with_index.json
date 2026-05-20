@@ -1,0 +1,16 @@
+[
+  {
+    "Plan": {
+      "Node Type": "Limit",
+      "Relation Name": "",
+      "Plans": [
+        {
+          "Node Type": "Index Scan",
+          "Relation Name": "users",
+          "Index Name": "users_email_idx",
+          "Plans": []
+        }
+      ]
+    }
+  }
+]

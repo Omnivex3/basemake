@@ -70,7 +70,7 @@ func Save(hash string, p *QueryProfile) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(ProfilePath(hash), data, 0644)
+	return os.WriteFile(ProfilePath(hash), data, 0600)
 }
 
 // CompareResult holds the user-facing comparison output after profiling a query.

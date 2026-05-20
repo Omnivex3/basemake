@@ -174,7 +174,7 @@ Uses your cached schema to generate accurate queries.
 				}
 				fmt.Fprint(os.Stderr, "\nRun anyway? [Y/n]: ")
 				var resp string
-				fmt.Scanln(&resp)
+				_, _ = fmt.Scanln(&resp)
 				if resp != "" && resp != "y" && resp != "Y" && resp != "yes" && resp != "Yes" {
 					return fmt.Errorf("cancelled")
 				}

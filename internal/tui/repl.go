@@ -1621,7 +1621,7 @@ func saveQueryToDisk(q savedQuery) error {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
-	return os.WriteFile(savedQueriesPath(), data, 0644)
+	return os.WriteFile(savedQueriesPath(), data, 0600)
 }
 
 func (m Model) saveCmd(name string) tea.Cmd {
