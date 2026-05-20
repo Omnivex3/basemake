@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator'
 
 function H1({ children }: { children: React.ReactNode }) {
   return (
-    <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
+    <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
       {children}
     </h1>
   )
@@ -19,7 +19,7 @@ function H2({ id, children }: { id?: string; children: React.ReactNode }) {
   return (
     <h2
       id={id}
-      className="mt-12 mb-4 scroll-mt-24 text-2xl font-bold tracking-tight text-white"
+      className="mt-12 mb-4 scroll-mt-24 text-2xl font-bold tracking-tight text-foreground"
     >
       {children}
     </h2>
@@ -28,7 +28,7 @@ function H2({ id, children }: { id?: string; children: React.ReactNode }) {
 
 function H3({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mt-8 mb-3 text-xl font-semibold tracking-tight text-white">
+    <h3 className="mt-8 mb-3 text-xl font-semibold tracking-tight text-foreground">
       {children}
     </h3>
   )
@@ -36,7 +36,7 @@ function H3({ children }: { children: React.ReactNode }) {
 
 function P({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-4 leading-relaxed text-white/60">
+    <p className="mb-4 leading-relaxed text-muted-foreground">
       {children}
     </p>
   )
@@ -44,7 +44,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Code({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <code className={`rounded-md border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 text-sm font-mono text-[#ff3131] ${className}`}>
+    <code className={`rounded-md border border-border/[0.06] bg-muted/30 px-1.5 py-0.5 text-sm font-mono text-[#ff3131] ${className}`}>
       {children}
     </code>
   )
@@ -52,17 +52,17 @@ function Code({ children, className = '' }: { children: React.ReactNode; classNa
 
 function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: string }) {
   return (
-    <div className="group relative mb-6 overflow-hidden rounded-xl border border-white/[0.06] bg-black/60 backdrop-blur-sm">
-      <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
+    <div className="group relative mb-6 overflow-hidden rounded-xl border border-border/[0.06] bg-black/60 backdrop-blur-sm">
+      <div className="flex items-center gap-2 border-b border-border/[0.06] px-4 py-2.5">
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-[#ff3131]/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
         </div>
-        <span className="ml-2 text-[11px] text-white/30 font-mono">{lang}</span>
+        <span className="ml-2 text-[11px] text-muted-foreground/80 font-mono">{lang}</span>
       </div>
       <pre className="overflow-x-auto p-5 text-sm leading-relaxed">
-        <code className="font-mono text-white/80 [word-spacing:0.15em]">
+        <code className="font-mono text-foreground/80 [word-spacing:0.15em]">
           {children}
         </code>
       </pre>
@@ -72,7 +72,7 @@ function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: strin
 
 function UL({ children }: { children: React.ReactNode }) {
   return (
-    <ul className="mb-6 space-y-2 text-white/60">
+    <ul className="mb-6 space-y-2 text-muted-foreground">
       {children}
     </ul>
   )
@@ -89,7 +89,7 @@ function LI({ children }: { children: React.ReactNode }) {
 
 function Table({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mb-6 overflow-x-auto rounded-xl border border-white/[0.06]">
+    <div className="mb-6 overflow-x-auto rounded-xl border border-border/[0.06]">
       <table className="w-full text-sm">
         {children}
       </table>
@@ -99,7 +99,7 @@ function Table({ children }: { children: React.ReactNode }) {
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
-    <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">
+    <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">
       {children}
     </th>
   )
@@ -107,7 +107,7 @@ function Th({ children }: { children: React.ReactNode }) {
 
 function Td({ children }: { children: React.ReactNode }) {
   return (
-    <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 last:border-0">
+    <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground last:border-0">
       {children}
     </td>
   )
@@ -163,17 +163,17 @@ export default function Commands() {
           Reference
         </Badge>
         <H1>Commands Reference</H1>
-        <p className="mt-3 text-lg text-white/50">
+        <p className="mt-3 text-lg text-muted-foreground">
           Every command in the basemake CLI, with syntax and examples.
         </p>
       </div>
 
-      <Separator className="mb-10 bg-white/[0.04]" />
+      <Separator className="mb-10 bg-muted/30" />
 
       {/* Overview table */}
-      <Card className="mb-10 border-white/[0.06] bg-white/[0.02]">
+      <Card className="mb-10 border-border/[0.06] bg-muted/30">
         <CardHeader>
-          <CardTitle className="text-white text-lg">Quick Reference</CardTitle>
+          <CardTitle className="text-foreground text-lg">Quick Reference</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -259,7 +259,7 @@ export default function Commands() {
   >   …
   > .exit`}</CodeBlock>
 
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="init">basemake init</H2>
       <P>
@@ -269,7 +269,7 @@ export default function Commands() {
       <CodeBlock lang="bash">{`basemake init
 basemake init --force   # overwrite existing config`}</CodeBlock>
 
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="connect">basemake connect</H2>
       <P>
@@ -279,7 +279,7 @@ basemake init --force   # overwrite existing config`}</CodeBlock>
       <CodeBlock lang="bash">{`basemake connect postgres://user:pass@host:5432/dbname
 basemake connect "postgres://user@localhost:5432/mydb?sslmode=require"`}</CodeBlock>
 
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="query">basemake "query"</H2>
       <P>
@@ -294,7 +294,7 @@ cat query.txt | basemake --format=json`}</CodeBlock>
         generated SQL), <Code>--no-execute</Code> (generate SQL without running it).
       </P>
 
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="check">basemake check</H2>
       <P>
@@ -310,7 +310,7 @@ basemake check --stdin < query.sql`}</CodeBlock>
         <Code>2</Code> = dangerous patterns found.
       </P>
 
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="budget">basemake budget</H2>
       <P>
@@ -322,7 +322,7 @@ basemake budget set --max-rows=10000
 basemake budget list
 basemake budget apply --profile=strict`}</CodeBlock>
 
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="watch">basemake watch</H2>
       <P>
@@ -333,7 +333,7 @@ basemake budget apply --profile=strict`}</CodeBlock>
 basemake watch --interval=5s
 basemake watch --alert-latency=1s`}</CodeBlock>
 
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="diff">basemake diff</H2>
       <P>
@@ -343,7 +343,7 @@ basemake watch --alert-latency=1s`}</CodeBlock>
       <CodeBlock lang="bash">{`basemake diff --from=staging --to=production
 basemake diff --file=schema_a.sql --file=schema_b.sql`}</CodeBlock>
 
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="doctor">basemake doctor</H2>
       <P>
@@ -353,7 +353,7 @@ basemake diff --file=schema_a.sql --file=schema_b.sql`}</CodeBlock>
       <CodeBlock lang="bash">{`basemake doctor
 basemake doctor --verbose`}</CodeBlock>
 
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="index">basemake index</H2>
       <P>
@@ -364,7 +364,7 @@ basemake doctor --verbose`}</CodeBlock>
 basemake index --apply    # generate and apply recommended indexes
 basemake index --review   # interactive review before applying`}</CodeBlock>
 
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="config">basemake config</H2>
       <P>
@@ -376,7 +376,7 @@ basemake config set ai_provider openai
 basemake config set ai_model gpt-4o
 basemake config get ai_provider`}</CodeBlock>
 
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="server">basemake server</H2>
       <P>

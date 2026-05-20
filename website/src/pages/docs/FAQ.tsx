@@ -11,7 +11,7 @@ import { ChevronDown } from 'lucide-react'
 
 function P({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-4 leading-relaxed text-white/60">
+    <p className="mb-4 leading-relaxed text-muted-foreground">
       {children}
     </p>
   )
@@ -19,7 +19,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded-md border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 text-sm font-mono text-[#ff3131]">
+    <code className="rounded-md border border-border/[0.06] bg-muted/30 px-1.5 py-0.5 text-sm font-mono text-[#ff3131]">
       {children}
     </code>
   )
@@ -27,17 +27,17 @@ function Code({ children }: { children: React.ReactNode }) {
 
 function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: string }) {
   return (
-    <div className="group relative mb-6 overflow-hidden rounded-xl border border-white/[0.06] bg-black/60 backdrop-blur-sm">
-      <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
+    <div className="group relative mb-6 overflow-hidden rounded-xl border border-border/[0.06] bg-black/60 backdrop-blur-sm">
+      <div className="flex items-center gap-2 border-b border-border/[0.06] px-4 py-2.5">
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-[#ff3131]/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
         </div>
-        <span className="ml-2 text-[11px] text-white/30 font-mono">{lang}</span>
+        <span className="ml-2 text-[11px] text-muted-foreground/80 font-mono">{lang}</span>
       </div>
       <pre className="overflow-x-auto p-5 text-sm leading-relaxed">
-        <code className="font-mono text-white/80 [word-spacing:0.15em]">
+        <code className="font-mono text-foreground/80 [word-spacing:0.15em]">
           {children}
         </code>
       </pre>
@@ -59,22 +59,22 @@ function FAQItem({ question, children, defaultOpen = false }: FAQItemProps) {
   const [open, setOpen] = useState(defaultOpen)
 
   return (
-    <div className="group rounded-xl border border-white/[0.06] bg-white/[0.02] transition-colors hover:border-white/[0.10]">
+    <div className="group rounded-xl border border-border/[0.06] bg-muted/30 transition-colors hover:border-border/[0.10]">
       <button
         onClick={() => setOpen(!open)}
         className="flex w-full items-center justify-between px-6 py-5 text-left"
       >
-        <span className="pr-4 text-base font-medium text-white/90">
+        <span className="pr-4 text-base font-medium text-foreground/90">
           {question}
         </span>
         <ChevronDown
-          className={`h-4 w-4 shrink-0 text-white/40 transition-transform duration-200 ${
+          className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
             open ? 'rotate-180' : ''
           }`}
         />
       </button>
       {open && (
-        <div className="border-t border-white/[0.06] px-6 py-5 text-sm leading-relaxed text-white/60">
+        <div className="border-t border-border/[0.06] px-6 py-5 text-sm leading-relaxed text-muted-foreground">
           {children}
         </div>
       )}
@@ -93,20 +93,20 @@ export default function FAQ() {
         <Badge variant="outline" className="mb-3 border-[#ff3131]/30 text-[#ff3131] text-xs tracking-wide uppercase">
           Help
         </Badge>
-        <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
           Frequently Asked Questions
         </h1>
-        <p className="mt-3 text-lg text-white/50">
+        <p className="mt-3 text-lg text-muted-foreground">
           Everything you need to know about basemake.
         </p>
       </div>
 
-      <Separator className="mb-10 bg-white/[0.04]" />
+      <Separator className="mb-10 bg-muted/30" />
 
       <div className="space-y-3">
         <FAQItem question="What is basemake?">
           <P>
-            basemake is a <strong className="text-white">local-first CLI tool</strong>{' '}
+            basemake is a <strong className="text-foreground">local-first CLI tool</strong>{' '}
             that converts natural language questions into optimized SQL. Instead of
             writing complex JOINs or memorizing table schemas, you describe what you
             need in plain English and basemake handles the translation, execution, and
@@ -126,18 +126,18 @@ export default function FAQ() {
 
         <FAQItem question="How is the free tier different from Pro?">
           <P>
-            The <strong className="text-white">Free tier</strong> gives you full access to
+            The <strong className="text-foreground">Free tier</strong> gives you full access to
             basemake's core CLI — REPL mode, natural language queries, and local
             configuration. It's designed for individual developers and personal projects.
           </P>
           <P>
-            <strong className="text-white">Pro</strong> adds CI/CD integration with{' '}
+            <strong className="text-foreground">Pro</strong> adds CI/CD integration with{' '}
             <Code>basemake check</Code>, custom check policies, budget profiles, index
             recommendations, and schema diffing. It's designed for professional developers
             who need to gate SQL quality in their pipelines.
           </P>
           <P>
-            <strong className="text-white">Team</strong> adds the Team Server — shared AI
+            <strong className="text-foreground">Team</strong> adds the Team Server — shared AI
             proxy and caching (40-60% cost savings), RBAC, audit logging, and Slack/Teams
             integrations. It's designed for organizations.
           </P>
@@ -205,21 +205,21 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
             <Link to="/docs/team-server" className="text-[#ff3131] hover:underline">
               Team Server
             </Link>{' '}
-            typically see <strong className="text-white">40–60% reduction</strong> in AI
+            typically see <strong className="text-foreground">40–60% reduction</strong> in AI
             API costs. Here's how:
           </P>
           <ul className="mb-4 space-y-2">
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
-              <span><strong className="text-white">Semantic caching:</strong> When one person asks "show me monthly revenue," the result is cached. If a colleague asks "what's our monthly revenue trend?" they get the cached result — no new API call.</span>
+              <span><strong className="text-foreground">Semantic caching:</strong> When one person asks "show me monthly revenue," the result is cached. If a colleague asks "what's our monthly revenue trend?" they get the cached result — no new API call.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
-              <span><strong className="text-white">Single API key:</strong> One key for the whole team means you benefit from provider tier discounts and consolidated billing.</span>
+              <span><strong className="text-foreground">Single API key:</strong> One key for the whole team means you benefit from provider tier discounts and consolidated billing.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
-              <span><strong className="text-white">Rate limiting:</strong> Prevents a single user from accidentally running up the bill.</span>
+              <span><strong className="text-foreground">Rate limiting:</strong> Prevents a single user from accidentally running up the bill.</span>
             </li>
           </ul>
           <P>
@@ -232,25 +232,25 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
         <FAQItem question="How is this different from DataGrip or other database tools?">
           <P>
             Traditional database tools like DataGrip, DBeaver, and TablePlus are
-            <strong className="text-white"> GUI-based editors</strong> that require you
+            <strong className="text-foreground"> GUI-based editors</strong> that require you
             to write SQL by hand. basemake takes a different approach:
           </P>
           <ul className="mb-4 space-y-2">
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
-              <span><strong className="text-white">Natural language first:</strong> Describe what you want in English — basemake generates the SQL. You don't need to know table names, column types, or JOIN syntax.</span>
+              <span><strong className="text-foreground">Natural language first:</strong> Describe what you want in English — basemake generates the SQL. You don't need to know table names, column types, or JOIN syntax.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
-              <span><strong className="text-white">CLI-native:</strong> Designed for the terminal, not a GUI. Perfect for SSH sessions, CI/CD pipelines, and developer workflows.</span>
+              <span><strong className="text-foreground">CLI-native:</strong> Designed for the terminal, not a GUI. Perfect for SSH sessions, CI/CD pipelines, and developer workflows.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
-              <span><strong className="text-white">Built-in performance analysis:</strong> Every query comes with execution insights — no separate EXPLAIN step needed.</span>
+              <span><strong className="text-foreground">Built-in performance analysis:</strong> Every query comes with execution insights — no separate EXPLAIN step needed.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
-              <span><strong className="text-white">CI/CD gates:</strong> basemake check slots into your pipeline to catch bad SQL before it ships.</span>
+              <span><strong className="text-foreground">CI/CD gates:</strong> basemake check slots into your pipeline to catch bad SQL before it ships.</span>
             </li>
           </ul>
           <P>
@@ -275,7 +275,7 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
             ].map((db) => (
               <div
                 key={db}
-                className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-center text-sm text-white/70"
+                className="rounded-lg border border-border/[0.06] bg-muted/30 px-3 py-2 text-center text-sm text-muted-foreground"
               >
                 {db}
               </div>
@@ -297,10 +297,10 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
             Yes — with one caveat: the AI translation step.
           </P>
           <P>
-            <strong className="text-white">Your data stays local:</strong> basemake sends
-            your database <strong className="text-white">schema metadata</strong> (table
+            <strong className="text-foreground">Your data stays local:</strong> basemake sends
+            your database <strong className="text-foreground">schema metadata</strong> (table
             names, column names, types, relationships) to the AI provider. It does
-            <strong className="text-white"> not</strong> send row data, query results, or
+            <strong className="text-foreground"> not</strong> send row data, query results, or
             any actual database content to the AI.
           </P>
           <P>
@@ -309,17 +309,17 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
           <ul className="mb-4 space-y-2">
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500/60" />
-              <span><strong className="text-white">Use Ollama</strong> — run a local LLM
+              <span><strong className="text-foreground">Use Ollama</strong> — run a local LLM
               on your machine. Nothing leaves your laptop.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500/60" />
-              <span><strong className="text-white">Team Server</strong> — the server
+              <span><strong className="text-foreground">Team Server</strong> — the server
               proxies AI requests through a shared cache on your infrastructure.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500/60" />
-              <span><strong className="text-white">No telemetry</strong> — basemake has
+              <span><strong className="text-foreground">No telemetry</strong> — basemake has
               no phone-home, no analytics, no usage tracking.</span>
             </li>
           </ul>
@@ -339,7 +339,7 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
           <ul className="mb-4 space-y-2">
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
-              <span><strong className="text-white">GitHub Issues</strong> — report bugs
+              <span><strong className="text-foreground">GitHub Issues</strong> — report bugs
               and request features at{' '}
               <Link to="https://github.com/DynamicKarabo/basemake/issues" className="text-[#ff3131] hover:underline">
                 github.com/DynamicKarabo/basemake
@@ -347,17 +347,17 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
-              <span><strong className="text-white">Documentation</strong> — this site
+              <span><strong className="text-foreground">Documentation</strong> — this site
               covers Quickstart, Commands, Configuration, and more.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
-              <span><strong className="text-white">Pro / Team</strong> — priority email
+              <span><strong className="text-foreground">Pro / Team</strong> — priority email
               support with guaranteed response times.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
-              <span><strong className="text-white">basemake doctor</strong> — built-in
+              <span><strong className="text-foreground">basemake doctor</strong> — built-in
               diagnostics that can help you troubleshoot common issues.</span>
             </li>
           </ul>
@@ -366,13 +366,13 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
       </div>
 
       {/* Still have questions */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
-      <Card className="border-white/[0.06] bg-white/[0.02]">
+      <Card className="border-border/[0.06] bg-muted/30">
         <CardHeader>
-          <CardTitle className="text-white text-lg">Still have questions?</CardTitle>
+          <CardTitle className="text-foreground text-lg">Still have questions?</CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-white/60">
+        <CardContent className="text-sm text-muted-foreground">
           <P>
             Check out the other documentation pages or{' '}
             <Link to="https://github.com/DynamicKarabo/basemake/issues" className="text-[#ff3131] hover:underline">

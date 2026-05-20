@@ -11,7 +11,7 @@ function H2({ id, children }: { id?: string; children: React.ReactNode }) {
   return (
     <h2
       id={id}
-      className="mt-12 mb-4 scroll-mt-24 text-2xl font-bold tracking-tight text-white"
+      className="mt-12 mb-4 scroll-mt-24 text-2xl font-bold tracking-tight text-foreground"
     >
       {children}
     </h2>
@@ -20,7 +20,7 @@ function H2({ id, children }: { id?: string; children: React.ReactNode }) {
 
 function H3({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mt-8 mb-3 text-xl font-semibold tracking-tight text-white">
+    <h3 className="mt-8 mb-3 text-xl font-semibold tracking-tight text-foreground">
       {children}
     </h3>
   )
@@ -28,7 +28,7 @@ function H3({ children }: { children: React.ReactNode }) {
 
 function P({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-4 leading-relaxed text-white/60">
+    <p className="mb-4 leading-relaxed text-muted-foreground">
       {children}
     </p>
   )
@@ -36,7 +36,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded-md border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 text-sm font-mono text-[#ff3131]">
+    <code className="rounded-md border border-border/[0.06] bg-muted/30 px-1.5 py-0.5 text-sm font-mono text-[#ff3131]">
       {children}
     </code>
   )
@@ -44,17 +44,17 @@ function Code({ children }: { children: React.ReactNode }) {
 
 function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: string }) {
   return (
-    <div className="group relative mb-6 overflow-hidden rounded-xl border border-white/[0.06] bg-black/60 backdrop-blur-sm">
-      <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
+    <div className="group relative mb-6 overflow-hidden rounded-xl border border-border/[0.06] bg-black/60 backdrop-blur-sm">
+      <div className="flex items-center gap-2 border-b border-border/[0.06] px-4 py-2.5">
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-[#ff3131]/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
         </div>
-        <span className="ml-2 text-[11px] text-white/30 font-mono">{lang}</span>
+        <span className="ml-2 text-[11px] text-muted-foreground/80 font-mono">{lang}</span>
       </div>
       <pre className="overflow-x-auto p-5 text-sm leading-relaxed">
-        <code className="font-mono text-white/80 [word-spacing:0.15em]">
+        <code className="font-mono text-foreground/80 [word-spacing:0.15em]">
           {children}
         </code>
       </pre>
@@ -64,7 +64,7 @@ function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: strin
 
 function UL({ children }: { children: React.ReactNode }) {
   return (
-    <ul className="mb-6 space-y-2 text-white/60">
+    <ul className="mb-6 space-y-2 text-muted-foreground">
       {children}
     </ul>
   )
@@ -116,15 +116,15 @@ function TierCard({
       className={
         highlight
           ? 'border-[#ff3131]/30 bg-[#ff3131]/5'
-          : 'border-white/[0.06] bg-white/[0.02]'
+          : 'border-border/[0.06] bg-muted/30'
       }
     >
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-white text-xl">{name}</CardTitle>
-          <span className="text-lg font-semibold text-white/70">{price}</span>
+          <CardTitle className="text-foreground text-xl">{name}</CardTitle>
+          <span className="text-lg font-semibold text-muted-foreground">{price}</span>
         </div>
-        <p className="text-sm text-white/50">{description}</p>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </CardHeader>
       <CardContent>
         <UL>
@@ -148,16 +148,16 @@ export default function Licensing() {
         <Badge variant="outline" className="mb-3 border-[#ff3131]/30 text-[#ff3131] text-xs tracking-wide uppercase">
           Plans
         </Badge>
-        <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
           Licensing
         </h1>
-        <p className="mt-3 text-lg text-white/50">
+        <p className="mt-3 text-lg text-muted-foreground">
           basemake is free for individual use. Upgrade to Pro or Team for advanced
           features, CI/CD gates, and team collaboration.
         </p>
       </div>
 
-      <Separator className="mb-10 bg-white/[0.04]" />
+      <Separator className="mb-10 bg-muted/30" />
 
       {/* Tiers */}
       <div className="mb-12 grid gap-6 md:grid-cols-3">
@@ -212,22 +212,22 @@ export default function Licensing() {
         basemake never phones home.
       </P>
 
-      <div className="mb-6 overflow-x-auto rounded-xl border border-white/[0.06]">
+      <div className="mb-6 overflow-x-auto rounded-xl border border-border/[0.06]">
         <table className="w-full text-sm">
           <thead>
             <tr>
-              <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Plan</th>
-              <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Key Format</th>
+              <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Plan</th>
+              <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Key Format</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Pro</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-mono text-xs">bmk_pro_xxxxxxxxxxxxxxxx</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Pro</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-mono text-xs">bmk_pro_xxxxxxxxxxxxxxxx</td>
             </tr>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Team</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-mono text-xs">bmk_team_xxxxxxxxxxxxxxxx</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Team</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-mono text-xs">bmk_team_xxxxxxxxxxxxxxxx</td>
             </tr>
           </tbody>
         </table>
@@ -245,7 +245,7 @@ export BASEMAKE_LICENSE_KEY=bmk_pro_xxxxxxxxxxxxxxxx`}</CodeBlock>
       </Tip>
 
       {/* HMAC Verification */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="hmac-verification">HMAC Verification</H2>
 
@@ -276,16 +276,16 @@ Signature: HMAC-SHA256(public_salt, payload)
         This means:
       </P>
       <UL>
-        <LI><strong className="text-white">No phone-home required</strong> — verification
+        <LI><strong className="text-foreground">No phone-home required</strong> — verification
         is fully offline.</LI>
-        <LI><strong className="text-white">Tamper-proof</strong> — modified keys fail
+        <LI><strong className="text-foreground">Tamper-proof</strong> — modified keys fail
         HMAC verification immediately.</LI>
-        <LI><strong className="text-white">Time-bound</strong> — expired keys are rejected
+        <LI><strong className="text-foreground">Time-bound</strong> — expired keys are rejected
         with a clear message.</LI>
       </UL>
 
       {/* Grace Period */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="grace-period">License Expiry & Grace Period</H2>
 
@@ -311,7 +311,7 @@ Signature: HMAC-SHA256(public_salt, payload)
       </Warn>
 
       {/* CI/CD */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="ci-cd-licensing">Licensing for CI/CD</H2>
 
@@ -335,27 +335,27 @@ basemake check --dir ./migrations --license=bmk_pro_xxxxxxxxxxxxxxxx`}</CodeBloc
       </P>
 
       {/* FAQ */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
-      <Card className="border-white/[0.06] bg-white/[0.02]">
+      <Card className="border-border/[0.06] bg-muted/30">
         <CardHeader>
-          <CardTitle className="text-white text-lg">Licensing FAQ</CardTitle>
+          <CardTitle className="text-foreground text-lg">Licensing FAQ</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 text-sm text-white/60">
+        <CardContent className="space-y-4 text-sm text-muted-foreground">
           <div>
-            <p className="mb-1 font-semibold text-white">Can I use my license on multiple machines?</p>
+            <p className="mb-1 font-semibold text-foreground">Can I use my license on multiple machines?</p>
             <p>Yes. Your license key works on any machine you control — laptop, desktop,
             CI runners, and servers.</p>
           </div>
-          <Separator className="bg-white/[0.04]" />
+          <Separator className="bg-muted/30" />
           <div>
-            <p className="mb-1 font-semibold text-white">What happens if my payment fails?</p>
+            <p className="mb-1 font-semibold text-foreground">What happens if my payment fails?</p>
             <p>You enter the 14-day grace period. We'll send you reminder emails. If the
             issue isn't resolved, basemake drops to Free mode after 14 days.</p>
           </div>
-          <Separator className="bg-white/[0.04]" />
+          <Separator className="bg-muted/30" />
           <div>
-            <p className="mb-1 font-semibold text-white">Do you offer student or open-source discounts?</p>
+            <p className="mb-1 font-semibold text-foreground">Do you offer student or open-source discounts?</p>
             <p>Yes. Contact us at <Code>license@basemake.dev</Code> with your
             situation — we offer free Pro licenses for qualifying students and
             open-source projects.</p>

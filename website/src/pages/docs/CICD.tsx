@@ -11,7 +11,7 @@ function H2({ id, children }: { id?: string; children: React.ReactNode }) {
   return (
     <h2
       id={id}
-      className="mt-12 mb-4 scroll-mt-24 text-2xl font-bold tracking-tight text-white"
+      className="mt-12 mb-4 scroll-mt-24 text-2xl font-bold tracking-tight text-foreground"
     >
       {children}
     </h2>
@@ -20,7 +20,7 @@ function H2({ id, children }: { id?: string; children: React.ReactNode }) {
 
 function H3({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mt-8 mb-3 text-xl font-semibold tracking-tight text-white">
+    <h3 className="mt-8 mb-3 text-xl font-semibold tracking-tight text-foreground">
       {children}
     </h3>
   )
@@ -28,7 +28,7 @@ function H3({ children }: { children: React.ReactNode }) {
 
 function P({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-4 leading-relaxed text-white/60">
+    <p className="mb-4 leading-relaxed text-muted-foreground">
       {children}
     </p>
   )
@@ -36,7 +36,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Code({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <code className={`rounded-md border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 text-sm font-mono text-[#ff3131] ${className}`}>
+    <code className={`rounded-md border border-border/[0.06] bg-muted/30 px-1.5 py-0.5 text-sm font-mono text-[#ff3131] ${className}`}>
       {children}
     </code>
   )
@@ -44,17 +44,17 @@ function Code({ children, className = '' }: { children: React.ReactNode; classNa
 
 function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: string }) {
   return (
-    <div className="group relative mb-6 overflow-hidden rounded-xl border border-white/[0.06] bg-black/60 backdrop-blur-sm">
-      <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
+    <div className="group relative mb-6 overflow-hidden rounded-xl border border-border/[0.06] bg-black/60 backdrop-blur-sm">
+      <div className="flex items-center gap-2 border-b border-border/[0.06] px-4 py-2.5">
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-[#ff3131]/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
         </div>
-        <span className="ml-2 text-[11px] text-white/30 font-mono">{lang}</span>
+        <span className="ml-2 text-[11px] text-muted-foreground/80 font-mono">{lang}</span>
       </div>
       <pre className="overflow-x-auto p-5 text-sm leading-relaxed">
-        <code className="font-mono text-white/80 [word-spacing:0.15em]">
+        <code className="font-mono text-foreground/80 [word-spacing:0.15em]">
           {children}
         </code>
       </pre>
@@ -64,7 +64,7 @@ function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: strin
 
 function UL({ children }: { children: React.ReactNode }) {
   return (
-    <ul className="mb-6 space-y-2 text-white/60">
+    <ul className="mb-6 space-y-2 text-muted-foreground">
       {children}
     </ul>
   )
@@ -106,51 +106,51 @@ export default function CICD() {
         <Badge variant="outline" className="mb-3 border-[#ff3131]/30 text-[#ff3131] text-xs tracking-wide uppercase">
           Integration
         </Badge>
-        <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
           CI/CD Integration
         </h1>
-        <p className="mt-3 text-lg text-white/50">
+        <p className="mt-3 text-lg text-muted-foreground">
           Gate your deployments on SQL quality with <Code>basemake check</Code>. Catch
           slow queries, dangerous patterns, and schema drift before they reach production.
         </p>
       </div>
 
-      <Separator className="mb-10 bg-white/[0.04]" />
+      <Separator className="mb-10 bg-muted/30" />
 
       {/* Overview */}
-      <Card className="mb-10 border-white/[0.06] bg-white/[0.02]">
+      <Card className="mb-10 border-border/[0.06] bg-muted/30">
         <CardHeader>
-          <CardTitle className="text-white text-lg">How It Works</CardTitle>
+          <CardTitle className="text-foreground text-lg">How It Works</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-white/60">
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
             <Code>basemake check</Code> analyzes SQL files and returns a standardized
             exit code that your CI pipeline can act on:
           </p>
-          <div className="overflow-x-auto rounded-xl border border-white/[0.06]">
+          <div className="overflow-x-auto rounded-xl border border-border/[0.06]">
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Exit Code</th>
-                  <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Meaning</th>
-                  <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Action</th>
+                  <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Exit Code</th>
+                  <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Meaning</th>
+                  <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Action</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td className="border-b border-white/[0.04] px-4 py-3"><Code className="text-emerald-400">0</Code></td>
-                  <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Pass</td>
-                  <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">All queries meet quality thresholds</td>
+                  <td className="border-b border-border/[0.04] px-4 py-3"><Code className="text-emerald-400">0</Code></td>
+                  <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Pass</td>
+                  <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">All queries meet quality thresholds</td>
                 </tr>
                 <tr>
-                  <td className="border-b border-white/[0.04] px-4 py-3"><Code className="text-amber-400">1</Code></td>
-                  <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Slow</td>
-                  <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Queries exceed latency or cost budget</td>
+                  <td className="border-b border-border/[0.04] px-4 py-3"><Code className="text-amber-400">1</Code></td>
+                  <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Slow</td>
+                  <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Queries exceed latency or cost budget</td>
                 </tr>
                 <tr>
-                  <td className="border-b border-white/[0.04] px-4 py-3"><Code className="text-[#ff3131]">2</Code></td>
-                  <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Dangerous</td>
-                  <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Dangerous patterns (full table scans, Cartesian joins, etc.)</td>
+                  <td className="border-b border-border/[0.04] px-4 py-3"><Code className="text-[#ff3131]">2</Code></td>
+                  <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Dangerous</td>
+                  <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Dangerous patterns (full table scans, Cartesian joins, etc.)</td>
                 </tr>
               </tbody>
             </table>
@@ -197,7 +197,7 @@ jobs:
       </Tip>
 
       {/* GitLab CI */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="gitlab-ci">GitLab CI</H2>
 
@@ -222,7 +222,7 @@ jobs:
         - migrations/**/*.sql`}</CodeBlock>
 
       {/* Budget Policies in CI */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="budget-policies">Budget Policies in CI</H2>
 
@@ -251,7 +251,7 @@ basemake check --dir ./migrations --budget=ci`}</CodeBlock>
       </P>
 
       {/* Environment Variables */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="env-vars">Environment Variables for CI</H2>
 
@@ -260,30 +260,30 @@ basemake check --dir ./migrations --budget=ci`}</CodeBlock>
         credentials out of your repository.
       </P>
 
-      <div className="mb-6 overflow-x-auto rounded-xl border border-white/[0.06]">
+      <div className="mb-6 overflow-x-auto rounded-xl border border-border/[0.06]">
         <table className="w-full text-sm">
           <thead>
             <tr>
-              <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Variable</th>
-              <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Required</th>
-              <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Description</th>
+              <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Variable</th>
+              <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Required</th>
+              <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Description</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-mono text-xs">BASEMAKE_LICENSE_KEY</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">For Pro/Team features</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Your license key</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-mono text-xs">BASEMAKE_LICENSE_KEY</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">For Pro/Team features</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Your license key</td>
             </tr>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-mono text-xs">OPENAI_API_KEY</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">For AI-powered checks</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Provider API key</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-mono text-xs">OPENAI_API_KEY</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">For AI-powered checks</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Provider API key</td>
             </tr>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-mono text-xs">DATABASE_URL</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">For schema-aware checks</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Test database connection</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-mono text-xs">DATABASE_URL</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">For schema-aware checks</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Test database connection</td>
             </tr>
           </tbody>
         </table>
@@ -296,7 +296,7 @@ basemake check --dir ./migrations --budget=ci`}</CodeBlock>
       </Warn>
 
       {/* Advanced: Custom Policies */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="custom-policies">Custom Check Policies</H2>
 

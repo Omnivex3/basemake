@@ -11,7 +11,7 @@ function H2({ id, children }: { id?: string; children: React.ReactNode }) {
   return (
     <h2
       id={id}
-      className="mt-12 mb-4 scroll-mt-24 text-2xl font-bold tracking-tight text-white"
+      className="mt-12 mb-4 scroll-mt-24 text-2xl font-bold tracking-tight text-foreground"
     >
       {children}
     </h2>
@@ -20,7 +20,7 @@ function H2({ id, children }: { id?: string; children: React.ReactNode }) {
 
 function H3({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mt-8 mb-3 text-xl font-semibold tracking-tight text-white">
+    <h3 className="mt-8 mb-3 text-xl font-semibold tracking-tight text-foreground">
       {children}
     </h3>
   )
@@ -28,7 +28,7 @@ function H3({ children }: { children: React.ReactNode }) {
 
 function P({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-4 leading-relaxed text-white/60">
+    <p className="mb-4 leading-relaxed text-muted-foreground">
       {children}
     </p>
   )
@@ -36,7 +36,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded-md border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 text-sm font-mono text-[#ff3131]">
+    <code className="rounded-md border border-border/[0.06] bg-muted/30 px-1.5 py-0.5 text-sm font-mono text-[#ff3131]">
       {children}
     </code>
   )
@@ -44,17 +44,17 @@ function Code({ children }: { children: React.ReactNode }) {
 
 function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: string }) {
   return (
-    <div className="group relative mb-6 overflow-hidden rounded-xl border border-white/[0.06] bg-black/60 backdrop-blur-sm">
-      <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
+    <div className="group relative mb-6 overflow-hidden rounded-xl border border-border/[0.06] bg-black/60 backdrop-blur-sm">
+      <div className="flex items-center gap-2 border-b border-border/[0.06] px-4 py-2.5">
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-[#ff3131]/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
         </div>
-        <span className="ml-2 text-[11px] text-white/30 font-mono">{lang}</span>
+        <span className="ml-2 text-[11px] text-muted-foreground/80 font-mono">{lang}</span>
       </div>
       <pre className="overflow-x-auto p-5 text-sm leading-relaxed">
-        <code className="font-mono text-white/80 [word-spacing:0.15em]">
+        <code className="font-mono text-foreground/80 [word-spacing:0.15em]">
           {children}
         </code>
       </pre>
@@ -64,7 +64,7 @@ function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: strin
 
 function UL({ children }: { children: React.ReactNode }) {
   return (
-    <ul className="mb-6 space-y-2 text-white/60">
+    <ul className="mb-6 space-y-2 text-muted-foreground">
       {children}
     </ul>
   )
@@ -98,15 +98,15 @@ export default function Configuration() {
         <Badge variant="outline" className="mb-3 border-[#ff3131]/30 text-[#ff3131] text-xs tracking-wide uppercase">
           Reference
         </Badge>
-        <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
           Configuration
         </h1>
-        <p className="mt-3 text-lg text-white/50">
+        <p className="mt-3 text-lg text-muted-foreground">
           Configure basemake via the CLI, config file, or environment variables.
         </p>
       </div>
 
-      <Separator className="mb-10 bg-white/[0.04]" />
+      <Separator className="mb-10 bg-muted/30" />
 
       {/* Config CLI */}
       <H2 id="config-cli">basemake config CLI</H2>
@@ -129,7 +129,7 @@ basemake config set ai_provider openai
 basemake config unset ai_api_key`}</CodeBlock>
 
       {/* Config File */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="config-file">Config File Location</H2>
 
@@ -138,26 +138,26 @@ basemake config unset ai_api_key`}</CodeBlock>
         your operating system:
       </P>
 
-      <div className="mb-6 overflow-x-auto rounded-xl border border-white/[0.06]">
+      <div className="mb-6 overflow-x-auto rounded-xl border border-border/[0.06]">
         <table className="w-full text-sm">
           <thead>
             <tr>
-              <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Platform</th>
-              <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Path</th>
+              <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Platform</th>
+              <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Path</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Linux</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-mono text-xs">~/.config/basemake/config.yaml</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Linux</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-mono text-xs">~/.config/basemake/config.yaml</td>
             </tr>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">macOS</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-mono text-xs">~/Library/Application Support/basemake/config.yaml</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">macOS</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-mono text-xs">~/Library/Application Support/basemake/config.yaml</td>
             </tr>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Windows</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-mono text-xs">%APPDATA%\basemake\config.yaml</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Windows</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-mono text-xs">%APPDATA%\basemake\config.yaml</td>
             </tr>
           </tbody>
         </table>
@@ -171,7 +171,7 @@ basemake config unset ai_api_key`}</CodeBlock>
 export BASEMAKE_CONFIG=/path/to/custom.yaml`}</CodeBlock>
 
       {/* Environment Variables */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="env-vars">Environment Variables</H2>
 
@@ -180,89 +180,89 @@ export BASEMAKE_CONFIG=/path/to/custom.yaml`}</CodeBlock>
         take precedence over values in the config file.
       </P>
 
-      <div className="mb-6 overflow-x-auto rounded-xl border border-white/[0.06]">
+      <div className="mb-6 overflow-x-auto rounded-xl border border-border/[0.06]">
         <table className="w-full text-sm">
           <thead>
             <tr>
-              <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Variable</th>
-              <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Description</th>
+              <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Variable</th>
+              <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Description</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-mono text-xs">BASEMAKE_LICENSE_KEY</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">License key for Pro/Team</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-mono text-xs">BASEMAKE_LICENSE_KEY</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">License key for Pro/Team</td>
             </tr>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-mono text-xs">BASEMAKE_CONFIG</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Config file path override</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-mono text-xs">BASEMAKE_CONFIG</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Config file path override</td>
             </tr>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-mono text-xs">OPENAI_API_KEY</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">OpenAI API key (auto-detected)</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-mono text-xs">OPENAI_API_KEY</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">OpenAI API key (auto-detected)</td>
             </tr>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-mono text-xs">ANTHROPIC_API_KEY</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Anthropic API key (auto-detected)</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-mono text-xs">ANTHROPIC_API_KEY</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Anthropic API key (auto-detected)</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       {/* Key Settings */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="key-settings">Key Settings Reference</H2>
 
-      <Card className="mb-6 border-white/[0.06] bg-white/[0.02]">
+      <Card className="mb-6 border-border/[0.06] bg-muted/30">
         <CardContent className="pt-6">
           <dl className="space-y-6 text-sm">
             <div>
-              <dt className="mb-1 font-semibold text-white">license_key</dt>
-              <dd className="text-white/60">
+              <dt className="mb-1 font-semibold text-foreground">license_key</dt>
+              <dd className="text-muted-foreground">
                 Your basemake license key. Required for Pro features and Team Server.
                 Format: <Code>bmk_pro_xxx</Code> or <Code>bmk_team_xxx</Code>.
                 Set via <Code>basemake config set license_key bmk_pro_xxx</Code>.
               </dd>
             </div>
-            <Separator className="bg-white/[0.04]" />
+            <Separator className="bg-muted/30" />
             <div>
-              <dt className="mb-1 font-semibold text-white">ai_provider</dt>
-              <dd className="text-white/60">
+              <dt className="mb-1 font-semibold text-foreground">ai_provider</dt>
+              <dd className="text-muted-foreground">
                 The AI provider to use. One of: <Code>openai</Code>,{' '}
                 <Code>anthropic</Code>, <Code>opencode</Code>, <Code>ollama</Code>.
                 Default: detected during <Code>basemake init</Code>.
               </dd>
             </div>
-            <Separator className="bg-white/[0.04]" />
+            <Separator className="bg-muted/30" />
             <div>
-              <dt className="mb-1 font-semibold text-white">ai_model</dt>
-              <dd className="text-white/60">
+              <dt className="mb-1 font-semibold text-foreground">ai_model</dt>
+              <dd className="text-muted-foreground">
                 The model identifier for the selected provider. Examples:{' '}
                 <Code>gpt-4o</Code>, <Code>claude-sonnet-4-20250514</Code>,{' '}
                 <Code>llama3.2:latest</Code>.
               </dd>
             </div>
-            <Separator className="bg-white/[0.04]" />
+            <Separator className="bg-muted/30" />
             <div>
-              <dt className="mb-1 font-semibold text-white">ai_api_key</dt>
-              <dd className="text-white/60">
+              <dt className="mb-1 font-semibold text-foreground">ai_api_key</dt>
+              <dd className="text-muted-foreground">
                 Your API key for the selected provider. Stored in the config file.
                 Can also be set via provider-specific environment variables.
               </dd>
             </div>
-            <Separator className="bg-white/[0.04]" />
+            <Separator className="bg-muted/30" />
             <div>
-              <dt className="mb-1 font-semibold text-white">default_connection</dt>
-              <dd className="text-white/60">
+              <dt className="mb-1 font-semibold text-foreground">default_connection</dt>
+              <dd className="text-muted-foreground">
                 The connection string for your default database. Set automatically by{' '}
                 <Code>basemake connect</Code>.
               </dd>
             </div>
-            <Separator className="bg-white/[0.04]" />
+            <Separator className="bg-muted/30" />
             <div>
-              <dt className="mb-1 font-semibold text-white">ollama_host</dt>
-              <dd className="text-white/60">
+              <dt className="mb-1 font-semibold text-foreground">ollama_host</dt>
+              <dd className="text-muted-foreground">
                 Ollama server URL. Default: <Code>http://localhost:11434</Code>.
                 Override to use a remote Ollama instance.
               </dd>
@@ -272,7 +272,7 @@ export BASEMAKE_CONFIG=/path/to/custom.yaml`}</CodeBlock>
       </Card>
 
       {/* Connection Management */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="connections">Connection Management</H2>
 
@@ -300,7 +300,7 @@ basemake config unset connection.production`}</CodeBlock>
       </Tip>
 
       {/* Sample config file */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="example-config">Example Config File</H2>
 

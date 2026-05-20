@@ -11,7 +11,7 @@ function H2({ id, children }: { id?: string; children: React.ReactNode }) {
   return (
     <h2
       id={id}
-      className="mt-12 mb-4 scroll-mt-24 text-2xl font-bold tracking-tight text-white"
+      className="mt-12 mb-4 scroll-mt-24 text-2xl font-bold tracking-tight text-foreground"
     >
       {children}
     </h2>
@@ -20,7 +20,7 @@ function H2({ id, children }: { id?: string; children: React.ReactNode }) {
 
 function H3({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mt-8 mb-3 text-xl font-semibold tracking-tight text-white">
+    <h3 className="mt-8 mb-3 text-xl font-semibold tracking-tight text-foreground">
       {children}
     </h3>
   )
@@ -28,7 +28,7 @@ function H3({ children }: { children: React.ReactNode }) {
 
 function P({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-4 leading-relaxed text-white/60">
+    <p className="mb-4 leading-relaxed text-muted-foreground">
       {children}
     </p>
   )
@@ -36,7 +36,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded-md border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 text-sm font-mono text-[#ff3131]">
+    <code className="rounded-md border border-border/[0.06] bg-muted/30 px-1.5 py-0.5 text-sm font-mono text-[#ff3131]">
       {children}
     </code>
   )
@@ -44,17 +44,17 @@ function Code({ children }: { children: React.ReactNode }) {
 
 function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: string }) {
   return (
-    <div className="group relative mb-6 overflow-hidden rounded-xl border border-white/[0.06] bg-black/60 backdrop-blur-sm">
-      <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
+    <div className="group relative mb-6 overflow-hidden rounded-xl border border-border/[0.06] bg-black/60 backdrop-blur-sm">
+      <div className="flex items-center gap-2 border-b border-border/[0.06] px-4 py-2.5">
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-[#ff3131]/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
         </div>
-        <span className="ml-2 text-[11px] text-white/30 font-mono">{lang}</span>
+        <span className="ml-2 text-[11px] text-muted-foreground/80 font-mono">{lang}</span>
       </div>
       <pre className="overflow-x-auto p-5 text-sm leading-relaxed">
-        <code className="font-mono text-white/80 [word-spacing:0.15em]">
+        <code className="font-mono text-foreground/80 [word-spacing:0.15em]">
           {children}
         </code>
       </pre>
@@ -64,7 +64,7 @@ function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: strin
 
 function UL({ children }: { children: React.ReactNode }) {
   return (
-    <ul className="mb-6 space-y-2 text-white/60">
+    <ul className="mb-6 space-y-2 text-muted-foreground">
       {children}
     </ul>
   )
@@ -98,21 +98,21 @@ export default function TeamServer() {
         <Badge variant="outline" className="mb-3 border-[#ff3131]/30 text-[#ff3131] text-xs tracking-wide uppercase">
           Enterprise
         </Badge>
-        <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
           Team Server
         </h1>
-        <p className="mt-3 text-lg text-white/50">
+        <p className="mt-3 text-lg text-muted-foreground">
           Run basemake as a shared service for your team. Cut AI costs, enforce
           governance, and keep a central query history.
         </p>
       </div>
 
-      <Separator className="mb-10 bg-white/[0.04]" />
+      <Separator className="mb-10 bg-muted/30" />
 
       {/* Overview */}
-      <Card className="mb-10 border-white/[0.06] bg-white/[0.02]">
+      <Card className="mb-10 border-border/[0.06] bg-muted/30">
         <CardHeader>
-          <CardTitle className="text-white text-lg">At a Glance</CardTitle>
+          <CardTitle className="text-foreground text-lg">At a Glance</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
@@ -121,9 +121,9 @@ export default function TeamServer() {
             { label: 'RBAC', value: 'Read-only enforcement' },
             { label: 'Integrations', value: 'Slack & Teams' },
           ].map((stat) => (
-            <div key={stat.label} className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-center">
-              <p className="text-xs font-semibold tracking-wide text-white/40 uppercase">{stat.label}</p>
-              <p className="mt-1 text-lg font-semibold text-white">{stat.value}</p>
+            <div key={stat.label} className="rounded-lg border border-border/[0.06] bg-muted/30 px-4 py-3 text-center">
+              <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{stat.label}</p>
+              <p className="mt-1 text-lg font-semibold text-foreground">{stat.value}</p>
             </div>
           ))}
         </CardContent>
@@ -160,7 +160,7 @@ basemake config set server_token <shared-secret>`}</CodeBlock>
       </Tip>
 
       {/* Shared Query History */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="query-history">Shared Query History</H2>
 
@@ -170,13 +170,13 @@ basemake config set server_token <shared-secret>`}</CodeBlock>
       </P>
 
       <UL>
-        <LI><strong className="text-white">Browse recent queries</strong> — see what
+        <LI><strong className="text-foreground">Browse recent queries</strong> — see what
         others have been working on.</LI>
-        <LI><strong className="text-white">Replay past queries</strong> — reuse and
+        <LI><strong className="text-foreground">Replay past queries</strong> — reuse and
         adapt successful queries instead of starting from scratch.</LI>
-        <LI><strong className="text-white">Search history</strong> — find queries by
+        <LI><strong className="text-foreground">Search history</strong> — find queries by
         user, table, or natural language description.</LI>
-        <LI><strong className="text-white">Flag favorites</strong> — bookmark queries
+        <LI><strong className="text-foreground">Flag favorites</strong> — bookmark queries
         for team-wide reference.</LI>
       </UL>
 
@@ -190,7 +190,7 @@ basemake history --search "monthly revenue"
 basemake history --id=q-abc123`}</CodeBlock>
 
       {/* AI Proxy & Caching */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="ai-proxy">Shared AI Proxy & Caching</H2>
 
@@ -200,30 +200,30 @@ basemake history --id=q-abc123`}</CodeBlock>
         questions from other team members are served instantly — no API call needed.
       </P>
 
-      <div className="mb-6 overflow-x-auto rounded-xl border border-white/[0.06]">
+      <div className="mb-6 overflow-x-auto rounded-xl border border-border/[0.06]">
         <table className="w-full text-sm">
           <thead>
             <tr>
-              <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Feature</th>
-              <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Benefit</th>
+              <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Feature</th>
+              <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Benefit</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Semantic caching</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Similar questions return cached results (not just exact matches)</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Semantic caching</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Similar questions return cached results (not just exact matches)</td>
             </tr>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Single API key</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">One API key for the whole team — no individual sign-ups</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Single API key</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">One API key for the whole team — no individual sign-ups</td>
             </tr>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Rate limiting</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Prevents runaway API costs from a single user</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Rate limiting</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Prevents runaway API costs from a single user</td>
             </tr>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Cost tracking</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Per-user and per-team AI usage dashboards</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Cost tracking</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Per-user and per-team AI usage dashboards</td>
             </tr>
           </tbody>
         </table>
@@ -235,7 +235,7 @@ basemake history --id=q-abc123`}</CodeBlock>
       </P>
 
       {/* RBAC */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="rbac">RBAC: Read-Only Enforcement</H2>
 
@@ -245,30 +245,30 @@ basemake history --id=q-abc123`}</CodeBlock>
         configuration needed.
       </P>
 
-      <div className="mb-6 overflow-x-auto rounded-xl border border-white/[0.06]">
+      <div className="mb-6 overflow-x-auto rounded-xl border border-border/[0.06]">
         <table className="w-full text-sm">
           <thead>
             <tr>
-              <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Role</th>
-              <th className="border-b border-white/[0.06] bg-white/[0.03] px-4 py-3 text-left font-semibold text-white/70">Permissions</th>
+              <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Role</th>
+              <th className="border-b border-border/[0.06] bg-muted/30 px-4 py-3 text-left font-semibold text-muted-foreground">Permissions</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-semibold text-white">Admin</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Full access — queries, config, user management, audit logs</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-semibold text-foreground">Admin</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Full access — queries, config, user management, audit logs</td>
             </tr>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-semibold text-white">Member</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Read-write queries, view history, personal config</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-semibold text-foreground">Member</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Read-write queries, view history, personal config</td>
             </tr>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-semibold text-white">Read-Only</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">SELECT queries only — INSERT/UPDATE/DELETE/DROP are blocked by the proxy</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-semibold text-foreground">Read-Only</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">SELECT queries only — INSERT/UPDATE/DELETE/DROP are blocked by the proxy</td>
             </tr>
             <tr>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60 font-semibold text-white">Viewer</td>
-              <td className="border-b border-white/[0.04] px-4 py-3 text-white/60">Browse query history only — cannot run new queries</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground font-semibold text-foreground">Viewer</td>
+              <td className="border-b border-border/[0.04] px-4 py-3 text-muted-foreground">Browse query history only — cannot run new queries</td>
             </tr>
           </tbody>
         </table>
@@ -284,7 +284,7 @@ basemake server set-role user@company.com --role=read-only
 basemake server members`}</CodeBlock>
 
       {/* Audit Logging */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="audit-logging">Audit Logging</H2>
 
@@ -294,13 +294,13 @@ basemake server members`}</CodeBlock>
       </P>
 
       <UL>
-        <LI><strong className="text-white">Query execution</strong> — who ran what,
+        <LI><strong className="text-foreground">Query execution</strong> — who ran what,
         when, against which database, with the full SQL and generated SQL.</LI>
-        <LI><strong className="text-white">Configuration changes</strong> — who modified
+        <LI><strong className="text-foreground">Configuration changes</strong> — who modified
         server settings, budget profiles, or role assignments.</LI>
-        <LI><strong className="text-white">Access events</strong> — login attempts,
+        <LI><strong className="text-foreground">Access events</strong> — login attempts,
         token rotations, and permission denials.</LI>
-        <LI><strong className="text-white">AI usage</strong> — tokens consumed, cache
+        <LI><strong className="text-foreground">AI usage</strong> — tokens consumed, cache
         hit rates, and cost per user.</LI>
       </UL>
 
@@ -322,7 +322,7 @@ basemake server audit --format=json --since=30d > audit-export.json`}</CodeBlock
       </Tip>
 
       {/* Slack / Teams Integration */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="integrations">Slack & Teams Integrations</H2>
 
@@ -352,7 +352,7 @@ basemake server integrations add teams \
       </UL>
 
       {/* Deployment */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="deployment">Deployment Options</H2>
 
@@ -361,13 +361,13 @@ basemake server integrations add teams \
       </P>
 
       <UL>
-        <LI><strong className="text-white">Docker</strong> —{' '}
+        <LI><strong className="text-foreground">Docker</strong> —{' '}
         <Code>docker run ghcr.io/dynamickarabo/basemake-server</Code></LI>
-        <LI><strong className="text-white">Systemd service</strong> — run as a
+        <LI><strong className="text-foreground">Systemd service</strong> — run as a
         background service on any Linux VM.</LI>
-        <LI><strong className="text-white">Kubernetes</strong> — deploy as a Deployment
+        <LI><strong className="text-foreground">Kubernetes</strong> — deploy as a Deployment
         with a ConfigMap for configuration.</LI>
-        <LI><strong className="text-white">Railway / Fly.io</strong> — one-click deploy
+        <LI><strong className="text-foreground">Railway / Fly.io</strong> — one-click deploy
         on supported platforms.</LI>
       </UL>
 

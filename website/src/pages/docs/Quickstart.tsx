@@ -11,7 +11,7 @@ function H2({ id, children }: { id?: string; children: React.ReactNode }) {
   return (
     <h2
       id={id}
-      className="mt-12 mb-4 scroll-mt-24 text-2xl font-bold tracking-tight text-white"
+      className="mt-12 mb-4 scroll-mt-24 text-2xl font-bold tracking-tight text-foreground"
     >
       {children}
     </h2>
@@ -20,7 +20,7 @@ function H2({ id, children }: { id?: string; children: React.ReactNode }) {
 
 function H3({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="mt-8 mb-3 text-xl font-semibold tracking-tight text-white">
+    <h3 className="mt-8 mb-3 text-xl font-semibold tracking-tight text-foreground">
       {children}
     </h3>
   )
@@ -28,7 +28,7 @@ function H3({ children }: { children: React.ReactNode }) {
 
 function P({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mb-4 leading-relaxed text-white/60">
+    <p className="mb-4 leading-relaxed text-muted-foreground">
       {children}
     </p>
   )
@@ -36,7 +36,7 @@ function P({ children }: { children: React.ReactNode }) {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded-md border border-white/[0.06] bg-white/[0.04] px-1.5 py-0.5 text-sm font-mono text-[#ff3131]">
+    <code className="rounded-md border border-border/[0.06] bg-muted/30 px-1.5 py-0.5 text-sm font-mono text-[#ff3131]">
       {children}
     </code>
   )
@@ -44,17 +44,17 @@ function Code({ children }: { children: React.ReactNode }) {
 
 function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: string }) {
   return (
-    <div className="group relative mb-6 overflow-hidden rounded-xl border border-white/[0.06] bg-black/60 backdrop-blur-sm">
-      <div className="flex items-center gap-2 border-b border-white/[0.06] px-4 py-2.5">
+    <div className="group relative mb-6 overflow-hidden rounded-xl border border-border/[0.06] bg-black/60 backdrop-blur-sm">
+      <div className="flex items-center gap-2 border-b border-border/[0.06] px-4 py-2.5">
         <div className="flex items-center gap-1.5">
           <span className="h-2.5 w-2.5 rounded-full bg-[#ff3131]/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
           <span className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
         </div>
-        <span className="ml-2 text-[11px] text-white/30 font-mono">{lang}</span>
+        <span className="ml-2 text-[11px] text-muted-foreground/80 font-mono">{lang}</span>
       </div>
       <pre className="overflow-x-auto p-5 text-sm leading-relaxed">
-        <code className="font-mono text-white/80 [word-spacing:0.15em]">
+        <code className="font-mono text-foreground/80 [word-spacing:0.15em]">
           {children}
         </code>
       </pre>
@@ -64,7 +64,7 @@ function CodeBlock({ children, lang = 'bash' }: { children: string; lang?: strin
 
 function UL({ children }: { children: React.ReactNode }) {
   return (
-    <ul className="mb-6 space-y-2 text-white/60">
+    <ul className="mb-6 space-y-2 text-muted-foreground">
       {children}
     </ul>
   )
@@ -98,15 +98,15 @@ export default function Quickstart() {
         <Badge variant="outline" className="mb-3 border-[#ff3131]/30 text-[#ff3131] text-xs tracking-wide uppercase">
           Getting Started
         </Badge>
-        <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
+        <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
           Quickstart
         </h1>
-        <p className="mt-3 text-lg text-white/50">
+        <p className="mt-3 text-lg text-muted-foreground">
           Get basemake installed and running your first query in under two minutes.
         </p>
       </div>
 
-      <Separator className="mb-10 bg-white/[0.04]" />
+      <Separator className="mb-10 bg-muted/30" />
 
       {/* 1. Install */}
       <H2 id="install">1. Install</H2>
@@ -143,7 +143,7 @@ basemake --version`}
       <CodeBlock lang="bash">brew install basemake</CodeBlock>
 
       {/* 2. Init */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="init">2. Initialize</H2>
 
@@ -152,12 +152,12 @@ basemake --version`}
       </P>
 
       <UL>
-        <LI><strong className="text-white">Detect your database</strong> — scans common
+        <LI><strong className="text-foreground">Detect your database</strong> — scans common
         connection strings from environment variables and existing config files.</LI>
-        <LI><strong className="text-white">Pick an AI provider</strong> — prompts you to
+        <LI><strong className="text-foreground">Pick an AI provider</strong> — prompts you to
         choose between OpenAI, Anthropic, OpenCode, or a local Ollama model. You can
         bring your own API key or use the built-in defaults.</LI>
-        <LI><strong className="text-white">Run a test query</strong> — executes a sample
+        <LI><strong className="text-foreground">Run a test query</strong> — executes a sample
         question against your database to confirm everything works end-to-end.</LI>
       </UL>
 
@@ -177,7 +177,7 @@ basemake --version`}
       </CodeBlock>
 
       {/* 3. Connect */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="connect">3. Connect to a Database</H2>
 
@@ -199,7 +199,7 @@ basemake connect sqlite:///path/to/db.sqlite`}
       </P>
 
       {/* 4. First Query */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="first-query">4. Run Your First Query</H2>
 
@@ -231,7 +231,7 @@ basemake connect sqlite:///path/to/db.sqlite`}
       </CodeBlock>
 
       {/* 5. REPL */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
       <H2 id="repl">5. Enter the REPL</H2>
 
@@ -266,27 +266,27 @@ basemake connect sqlite:///path/to/db.sqlite`}
       </P>
 
       {/* Next steps */}
-      <Separator className="my-10 bg-white/[0.04]" />
+      <Separator className="my-10 bg-muted/30" />
 
-      <Card className="border-white/[0.06] bg-white/[0.02]">
+      <Card className="border-border/[0.06] bg-muted/30">
         <CardHeader>
-          <CardTitle className="text-white text-lg">Next Steps</CardTitle>
+          <CardTitle className="text-foreground text-lg">Next Steps</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-white/60">
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
-            🚀 <strong className="text-white">Set up CI/CD</strong> —{' '}
+            🚀 <strong className="text-foreground">Set up CI/CD</strong> —{' '}
             <Link to="/docs/ci-cd" className="text-[#ff3131] hover:underline">
               Integrate basemake check into your pipeline
             </Link>
           </p>
           <p>
-            🔑 <strong className="text-white">Configure AI providers</strong> —{' '}
+            🔑 <strong className="text-foreground">Configure AI providers</strong> —{' '}
             <Link to="/docs/ai-providers" className="text-[#ff3131] hover:underline">
               Bring your own API key or use local models
             </Link>
           </p>
           <p>
-            👥 <strong className="text-white">Team Server</strong> —{' '}
+            👥 <strong className="text-foreground">Team Server</strong> —{' '}
             <Link to="/docs/team-server" className="text-[#ff3131] hover:underline">
               Share queries and AI credits with your team
             </Link>
