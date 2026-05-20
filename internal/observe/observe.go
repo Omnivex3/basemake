@@ -73,26 +73,15 @@ func loadState() observeState {
 		return observeState{}
 	}
 	var st observeState
-	if err := json.Unmarshal(data, &st); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: observe: failed to parse state file: %v\n", err)
-	}
+	_ = json.Unmarshal(data, &st)
 	return st
 }
 
 func saveState(st observeState) {
 	dir := filepath.Dir(statePath())
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		fmt.Fprintf(os.Stderr, "error: observe: failed to create state directory: %v\n", err)
-		return
-	}
-	data, err := json.Marshal(st)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: observe: failed to marshal state: %v\n", err)
-		return
-	}
-	if err := os.WriteFile(statePath(), data, 0600); err != nil {
-		fmt.Fprintf(os.Stderr, "error: observe: failed to write state file: %v\n", err)
-	}
+	_ = os.MkdirAll(dir, 0755)
+	data, _ := json.Marshal(st)
+	_ = os.WriteFile(statePath(), data, 0600)
 }
 
 // ── signal: plan changes ──
