@@ -12,6 +12,9 @@ Welcome to the comprehensive documentation for **basemake** — the AI-powered d
 | [Database Drivers](database-drivers.md) | PostgreSQL, MySQL, SQLite implementation details |
 | [Output Formats](output-formats.md) | Table, JSON, CSV, TSV formatting rules |
 | [AI Integration](ai-integration.md) | NL→SQL generation, OpenAI API, model selection |
+| [Guardrails](guardrails.md) | SELECT * protection, schema truncation, FK context |
+| [Payment Flow](payment-flow.md) | Lemon Squeezy webhook, license key generation, Vercel deploy |
+| [Operations](operations.md) | Self-hosted runner, CI/CD pipeline, pre-commit hooks |
 | [Development](development.md) | Building, testing, CI/CD, adding drivers/commands |
 
 ## Quick Reference
@@ -75,9 +78,11 @@ Server Data:
 |--------|-------|
 | Commands | 14 (3 categories: Understand, Act, Govern) |
 | Database drivers | 3 (PostgreSQL, MySQL, SQLite) |
+| Guardrails | 3 (SELECT *, schema truncation, FK context) |
 | Output formats | 3 (table, JSON, CSV) |
-| Test functions | 29+ |
-| CI build targets | 5 (linux/mac/windows × amd64/arm64) |
+| Test functions | 31+ |
+| CI build targets | 1 (push), 5 (tags) — self-hosted runner |
 | Go version | 1.26 |
 | Lines of Go | ~6,700 |
+| Payment | Lemon Squeezy → Vercel → Resend |
 | External deps | 4 (cobra, lib/pq, go-sql-driver/mysql, modernc.org/sqlite) |

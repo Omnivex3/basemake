@@ -167,53 +167,64 @@ GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o basemake-windows-amd64.ex
 
 ## CI/CD Pipeline
 
-The GitHub Actions workflow (`.github/workflows/release.yml`) has 4 jobs:
+The GitHub Actions workflow (`.github/workflows/release.yml`) runs on every push to `main`, PRs, and tag pushes (`v*`).
+
+### Job Overview
+
+| Job | Runner | Trigger | GitHub Minutes |
+|-----|--------|---------|----------------|
+| `lint` | GitHub (ubuntu-latest) | Always | ~1m |
+| `test` | GitHub (ubuntu-latest) | Always | ~25s |
+| `build` | **Self-hosted** (Hetzner CX33) | Push to main + PRs | **0** |
+| `build-all` | **Self-hosted** | Tag push only | **0** |
+| `docker` | **Self-hosted** | Push to main + tags | **0** |
+| `release` | GitHub (ubuntu-latest) | Tag push only | ~30s |
+
+The self-hosted runner (`basemake-runner`) is a systemd service on the Hetzner CX33 VPS. Heavy jobs (cross-compilation, multi-arch Docker) run there at zero GitHub Actions minutes.
 
 ### `lint`
 - Runs `go vet ./...`
 - Runs `staticcheck` (latest)
-- Fast (<30s)
+- Fast (~1m)
 
 ### `test`
 - `go test -v -count=1 ./...`
 - Runs in parallel with lint
-- Fast (<30s)
+- Fast (~25s)
 
-### `build`
+### `build` (single platform)
 - Needs: lint + test
-- Matrix: 5 platform/arch combos
+- Triggers: push to main, pull_request
+- Builds: linux/amd64 only
+- Runs on: self-hosted runner
+
+### `build-all` (full matrix)
+- Needs: lint + test
+- Triggers: tag push only (`v*`)
+- Build matrix: 5 platform/arch combos
   - linux/amd64, linux/arm64
   - darwin/amd64, darwin/arm64
-  - windows/amd64 (excluded: windows/arm64)
+  - windows/amd64
 - Strips debug symbols (`-ldflags="-s -w"`)
 - Uploads each binary as a separate artifact (1-day retention)
+- Runs on: self-hosted runner
+
+### `docker`
+- Needs: lint + test
+- Triggers: push to main + tags
+- Builds linux/amd64 + linux/arm64 multi-arch via QEMU
+- Pushes to `ghcr.io/dynamickarabo/basemake`
+- Tags: `latest` (main), semver (tags)
+- Runs on: self-hosted runner
 
 ### `release`
 - Runs only on tag push (`v*`)
-- Needs: lint + test + build
+- Needs: lint + test + build-all
 - Downloads all artifacts
-- Creates `.tar.gz` archives with a clean binary name (`basemake` not `basemake-linux-amd64`)
+- Creates `.tar.gz` archives with a clean binary name
 - Generates SHA256 `checksums.txt`
 - Publishes GitHub Release via `softprops/action-gh-release`
 - Auto-generates release notes from commits
-
-### Build Matrix Details
-
-```yaml
-matrix:
-  goos: [linux, darwin, windows]
-  goarch: [amd64, arm64]
-  exclude:
-    - goos: windows
-      goarch: arm64
-```
-
-8 builds total (5 distinct targets):
-- linux/amd64 — primary, 99% of use
-- linux/arm64 — Raspberry Pi, ARM servers
-- darwin/amd64 — Intel Mac
-- darwin/arm64 — Apple Silicon Mac
-- windows/amd64 — Windows
 
 ### Release Tagging
 
