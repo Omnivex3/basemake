@@ -113,11 +113,7 @@ func (p *openAIProvider) send(ctx context.Context, system string, messages []pro
 	for _, t := range tools {
 		oaTools = append(oaTools, openAIToolDef{
 			Type: "function",
-			Function: openAIFunction{
-				Name:        t.Name,
-				Description: t.Description,
-				Parameters:  t.Parameters,
-			},
+			Function: openAIFunction(t),
 		})
 	}
 

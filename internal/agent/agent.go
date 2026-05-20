@@ -177,7 +177,7 @@ func estimatePricing(resp *providerResponse) *ai.ModelPricing {
 func newAnthropicProvider() (*anthropicProvider, error) {
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
 	if apiKey == "" {
-		return nil, fmt.Errorf("ANTHROPIC_API_KEY not set. Set it to use the agent path.")
+		return nil, fmt.Errorf("ANTHROPIC_API_KEY not set. Set it to use the agent path")
 	}
 	baseURL := os.Getenv("ANTHROPIC_BASE_URL")
 	if baseURL == "" {
@@ -193,7 +193,7 @@ func newAnthropicProvider() (*anthropicProvider, error) {
 func newOpenAIProvider() (*openAIProvider, error) {
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
-		return nil, fmt.Errorf("OPENAI_API_KEY not set. Set it to use the agent path.")
+		return nil, fmt.Errorf("OPENAI_API_KEY not set. Set it to use the agent path")
 	}
 	baseURL := os.Getenv("OPENAI_BASE_URL")
 	if baseURL == "" {
