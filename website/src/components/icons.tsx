@@ -89,6 +89,50 @@ export function ShieldIcon(props: SVGProps<SVGSVGElement>) {
   )
 }
 
+export function NaturalLangIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M7 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M7 12h7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M7 16h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </IconBase>
+  )
+}
+
+export function IndexIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M4 10h16" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M10 4v16" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M7 7h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M14 7h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </IconBase>
+  )
+}
+
+export function DiffIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 3l4 4h-3v10h3l-4 4-4-4h3V7H8l4-4z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </IconBase>
+  )
+}
+
+export function MonitorIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <IconBase {...props}>
+      <rect x="2" y="4" width="20" height="13" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M8 21h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M12 17v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M6 9l2 2-2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M18 9l-2 2 2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14 9l-2 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </IconBase>
+  )
+}
+
 export function CubeIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <IconBase {...props}>

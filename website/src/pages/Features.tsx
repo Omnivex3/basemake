@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
-  NaturalLangIcon, DatabaseIcon, ShieldCheckIcon,
+  NaturalLangIcon, DatabaseIcon, ShieldIcon,
   IndexIcon, DiffIcon, MonitorIcon,
   TerminalIcon, PromptIcon, BoltIcon,
 } from '@/components/icons'
@@ -61,7 +61,7 @@ const features = [
     desc: "PostgreSQL, MySQL, SQLite. Plus MariaDB and TimescaleDB via wire-compatible drivers. One tool, same interface.",
   },
   {
-    icon: ShieldCheckIcon, tag: "CI/CD",
+    icon: ShieldIcon, tag: "CI/CD",
     title: "Pipeline Gate",
     desc: "`basemake check` exits 0, 1, or 2. Plug it into your pipeline. Block slow queries, detect dangerous patterns, enforce budgets.",
   },
