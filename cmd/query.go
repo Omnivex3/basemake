@@ -12,6 +12,7 @@ import (
 	"github.com/DynamicKarabo/basemake/internal/db"
 	"github.com/DynamicKarabo/basemake/internal/display"
 	"github.com/DynamicKarabo/basemake/internal/history"
+	"github.com/DynamicKarabo/basemake/internal/profile"
 	"github.com/spf13/cobra"
 )
 
@@ -233,6 +234,35 @@ Uses your cached schema to generate accurate queries.
 		// Row count on stderr for non-table formats
 		if format != display.FormatTable {
 			fmt.Fprintf(os.Stderr, "\n%s\n", msg)
+		}
+
+		// Profile query when --explain is used
+		// Automatically compares timing and plan against previous runs.
+		if queryExplain && err == nil {
+			planJSON, pErr := conn.ExplainNoAnalyze(cmd.Context(), sql)
+			if pErr == nil {
+				normSQL := profile.NormalizeSQL(sql)
+				hash := profile.QueryHash(normSQL)
+				planHash := profile.PlanHash(planJSON)
+
+				run := profile.QueryRun{
+					Hash:          hash,
+					NormalizedSQL: normSQL,
+					Timestamp:     time.Now(),
+					DurationMS:    int64(elapsed),
+					RowsReturned:  int64(len(resultRows)),
+					PlanText:      planJSON,
+					PlanHash:      planHash,
+					DBFingerprint: conn.Name(),
+				}
+
+				result, cmpErr := profile.Compare(hash, run)
+				if cmpErr == nil {
+					if output := profile.FormatComparison(result); output != "" {
+						fmt.Fprint(os.Stderr, "\n"+output)
+					}
+				}
+			}
 		}
 
 		return nil
