@@ -64,31 +64,6 @@ const features = [
   },
 ]
 
-/* ── usage tabs ── */
-const usageModes = [
-  {
-    title: "One-liner",
-    code: `basemake "show me users who signed up last week
-  grouped by plan type, with total revenue"`,
-  },
-  {
-    title: "Pipe mode",
-    code: `cat query.sql | basemake --explain`,
-  },
-  {
-    title: "REPL",
-    code: `$ basemake
-  basemake> .connect postgres://localhost/mydb
-  basemake> show me slow queries
-  ┌──────────────────────┬──────────┬────────┐
-  │ query                │ duration │ rows   │
-  ├──────────────────────┼──────────┼────────┤
-  │ SELECT * FROM orders │ 2.3s     │ 1.2M   │
-  └──────────────────────┴──────────┴────────┘
-  basemake> .analyze`,
-  },
-]
-
 export default function Landing() {
   return (
     <div className="overflow-hidden">
@@ -421,9 +396,9 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ─── USAGE ─── */}
+      {/* ─── DEMOS — SEE IT IN ACTION ─── */}
       <section className="py-24 border-b border-white/[0.06]">
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto max-w-6xl px-6">
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -432,36 +407,64 @@ export default function Landing() {
             className="mb-12"
           >
             <motion.div variants={fadeUp}>
-              <Label>Three ways to use it</Label>
+              <Label>See it in action</Label>
               <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-                Drop in anywhere
+                Your database, your terminal
               </h2>
               <p className="text-white/40 max-w-lg text-lg">
-                One-liner, pipe, or interactive REPL. basemake fits your workflow, not the other way around.
+                No setup wizard. No GUI. Just your terminal, a database, and plain English.
               </p>
             </motion.div>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial="hidden"
+            whileInView="visible"
             viewport={{ once: true }}
+            variants={stagger}
             className="grid md:grid-cols-3 gap-6"
           >
-            {usageModes.map((mode, i) => (
-              <div key={i} className="group rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
-                <div className="flex items-center gap-1.5 px-4 pt-3 pb-2">
-                  {["#ff5f56", "#ffbd2e", "#28c840"].map((color) => (
-                    <span key={color} className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
-                  ))}
-                  <span className="ml-2 text-xs text-white/20 font-mono">{mode.title}</span>
+            {[
+              {
+                title: "Analyze",
+                desc: "EXPLAIN ANALYZE for any query. Spot seq scans, missing indexes, and row estimate mismatches instantly.",
+                gif: "/demos/demo-analyze.gif",
+              },
+              {
+                title: "CI/CD Gate",
+                desc: "basemake check exits 0/1/2. Plug it into your pipeline. Block slow queries before they hit production.",
+                gif: "/demos/demo-check.gif",
+              },
+              {
+                title: "Migration Safety",
+                desc: "Check every migration against your profile history. Know which queries will break before you run the change.",
+                gif: "/demos/demo-migrate.gif",
+              },
+            ].map((demo, i) => (
+              <motion.div key={i} variants={fadeUp} custom={i}>
+                <div className="group rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden transition-all duration-300 hover:border-[#ff3131]/20 hover:bg-white/[0.04]">
+                  {/* Terminal window dots */}
+                  <div className="flex items-center gap-1.5 px-5 pt-4 pb-2 border-b border-white/[0.04]">
+                    {["#ff5f56", "#ffbd2e", "#28c840"].map((color) => (
+                      <span key={color} className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+                    ))}
+                    <span className="ml-2 text-xs text-white/20 font-mono">{demo.title}</span>
+                  </div>
+                  {/* GIF */}
+                  <div className="bg-black/20">
+                    <img
+                      src={demo.gif}
+                      alt={demo.title}
+                      className="w-full h-auto block"
+                      loading="lazy"
+                    />
+                  </div>
+                  {/* Description */}
+                  <div className="px-5 py-4">
+                    <p className="text-sm text-white/40 leading-relaxed">{demo.desc}</p>
+                  </div>
                 </div>
-                <div className="px-4 pb-4">
-                  <pre className="text-xs text-white/40 font-mono leading-relaxed whitespace-pre-wrap">
-                    {mode.code}
-                  </pre>
-                </div>
-              </div>
+              </motion.div>
             ))}
           </motion.div>
         </div>
