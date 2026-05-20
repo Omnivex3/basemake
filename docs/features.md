@@ -36,6 +36,21 @@ Every query is recorded locally. Browse, search, and replay with `.history` and 
 
 ## 2. Database Support
 
+### Supported Drivers
+
+| Driver | DSN Prefix | Status |
+|--------|-----------|--------|
+| **PostgreSQL** | `postgres://` / `postgresql://` | ✅ Tested |
+| **MySQL** | `mysql://` | ✅ Tested |
+| **SQLite** | `sqlite:` / `sqlite://` | ✅ Tested |
+
+Wire-compatible databases (use existing driver, not separately tested):
+- **MariaDB** → connects via MySQL driver (wire-compatible)
+- **TimescaleDB** → connects via PostgreSQL driver (extension-compatible)
+- **CockroachDB** → connects via PostgreSQL driver (wire-compatible, may have quirks)
+
+> ⚠️ **ClickHouse** is listed on the website as aspirational — no driver exists yet.
+
 ### PostgreSQL
 - `postgres://` / `postgresql://` DSN
 - Full schema introspection: tables, columns, types, PKs, indexes, nullability, defaults
@@ -92,7 +107,28 @@ Bring your own key. Supported providers:
 Precedence: `AI_PROVIDER` env → config `ai_provider` → default `"openai"`
 
 ### Schema-Aware Generation
-AI receives the full cached schema (tables, columns, types, relationships) as context, producing accurate, join-correct SQL.
+AI receives the full cached schema (tables, columns, types, relationships, and foreign keys) as context, producing accurate, join-correct SQL.
+
+> ⚠️ **Current limitation:** No schema truncation exists. On databases with 50+ tables, the full schema + FK relationships can push prompts close to context limits. Schema truncation (query-text-aware table prioritization) is planned.
+
+### NL→SQL Quality
+The system prompt includes:
+
+- **Schema context** — tables, columns, types, primary keys, indexes, foreign keys (all three drivers)
+- **Dialect instruction** — PostgreSQL, MySQL, or SQLite
+- **Query history** — 5 most recent Q&A pairs for context compounding
+- **Validation loop** — generated SQL is validated via `EXPLAIN` before execution. Invalid SQL triggers one retry with the error message fed back to the AI
+- **No SELECT * or semantic guardrails** — syntax validation only; the AI can still generate semantically wrong SQL (e.g., returning `SELECT * FROM users` for "show me revenue by month")
+
+**Quality expectations by query complexity:**
+
+| Query type | Expected accuracy | Notes |
+|-----------|-----------------|-------|
+| Simple (single table, basic filters) | ~90% | Well-supported by schema context |
+| Multi-table with standard FK names | ~80% | FKs in prompt now give ground truth |
+| Multi-table with non-standard column names | ~80% | FKs solve this — no more guessing `cust_ref` vs `user_id` |
+| Complex aggregations with window functions | ~60-70% | Depends on model capability |
+| Ambiguous or underspecified questions | Variable | AI makes assumptions, documents them in comments |
 
 ### BYOK (Bring Your Own Key)
 No AI token markup. You use your own API keys or a local Ollama instance. basemake never charges for AI inference.
@@ -254,9 +290,13 @@ Features:
 ## 8. Monitoring & Observability
 
 ### Watch (`basemake watch`)
+Requires the **basemake server daemon** (`basemake server`) running on port 9876. The CLI proxies all watch operations to the server via HTTP.
+
 Schedule recurring queries and alert on regressions:
 
 ```bash
+# Start the server first, then add watches
+basemake server --license bmk_team_xxxx
 basemake watch --query "SELECT COUNT(*) FROM orders" --interval 5m --threshold 2000
 ```
 
@@ -400,7 +440,8 @@ One download, zero runtime dependencies. No Python, no Node, no JVM.
 | Linux (arm64) | ✅ |
 | macOS (amd64) | ✅ |
 | macOS (arm64) | ✅ |
-| Windows (amd64) | ✅ |
+
+> **Windows:** Not currently tested or targeted. Windows developers using databases typically work through WSL, where the Linux binary works. Native Windows support may come in a future release.
 
 ### Docker
 Multi-arch Docker image on GHCR:

@@ -40,7 +40,7 @@ const features = [
   {
     icon: DatabaseIcon,
     title: "Multi-Dialect",
-    desc: "PostgreSQL, MySQL, SQLite, MariaDB, TimescaleDB. One tool, same interface. The query you wrote for Postgres just works on SQLite.",
+    desc: "PostgreSQL, MySQL, SQLite. Plus MariaDB and TimescaleDB via wire-compatible drivers. One tool, same interface. The query you wrote for Postgres just works on SQLite.",
   },
   {
     icon: ShieldIcon,
@@ -201,11 +201,14 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl px-6 text-center">
           <Label>Works with your database</Label>
           <div className="flex flex-wrap justify-center gap-x-12 gap-y-4 text-sm text-white/30">
-            {["PostgreSQL", "MySQL", "SQLite", "MariaDB", "TimescaleDB", "CockroachDB", "ClickHouse"].map((db) => (
-              <span key={db} className="font-mono tracking-tight hover:text-white/60 transition-colors cursor-default">
-                {db}
-              </span>
-            ))}
+            {["PostgreSQL", "MySQL", "SQLite", "MariaDB", "TimescaleDB", "CockroachDB", "ClickHouse"].map((db) => {
+              const qualifier = db === "MariaDB" || db === "TimescaleDB" || db === "CockroachDB" ? " (beta)" : db === "ClickHouse" ? " (coming)" : "";
+              return (
+                <span key={db} className="font-mono tracking-tight hover:text-white/60 transition-colors cursor-default">
+                  {db}<span className="text-white/15 text-[10px]">{qualifier}</span>
+                </span>
+              );
+            })}
           </div>
         </div>
       </section>

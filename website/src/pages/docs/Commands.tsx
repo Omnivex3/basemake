@@ -274,7 +274,7 @@ basemake init --force   # overwrite existing config`}</CodeBlock>
       <H2 id="connect">basemake connect</H2>
       <P>
         Connect to a database using a connection string. Supports PostgreSQL, MySQL,
-        MariaDB, SQLite, TimescaleDB, CockroachDB, and ClickHouse.
+        MariaDB, and SQLite. Wire-compatible databases like TimescaleDB and CockroachDB
       </P>
       <CodeBlock lang="bash">{`basemake connect postgres://user:pass@host:5432/dbname
 basemake connect "postgres://user@localhost:5432/mydb?sslmode=require"`}</CodeBlock>

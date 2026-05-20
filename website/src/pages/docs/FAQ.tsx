@@ -269,8 +269,8 @@ basemake config set ai_api_key sk-...`}</CodeBlock>
               'MySQL',
               'MariaDB',
               'SQLite',
-              'TimescaleDB',
-              'CockroachDB',
+              'TimescaleDB (beta)',
+              'CockroachDB (beta)',
               'ClickHouse',
             ].map((db) => (
               <div

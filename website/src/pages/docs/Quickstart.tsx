@@ -193,7 +193,7 @@ basemake connect sqlite:///path/to/db.sqlite`}
       </CodeBlock>
 
       <P>
-        basemake supports PostgreSQL, MySQL, MariaDB, SQLite, TimescaleDB, CockroachDB,
+        basemake supports PostgreSQL, MySQL, and SQLite. Wire-compatible databases like
         and ClickHouse. See the full list in{' '}
         <Link to="/docs/configuration" className="text-[#e63946] hover:underline">Configuration</Link>.
       </P>
