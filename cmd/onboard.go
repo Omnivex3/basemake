@@ -13,7 +13,7 @@ func loadAPIKeysFromEnv() {
 			parts := strings.SplitN(strings.TrimSpace(line), "=", 2)
 			if len(parts) == 2 && (strings.HasPrefix(parts[0], "OPENAI") || strings.HasPrefix(parts[0], "OPENCODE") || strings.HasPrefix(parts[0], "ANTHROPIC") || parts[0] == "AI_PROVIDER") {
 				if os.Getenv(parts[0]) == "" {
-					os.Setenv(parts[0], parts[1])
+					_ = os.Setenv(parts[0], parts[1])
 				}
 			}
 		}

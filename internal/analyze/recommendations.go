@@ -61,7 +61,7 @@ func (s *RecStore) Save() error {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("create dir: %w", err)
 	}
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	if err := os.WriteFile(path, data, 0600); err != nil {
 		return fmt.Errorf("write recommendations: %w", err)
 	}
 	return nil

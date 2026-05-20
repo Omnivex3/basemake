@@ -11,6 +11,10 @@ import (
 
 const profilesDir = "profiles"
 
+// overrideProfileDir, if non-empty, is used instead of the computed profile
+// directory. Set by tests to avoid writing to the real user profile path.
+var overrideProfileDir string
+
 // QueryRun captures a single execution of a query with its plan and timing.
 type QueryRun struct {
 	Hash          string    `json:"hash"`
@@ -31,6 +35,9 @@ type QueryProfile struct {
 
 // ProfileDir returns ~/.basemake/profiles/
 func ProfileDir() string {
+	if overrideProfileDir != "" {
+		return overrideProfileDir
+	}
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return filepath.Join(".basemake", profilesDir)
@@ -70,7 +77,7 @@ func Save(hash string, p *QueryProfile) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(ProfilePath(hash), data, 0644)
+	return os.WriteFile(ProfilePath(hash), data, 0600)
 }
 
 // CompareResult holds the user-facing comparison output after profiling a query.

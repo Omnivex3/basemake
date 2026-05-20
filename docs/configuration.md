@@ -58,7 +58,7 @@ type Config struct {
 
 - `Load()` reads `~/.basemake/config.json`, returns `DefaultConfig()` if file doesn't exist
 - `DefaultConfig()` returns: `{OutputFormat: "table", OpenAIModel: "gpt-4"}`
-- `Save()` creates `~/.basemake/` with 0755, writes with 0644, uses `json.MarshalIndent`
+- `Save()` creates `~/.basemake/` with 0755, writes with 0600, uses `json.MarshalIndent`
 - Config directory: `$HOME/.basemake/`
 
 ## Environment Variables

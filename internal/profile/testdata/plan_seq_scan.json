@@ -1,0 +1,15 @@
+[
+  {
+    "Plan": {
+      "Node Type": "Limit",
+      "Relation Name": "",
+      "Plans": [
+        {
+          "Node Type": "Seq Scan",
+          "Relation Name": "users",
+          "Plans": []
+        }
+      ]
+    }
+  }
+]

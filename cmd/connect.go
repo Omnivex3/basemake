@@ -130,7 +130,7 @@ func connectWithDetect(cmd *cobra.Command) error {
 	}
 
 	idx := 0
-	fmt.Sscanf(choice, "%d", &idx)
+	_, _ = fmt.Sscanf(choice, "%d", &idx)
 	if idx < 1 || idx > len(detected) {
 		fmt.Fprintf(os.Stderr, "  Invalid choice.\n")
 		return nil

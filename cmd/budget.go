@@ -58,7 +58,7 @@ var budgetInitCmd = &cobra.Command{
 			return nil
 		}
 
-		if err := os.WriteFile(path, []byte(budget.TemplateBudgets()), 0644); err != nil {
+		if err := os.WriteFile(path, []byte(budget.TemplateBudgets()), 0600); err != nil {
 			return fmt.Errorf("write %s: %w", path, err)
 		}
 
@@ -313,7 +313,7 @@ func saveBudgets(dir string, bf *budget.BudgetFile) error {
 		return fmt.Errorf("marshal: %w", err)
 	}
 
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	if err := os.WriteFile(path, data, 0600); err != nil {
 		return fmt.Errorf("write %s: %w", path, err)
 	}
 
