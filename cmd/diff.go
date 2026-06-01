@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/DynamicKarabo/basemake/internal/db"
 	"github.com/DynamicKarabo/basemake/internal/diff"
@@ -36,15 +37,18 @@ Useful for catching schema drift between environments.
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if !requireLicense(license.FeatureDiff) {
-			os.Exit(1)
-			return nil
+			return fmt.Errorf("license required for diff feature")
 		}
 		var fromSchema, toSchema *db.Schema
 		var fromName, toName string
 
 		// Mode 1: Compare two saved schema files
 		if diffFileFrom != "" && diffFileTo != "" {
-			fromSchema, toSchema = loadSchemasFromFiles(diffFileFrom, diffFileTo)
+			s1, s2, err := loadSchemasFromFiles(diffFileFrom, diffFileTo)
+			if err != nil {
+				return fmt.Errorf("load schema files: %w", err)
+			}
+			fromSchema, toSchema = s1, s2
 			fromName = diffFileFrom
 			toName = diffFileTo
 		} else if diffFrom != "" && diffTo != "" {
@@ -124,29 +128,43 @@ func introspectDSN(dsn string) (*db.Schema, error) {
 }
 
 // loadSchemasFromFiles loads two schema JSON files from disk.
-func loadSchemasFromFiles(fromPath, toPath string) (*db.Schema, *db.Schema) {
-	from := loadSchemaFile(fromPath)
-	to := loadSchemaFile(toPath)
-	return from, to
+func loadSchemasFromFiles(fromPath, toPath string) (*db.Schema, *db.Schema, error) {
+	from, err := loadSchemaFile(fromPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("load %s: %w", fromPath, err)
+	}
+	to, err := loadSchemaFile(toPath)
+	if err != nil {
+		return nil, nil, fmt.Errorf("load %s: %w", toPath, err)
+	}
+	return from, to, nil
 }
 
-func loadSchemaFile(path string) *db.Schema {
+func loadSchemaFile(path string) (*db.Schema, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "⚠ Error reading %s: %v\n", path, err)
-		os.Exit(1)
+		return nil, fmt.Errorf("read %s: %w", path, err)
 	}
 	var s db.Schema
 	if err := json.Unmarshal(data, &s); err != nil {
-		fmt.Fprintf(os.Stderr, "⚠ Error parsing %s: %v\n", path, err)
-		os.Exit(1)
+		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
-	return &s
+	return &s, nil
 }
 
 // maskShort shortens a DSN for display (user:pass@host:port/db → db@host:port)
 func maskShort(dsn string) string {
-	// Try to extract meaningful info
+	// Mask credentials in DSN while preserving host/db identity.
+	// Handles both URL-style (postgres://user:pass@host/db) and
+	// MySQL-style (user:pass@tcp(host:port)/db) formats.
+	if dsn == "" {
+		return ""
+	}
+	// Mask everything before the first '@', leave host/db visible
+	if idx := strings.Index(dsn, "@"); idx >= 0 {
+		return "***@" + dsn[idx+1:]
+	}
+	// SQLite file path or uncredentialed DSN — return as-is
 	return dsn
 }
 

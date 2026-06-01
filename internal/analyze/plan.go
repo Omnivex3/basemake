@@ -249,6 +249,26 @@ func flattenMySQLNode(val interface{}, depth int, report *Report) {
 	// They contain opaque query_block objects that shouldn't be flattened as individual plan nodes
 }
 
+// effectiveTotal returns per-loop ActualTotal multiplied by loops.
+// PostgreSQL reports timing as per-loop averages when ActualLoops > 1.
+func (n FlatNode) effectiveTotal() float64 {
+	loops := n.ActualLoops
+	if loops < 1 {
+		loops = 1
+	}
+	return n.ActualTotal * loops
+}
+
+// effectiveRows returns per-loop ActualRows multiplied by loops.
+// PostgreSQL reports row counts as per-loop averages when ActualLoops > 1.
+func (n FlatNode) effectiveRows() float64 {
+	loops := n.ActualLoops
+	if loops < 1 {
+		loops = 1
+	}
+	return n.ActualRows * loops
+}
+
 // analyzeIssues walks the flattened plan and detects performance issues
 func analyzeIssues(r *Report) {
 	for _, n := range r.Nodes {
@@ -265,9 +285,10 @@ func analyzeIssues(r *Report) {
 			r.TotalTableScans++
 		}
 
-		// Track heaviest node
-		if n.ActualTotal > r.HeaviestNodeTime {
-			r.HeaviestNodeTime = n.ActualTotal
+		// Track heaviest node (use effective time accounting for loops)
+		effTime := n.effectiveTotal()
+		if effTime > r.HeaviestNodeTime {
+			r.HeaviestNodeTime = effTime
 			r.HeaviestNode = fmt.Sprintf("%s on %s", n.NodeType, n.RelationName)
 		}
 
@@ -286,7 +307,8 @@ func analyzeIssues(r *Report) {
 
 		// 2. Row estimate mismatch (PostgreSQL only — MySQL JSON doesn't have actuals)
 		if r.Dialect == "PostgreSQL" && n.ActualRows > 0 && n.PlanRows > 0 {
-			ratio := n.ActualRows / n.PlanRows
+			effRows := n.effectiveRows()
+			ratio := effRows / n.PlanRows
 			if ratio > 10 || ratio < 0.1 {
 				r.HasRowMismatch = true
 				if ratio > r.WorstRowMismatch {
@@ -296,19 +318,20 @@ func analyzeIssues(r *Report) {
 					Severity:   "warning",
 					NodeType:   n.NodeType,
 					TableName:  n.RelationName,
-					Message:    fmt.Sprintf("Row estimate mismatch on %s: actual=%d, estimated=%d (%.1fx off)", n.RelationName, int(n.ActualRows), int(n.PlanRows), ratio),
+					Message:    fmt.Sprintf("Row estimate mismatch on %s: actual=%d, estimated=%d (%.1fx off)", n.RelationName, int(effRows), int(n.PlanRows), ratio),
 					Suggestion: "Update table statistics with ANALYZE or adjust default_statistics_target",
 				})
 			}
 		}
 
 		// 3. Expensive filters (PostgreSQL only — MySQL JSON timing not available)
-		if r.Dialect == "PostgreSQL" && n.NodeType == "Seq Scan" && n.Filter != "" && n.ActualTotal > 1.0 {
+		effTime = n.effectiveTotal()
+		if r.Dialect == "PostgreSQL" && n.NodeType == "Seq Scan" && n.Filter != "" && effTime > 1.0 {
 			r.Issues = append(r.Issues, Issue{
 				Severity:   "info",
 				NodeType:   n.NodeType,
 				TableName:  n.RelationName,
-				Message:    fmt.Sprintf("Filter applied on sequential scan: %s (%.1fms)", n.Filter, n.ActualTotal),
+				Message:    fmt.Sprintf("Filter applied on sequential scan: %s (%.1fms)", n.Filter, effTime),
 				Suggestion: "Consider an index on the filtered column(s)",
 			})
 		}
@@ -325,12 +348,12 @@ func analyzeIssues(r *Report) {
 		}
 
 		// 5. Slow individual node (PostgreSQL only — MySQL JSON timing not available)
-		if r.Dialect == "PostgreSQL" && n.ActualTotal > 100 && n.NodeType != "" {
+		if r.Dialect == "PostgreSQL" && n.NodeType != "" && effTime > 100 {
 			r.Issues = append(r.Issues, Issue{
 				Severity:   "critical",
 				NodeType:   n.NodeType,
 				TableName:  n.RelationName,
-				Message:    fmt.Sprintf("Slow node: %s on %s (%.1fms)", n.NodeType, n.RelationNameOr("unknown"), n.ActualTotal),
+				Message:    fmt.Sprintf("Slow node: %s on %s (%.1fms effective, %.1fms per loop × %.0f loops)", n.NodeType, n.RelationNameOr("unknown"), effTime, n.ActualTotal, n.ActualLoops),
 				Suggestion: "Investigate this node — consider query rewrite or index strategy",
 			})
 		}
@@ -376,7 +399,7 @@ func (r *Report) String() string {
 			table = " on " + table
 		}
 		if r.Dialect == "PostgreSQL" {
-			fmt.Fprintf(&b, "%s%s%s (%.1fms, %d rows)\n", indent, n.NodeType, table, n.ActualTotal, int(n.ActualRows))
+			fmt.Fprintf(&b, "%s%s%s (%.1fms effective, %.1fms per-loop, %d rows)\n", indent, n.NodeType, table, n.effectiveTotal(), n.ActualTotal, int(n.effectiveRows()))
 		} else {
 			fmt.Fprintf(&b, "%s%s%s (%d estimated rows)\n", indent, n.NodeType, table, int(n.PlanRows))
 		}

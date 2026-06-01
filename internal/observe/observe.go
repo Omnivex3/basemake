@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -249,23 +250,26 @@ func diffSchema(prev, current interface{}) string {
 
 func loadProfiles() []*profile.QueryProfile {
 	dir := profile.ProfileDir()
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return nil
-	}
-
 	var profiles []*profile.QueryProfile
-	for _, entry := range entries {
-		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
-			continue
+
+	// Walk the profiles directory recursively — profiles may be in subdirectories
+	// (scoped by DB fingerprint) or at the top level (legacy unscoped).
+	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || filepath.Ext(path) != ".json" {
+			return nil
 		}
-		hash := entry.Name()[:len(entry.Name())-5]
-		p, err := profile.Load(hash)
-		if err != nil || len(p.Runs) == 0 {
-			continue
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil
 		}
-		profiles = append(profiles, p)
-	}
+		var p profile.QueryProfile
+		if err := json.Unmarshal(data, &p); err != nil || len(p.Runs) == 0 {
+			return nil
+		}
+		profiles = append(profiles, &p)
+		return nil
+	})
+
 	return profiles
 }
 

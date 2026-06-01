@@ -31,7 +31,7 @@ They define performance expectations for tables, migrations, and queries.
 
   basemake budget init                           # Create a template budgets.json
   basemake budget set --table orders --max-seq-rows 1000
-  basemake budget set --migration "V*__*.sql" --threshold 5s
+  basemake budget set --pattern "V*__*.sql" --threshold 5s
   basemake budget list                           # Show all active rules
   basemake budget diff                           # Compare with committed version`,
 }
@@ -53,9 +53,7 @@ var budgetInitCmd = &cobra.Command{
 
 		path := filepath.Join(bmDir, "budgets.json")
 		if _, err := os.Stat(path); err == nil {
-			fmt.Fprintf(os.Stderr, "⚠ budgets.json already exists at %s\n", path)
-			os.Exit(1)
-			return nil
+			return fmt.Errorf("budgets.json already exists at %s", path)
 		}
 
 		if err := os.WriteFile(path, []byte(budget.TemplateBudgets()), 0600); err != nil {
@@ -74,13 +72,12 @@ var budgetSetCmd = &cobra.Command{
 	Short: "Add or update a budget rule",
 	Example: `  basemake budget set --table orders --max-seq-rows 1000
   basemake budget set --table users --require-index email,status
-  basemake budget set --migration "V*__*.sql" --threshold 5s
-  basemake budget set --query "SELECT * FROM" --threshold 1s`,
+  basemake budget set --pattern "V*__*.sql" --threshold 5s
+  basemake budget set --pattern "SELECT * FROM" --threshold 1s`,
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if !requireLicense(license.FeatureBudget) {
-			os.Exit(1)
-			return nil
+			return fmt.Errorf("license required for budget feature")
 		}
 		dir, err := findBudgetsRoot()
 		if err != nil {
@@ -110,7 +107,7 @@ var budgetSetCmd = &cobra.Command{
 			rule.Type = budget.RuleQuery
 			rule.Pattern = budgetPattern
 		} else {
-			return fmt.Errorf("specify --table, --migration, or --query")
+			return fmt.Errorf("specify --table or --pattern")
 		}
 
 		if budgetThreshold != "" {

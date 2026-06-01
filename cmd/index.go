@@ -95,8 +95,7 @@ var indexApplyCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if !requireLicense(license.FeatureIndexApply) {
-			os.Exit(1)
-			return nil
+			return fmt.Errorf("license required for index apply feature")
 		}
 		id := args[0]
 

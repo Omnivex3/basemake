@@ -58,8 +58,7 @@ var watchAddCmd = &cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if !requireLicense(license.FeatureWatch) {
-			os.Exit(1)
-			return nil
+			return fmt.Errorf("license required for watch feature")
 		}
 		input := args[0]
 

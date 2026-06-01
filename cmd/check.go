@@ -43,8 +43,7 @@ Examples:
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if !requireLicense(license.FeatureCheck) {
-			os.Exit(1)
-			return nil
+			return fmt.Errorf("license required for check feature")
 		}
 		input := args[0]
 

@@ -4,6 +4,7 @@ package diff
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/DynamicKarabo/basemake/internal/db"
@@ -61,8 +62,9 @@ func SchemaDiff(from, to *db.Schema, fromName, toName string) *Report {
 		toMap[to.Tables[i].Name] = &to.Tables[i]
 	}
 
-	// Find added and removed tables, and diff common tables
-	for name, toTable := range toMap {
+	// Find added and removed tables, and diff common tables — sorted for deterministic output
+	for _, name := range sortedKeys(toMap) {
+		toTable := toMap[name]
 		fromTable, exists := fromMap[name]
 		if !exists {
 			r.Changes = append(r.Changes, Change{
@@ -79,7 +81,7 @@ func SchemaDiff(from, to *db.Schema, fromName, toName string) *Report {
 		diffIndexes(r, fromTable, toTable)
 	}
 
-	for name := range fromMap {
+	for _, name := range sortedKeys(fromMap) {
 		if _, exists := toMap[name]; !exists {
 			r.Changes = append(r.Changes, Change{
 				Type:   TableRemoved,
@@ -105,7 +107,8 @@ func diffColumns(r *Report, from, to *db.TableInfo) {
 		toCols[to.Columns[i].Name] = &to.Columns[i]
 	}
 
-	for name, tc := range toCols {
+	for _, name := range sortedKeys(toCols) {
+		tc := toCols[name]
 		fc, exists := fromCols[name]
 		if !exists {
 			r.Changes = append(r.Changes, Change{
@@ -169,7 +172,7 @@ func diffColumns(r *Report, from, to *db.TableInfo) {
 		}
 	}
 
-	for name := range fromCols {
+	for _, name := range sortedKeys(fromCols) {
 		if _, exists := toCols[name]; !exists {
 			r.Changes = append(r.Changes, Change{
 				Type:   ColumnRemoved,
@@ -193,7 +196,8 @@ func diffIndexes(r *Report, from, to *db.TableInfo) {
 		toIdxs[to.Indexes[i].Name] = &to.Indexes[i]
 	}
 
-	for name, ti := range toIdxs {
+	for _, name := range sortedKeys(toIdxs) {
+		ti := toIdxs[name]
 		if _, exists := fromIdxs[name]; !exists {
 			r.Changes = append(r.Changes, Change{
 				Type:  IndexAdded,
@@ -204,7 +208,7 @@ func diffIndexes(r *Report, from, to *db.TableInfo) {
 		}
 	}
 
-	for name := range fromIdxs {
+	for _, name := range sortedKeys(fromIdxs) {
 		if _, exists := toIdxs[name]; !exists {
 			r.Changes = append(r.Changes, Change{
 				Type:  IndexRemoved,
@@ -214,6 +218,16 @@ func diffIndexes(r *Report, from, to *db.TableInfo) {
 			})
 		}
 	}
+}
+
+// sortedKeys returns the keys of m in sorted order for deterministic iteration.
+func sortedKeys[K ~string, V any](m map[K]V) []K {
+	keys := make([]K, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+	return keys
 }
 
 func describeColumn(c *db.ColumnInfo) string {

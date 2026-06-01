@@ -31,15 +31,15 @@ func TestPlanCheck_IndexDropped(t *testing.T) {
 			},
 		},
 	}
-	Save(hash, p)
-	defer os.Remove(ProfilePath(hash))
+	Save(hash, "", p)
+	defer os.Remove(ProfilePath(hash, ""))
 
 	// Setup current plan returning Seq Scan
 	conn := &mockDB{
 		planJSON: readFixture(t, "plan_seq_scan.json"),
 	}
 
-	warnings := PlanCheck(context.Background(), "SELECT * FROM users", conn)
+	warnings := PlanCheck(context.Background(), "SELECT * FROM users", conn, "test-db")
 
 	if !HasWarnings(warnings) {
 		t.Fatal("expected warnings, got none")
@@ -66,14 +66,14 @@ func TestPlanCheck_Regression(t *testing.T) {
 			{DurationMS: 50}, // Last run is 5x slower
 		},
 	}
-	Save(hash, p)
-	defer os.Remove(ProfilePath(hash))
+	Save(hash, "", p)
+	defer os.Remove(ProfilePath(hash, ""))
 
 	conn := &mockDB{
 		planJSON: `[{"Plan": {"Node Type": "Limit", "Plans": []}}]`, // plan doesn't matter for this check
 	}
 
-	warnings := PlanCheck(context.Background(), "SELECT * FROM users", conn)
+	warnings := PlanCheck(context.Background(), "SELECT * FROM users", conn, "test-db")
 
 	foundRegression := false
 	for _, w := range warnings {

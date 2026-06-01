@@ -2,8 +2,11 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -168,43 +171,44 @@ func toolGetProfiles(ctx context.Context, input map[string]any) (string, error) 
 	}
 
 	dir := profile.ProfileDir()
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return "No profiles yet. Run queries with `--explain` to build profiles.", nil
-	}
 
 	type namedProfile struct {
-		hash         string
+		hash          string
 		normalizedSQL string
-		runs         int
-		avgDuration  int64
-		lastRun      profile.QueryRun
+		runs          int
+		avgDuration   int64
+		lastRun       profile.QueryRun
 	}
 
 	var profiles []namedProfile
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
-			continue
+
+	// Walk directory recursively to handle scoped profile directories
+	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".json") {
+			return nil
 		}
-		hash := strings.TrimSuffix(entry.Name(), ".json")
-		p, err := profile.Load(hash)
-		if err != nil || len(p.Runs) == 0 {
-			continue
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil
+		}
+		var p profile.QueryProfile
+		if err := json.Unmarshal(data, &p); err != nil || len(p.Runs) == 0 {
+			return nil
 		}
 		last := p.Runs[len(p.Runs)-1]
 		var total int64
 		for _, r := range p.Runs {
 			total += r.DurationMS
 		}
-		np := namedProfile{
-			hash:          hash,
+		profiles = append(profiles, namedProfile{
+			hash:          strings.TrimSuffix(filepath.Base(path), ".json"),
 			normalizedSQL: last.NormalizedSQL,
 			runs:          len(p.Runs),
 			avgDuration:   total / int64(len(p.Runs)),
 			lastRun:       last,
-		}
-		profiles = append(profiles, np)
-	}
+		})
+		return nil
+	})
 
 	// Sort by most recent run
 	sort.Slice(profiles, func(i, j int) bool {

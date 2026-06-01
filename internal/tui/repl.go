@@ -1135,7 +1135,7 @@ func (m Model) validateAndExecSQL(ctx context.Context, question, sqlStr string) 
 
 	// PlanCheck: surface regressions against profile history
 	// Warnings appear in the viewport before query results.
-	warnings := profile.PlanCheck(ctx, sqlStr, m.conn)
+	warnings := profile.PlanCheck(ctx, sqlStr, m.conn, m.conn.Name())
 	for _, w := range warnings {
 		icon := "⚠ "
 		if w.Severity == "info" {

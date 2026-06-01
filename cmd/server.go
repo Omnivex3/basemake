@@ -40,8 +40,7 @@ var serverStartCmd = &cobra.Command{
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if !requireLicense(license.FeatureServer) {
-			os.Exit(1)
-			return nil
+			return fmt.Errorf("license required for server feature")
 		}
 		store, err := server.NewStore(serverDir + "/basemake.db")
 		if err != nil {

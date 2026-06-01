@@ -57,7 +57,7 @@ var profileListCmd = &cobra.Command{
 			}
 
 			hash := strings.TrimSuffix(entry.Name(), ".json")
-			p, err := profile.Load(hash)
+			p, err := profile.Load(hash, "")
 			if err != nil || len(p.Runs) == 0 {
 				continue
 			}
@@ -129,7 +129,7 @@ var profileViewCmd = &cobra.Command{
 		inputHash := args[0]
 
 		// Try exact match first
-		p, err := profile.Load(inputHash)
+		p, err := profile.Load(inputHash, "")
 		if err == nil && len(p.Runs) > 0 {
 			return printProfileView(inputHash, p)
 		}
@@ -154,7 +154,7 @@ var profileViewCmd = &cobra.Command{
 			fmt.Fprintf(os.Stdout, "Profile not found for hash: %s\n", inputHash)
 			return nil
 		case 1:
-			p, err := profile.Load(matches[0])
+			p, err := profile.Load(matches[0], "")
 			if err != nil || len(p.Runs) == 0 {
 				fmt.Fprintf(os.Stdout, "Profile not found for hash: %s\n", inputHash)
 				return nil

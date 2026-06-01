@@ -27,14 +27,18 @@ type Config struct {
 }
 
 // DefaultConfig returns a config with sensible defaults
+// Single source of truth for model/base URL defaults.
+// ai.SelectedProvider reads these first, then env vars override.
 func DefaultConfig() *Config {
 	return &Config{
-		OutputFormat:   "table",
-		AIProvider:     "openai",
-		OpenAIModel:    "gpt-4",
-		AnthropicModel: "claude-sonnet-4-20250514",
-		OllamaModel:    "llama3",
-		OllamaBaseURL:  "http://localhost:11434/v1",
+		OutputFormat:     "table",
+		AIProvider:       "openai",
+		OpenAIModel:      "gpt-4",
+		OpenCodeModel:    "deepseek-chat",
+		OpenCodeBaseURL:  "https://api.opencode.ai/v1",
+		AnthropicModel:   "claude-sonnet-4-20250514",
+		OllamaModel:      "llama3",
+		OllamaBaseURL:    "http://localhost:11434/v1",
 	}
 }
 

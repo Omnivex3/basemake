@@ -162,7 +162,7 @@ Uses your cached schema to generate accurate queries.
 		// PlanCheck: compare current plan against profile history
 		// Only runs for NL-generated queries (not raw SQL or --explain)
 		if isNL && !queryExplain {
-			warnings := profile.PlanCheck(cmd.Context(), sql, conn)
+			warnings := profile.PlanCheck(cmd.Context(), sql, conn, conn.Name())
 			if profile.HasWarnings(warnings) {
 				fmt.Fprintf(os.Stderr, "\nGenerated SQL: %s\n\n", sql)
 				for _, w := range warnings {
@@ -299,35 +299,35 @@ func validateSQL(ctx context.Context, conn db.Database, sql string) error {
 }
 
 func looksLikeSQL(s string) bool {
-	trimmed := ""
-	for _, c := range s {
-		if c != ' ' && c != '\t' && c != '\n' {
-			trimmed += string(c)
-			if len(trimmed) >= 10 {
-				break
-			}
-		}
+	first := firstWord(s)
+	if first == "" {
+		return false
 	}
-	upper := strings.ToUpper(trimmed)
 	keywords := []string{"SELECT", "WITH", "EXPLAIN", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP", "TRUNCATE"}
 	for _, kw := range keywords {
-		if len(upper) >= len(kw) && upper[:len(kw)] == kw {
+		if first == kw {
 			return true
 		}
 	}
 	return false
 }
 
+// firstWord returns the first whitespace-delimited token, uppercased.
+func firstWord(s string) string {
+	fields := strings.Fields(s)
+	if len(fields) == 0 {
+		return ""
+	}
+	return strings.ToUpper(fields[0])
+}
+
 // isDML returns true if the query is a data modification statement.
 // Used to reject dangerous queries in check and explain flows.
 func isDML(s string) bool {
-	trimmed := strings.TrimSpace(s)
-	upper := strings.ToUpper(trimmed)
-	dmlKeywords := []string{"INSERT ", "UPDATE ", "DELETE ", "TRUNCATE ", "MERGE ", "DROP ", "ALTER ", "CREATE "}
-	for _, kw := range dmlKeywords {
-		if len(upper) >= len(kw) && upper[:len(kw)] == kw {
-			return true
-		}
+	first := firstWord(s)
+	switch first {
+	case "INSERT", "UPDATE", "DELETE", "TRUNCATE", "MERGE", "DROP", "ALTER", "CREATE":
+		return true
 	}
 	return false
 }

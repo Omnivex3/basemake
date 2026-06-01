@@ -1,6 +1,7 @@
 package profile
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -38,20 +39,45 @@ func ProfileDir() string {
 	return filepath.Join(home, ".basemake", profilesDir)
 }
 
-// ProfilePath returns the file path for a given query hash.
-func ProfilePath(hash string) string {
+// FingerprintHash returns a short stable hash of a database fingerprint string.
+func FingerprintHash(fp string) string {
+	if fp == "" {
+		return ""
+	}
+	h := sha256.Sum256([]byte(fp))
+	return fmt.Sprintf("%x", h[:8]) // 16 hex chars — collision improbable for a few hundred databases
+}
+
+// ProfilePath returns the file path for a given query hash and optional DB fingerprint.
+// When fingerprint is provided, profiles are scoped per-database to prevent
+// collisions between dev, staging, and production environments.
+// Falls back to the legacy unscoped path if the scoped path doesn't exist.
+func ProfilePath(hash, dbFingerprint string) string {
+	if dbFingerprint != "" {
+		fpHash := FingerprintHash(dbFingerprint)
+		return filepath.Join(ProfileDir(), fpHash, hash+".json")
+	}
 	return filepath.Join(ProfileDir(), hash+".json")
 }
 
-// Load retrieves the stored profile for a query hash. Returns an empty
-// profile if none exists yet.
-func Load(hash string) (*QueryProfile, error) {
-	data, err := os.ReadFile(ProfilePath(hash))
+// Load retrieves the stored profile for a query hash and optional DB fingerprint.
+// Returns an empty profile if none exists yet. When a fingerprint is provided,
+// prefers the scoped path but falls back to the legacy unscoped path.
+func Load(hash, dbFingerprint string) (*QueryProfile, error) {
+	path := ProfilePath(hash, dbFingerprint)
+	data, err := os.ReadFile(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return &QueryProfile{Runs: []QueryRun{}}, nil
+		// If the scoped path doesn't exist, try the legacy unscoped path as fallback
+		if dbFingerprint != "" && os.IsNotExist(err) {
+			legacyPath := filepath.Join(ProfileDir(), hash+".json")
+			data, err = os.ReadFile(legacyPath)
 		}
-		return nil, err
+		if err != nil {
+			if os.IsNotExist(err) {
+				return &QueryProfile{Runs: []QueryRun{}}, nil
+			}
+			return nil, err
+		}
 	}
 	var p QueryProfile
 	if err := json.Unmarshal(data, &p); err != nil {
@@ -60,9 +86,10 @@ func Load(hash string) (*QueryProfile, error) {
 	return &p, nil
 }
 
-// Save persists the profile to disk.
-func Save(hash string, p *QueryProfile) error {
-	dir := ProfileDir()
+// Save persists the profile to disk atomically (write to temp file, then rename).
+func Save(hash, dbFingerprint string, p *QueryProfile) error {
+	path := ProfilePath(hash, dbFingerprint)
+	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -70,7 +97,31 @@ func Save(hash string, p *QueryProfile) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(ProfilePath(hash), data, 0600)
+	// Write to temp file in same directory, then rename for atomicity.
+	// This prevents corruption from crashes or concurrent writes.
+	tmp, err := os.CreateTemp(dir, "*.json")
+	if err != nil {
+		return err
+	}
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		os.Remove(tmp.Name())
+		return err
+	}
+	if err := tmp.Chmod(0600); err != nil {
+		tmp.Close()
+		os.Remove(tmp.Name())
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmp.Name())
+		return err
+	}
+	if err := os.Rename(tmp.Name(), path); err != nil {
+		os.Remove(tmp.Name())
+		return err
+	}
+	return nil
 }
 
 // CompareResult holds the user-facing comparison output after profiling a query.
@@ -87,14 +138,15 @@ type CompareResult struct {
 // Compare stores a new query run, compares it against the profile history,
 // and returns the comparison. It also persists the new run.
 func Compare(hash string, newRun QueryRun) (*CompareResult, error) {
-	p, err := Load(hash)
+	dbFP := newRun.DBFingerprint
+	p, err := Load(hash, dbFP)
 	if err != nil {
 		return nil, err
 	}
 
 	// Append new run
 	p.Runs = append(p.Runs, newRun)
-	if err := Save(hash, p); err != nil {
+	if err := Save(hash, dbFP, p); err != nil {
 		return nil, err
 	}
 

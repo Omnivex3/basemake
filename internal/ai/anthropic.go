@@ -63,11 +63,16 @@ func (p *anthropicProvider) GenerateSQL(ctx context.Context, system, question st
 	req.Header.Set("anthropic-version", "2023-06-01")
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("http call: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("anthropic api returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -97,44 +102,44 @@ func (p *anthropicProvider) GenerateSQL(ctx context.Context, system, question st
 }
 
 func (p *anthropicProvider) GenerateSQLStream(ctx context.Context, system, question string) (<-chan string, error) {
-	ch := make(chan string)
+	body := anthropicRequest{
+		Model:     p.model,
+		MaxTokens: 1024,
+		System:    system,
+		Messages:  []anthropicMessage{{Role: "user", Content: question}},
+		Stream:    true,
+	}
 
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("marshal: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", p.baseURL+"/v1/messages", bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("x-api-key", p.apiKey)
+	req.Header.Set("anthropic-version", "2023-06-01")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "text/event-stream")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http call: %w", err)
+	}
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		return nil, fmt.Errorf("anthropic api returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	ch := make(chan string)
 	go func() {
 		defer close(ch)
-
-		body := anthropicRequest{
-			Model:     p.model,
-			MaxTokens: 1024,
-			System:    system,
-			Messages:  []anthropicMessage{{Role: "user", Content: question}},
-			Stream:    true,
-		}
-
-		payload, err := json.Marshal(body)
-		if err != nil {
-			ch <- fmt.Sprintf("Error: %v", err)
-			return
-		}
-
-		req, err := http.NewRequestWithContext(ctx, "POST", p.baseURL+"/v1/messages", bytes.NewReader(payload))
-		if err != nil {
-			ch <- fmt.Sprintf("Error: %v", err)
-			return
-		}
-		req.Header.Set("x-api-key", p.apiKey)
-		req.Header.Set("anthropic-version", "2023-06-01")
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "text/event-stream")
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			ch <- fmt.Sprintf("Error: %v", err)
-			return
-		}
 		defer resp.Body.Close()
 
 		scanner := bufio.NewScanner(resp.Body)
-		var fullText strings.Builder
 
 		for scanner.Scan() {
 			line := scanner.Text()
@@ -156,16 +161,20 @@ func (p *anthropicProvider) GenerateSQLStream(ctx context.Context, system, quest
 
 				if event.Type == "content_block_delta" && event.Delta != nil {
 					if event.Delta.Type == "text_delta" && event.Delta.Text != "" {
-						fullText.WriteString(event.Delta.Text)
 						ch <- event.Delta.Text
 					}
 				}
 
 				if event.Type == "error" {
-					ch <- fmt.Sprintf("\nError: %s", data)
+					// Stream ended with an API error — close channel naturally
 					return
 				}
 			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			// Scanner error means the stream ended prematurely.
+			_ = err
 		}
 	}()
 

@@ -45,7 +45,7 @@ jobs:
         run: go test -v -count=1 ./...
 
   build:
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     needs: [lint, test]
     runs-on: [self-hosted, linux, x64]
     steps:

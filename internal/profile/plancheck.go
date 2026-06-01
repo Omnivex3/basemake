@@ -25,10 +25,10 @@ type Warning struct {
 // PlanCheck runs ExplainNoAnalyze to get the current plan without executing
 // the query. It does NOT save the plan to the profile — that's the caller's
 // responsibility during execution.
-func PlanCheck(ctx context.Context, sql string, conn db.Database) []Warning {
+func PlanCheck(ctx context.Context, sql string, conn db.Database, dbFingerprint string) []Warning {
 	normSQL := NormalizeSQL(sql)
 	hash := QueryHash(normSQL)
-	p, err := Load(hash)
+	p, err := Load(hash, dbFingerprint)
 	if err != nil || len(p.Runs) == 0 {
 		return nil // No history to compare against
 	}

@@ -37,11 +37,16 @@ func (p *ollamaProvider) GenerateSQL(ctx context.Context, system, question strin
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("http call: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("ollama api returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -63,37 +68,38 @@ func (p *ollamaProvider) GenerateSQL(ctx context.Context, system, question strin
 }
 
 func (p *ollamaProvider) GenerateSQLStream(ctx context.Context, system, question string) (<-chan string, error) {
-	ch := make(chan string)
+	body := ollamaRequest{
+		Model:    p.model,
+		Stream:   true,
+		Messages: []openAIMessage{{Role: "system", Content: system}, {Role: "user", Content: question}},
+		Temp:     0.1,
+	}
 
+	payload, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("marshal: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", p.baseURL+"/chat/completions", bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "text/event-stream")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http call: %w", err)
+	}
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		return nil, fmt.Errorf("ollama api returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	ch := make(chan string)
 	go func() {
 		defer close(ch)
-
-		body := ollamaRequest{
-			Model:    p.model,
-			Stream:   true,
-			Messages: []openAIMessage{{Role: "system", Content: system}, {Role: "user", Content: question}},
-			Temp:     0.1,
-		}
-
-		payload, err := json.Marshal(body)
-		if err != nil {
-			ch <- fmt.Sprintf("Error: %v", err)
-			return
-		}
-
-		req, err := http.NewRequestWithContext(ctx, "POST", p.baseURL+"/chat/completions", bytes.NewReader(payload))
-		if err != nil {
-			ch <- fmt.Sprintf("Error: %v", err)
-			return
-		}
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Accept", "text/event-stream")
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			ch <- fmt.Sprintf("Error: %v", err)
-			return
-		}
 		defer resp.Body.Close()
 
 		scanner := bufio.NewScanner(resp.Body)
@@ -124,6 +130,11 @@ func (p *ollamaProvider) GenerateSQLStream(ctx context.Context, system, question
 					ch <- delta
 				}
 			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			// Scanner error means the stream ended prematurely.
+			_ = err
 		}
 	}()
 
