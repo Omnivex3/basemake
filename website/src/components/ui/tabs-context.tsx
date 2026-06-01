@@ -1,1 +1,0 @@
-export { TabsProvider } from './tabs'
