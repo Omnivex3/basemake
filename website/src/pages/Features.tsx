@@ -1,6 +1,4 @@
-import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
 import {
   BrainIcon, BoltIcon, DatabaseIcon, ShieldIcon,
   CompareIcon, EyeIcon,
@@ -124,16 +122,6 @@ export default function Features() {
                 basemake replaces 3-4 separate tools with a single 15 MB binary.
               </p>
               <div className="flex flex-wrap justify-center gap-4">
-                <Link to="/docs/quickstart">
-                  <Button size="lg" className="rounded-full bg-foreground text-primary-foreground hover:bg-foreground/90 shadow-lg shadow-foreground/10 px-8 h-12 text-base font-semibold">
-                    Get Started
-                  </Button>
-                </Link>
-                <Link to="/pricing">
-                  <Button size="lg" variant="outline" className="rounded-full border-border text-muted-foreground hover:bg-muted hover:text-foreground px-8 h-12 text-base font-semibold">
-                    See Pricing
-                  </Button>
-                </Link>
               </div>
             </motion.div>
           </motion.div>
@@ -232,32 +220,6 @@ export default function Features() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="border-t border-border/50 bg-muted/30 py-24">
-        <div className="mx-auto max-w-6xl px-6 text-center">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}>
-            <motion.div variants={fadeUp}>
-              <h2 className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground mb-4">
-                Ready to ship faster?
-              </h2>
-              <p className="text-muted-foreground text-lg mb-10 max-w-md mx-auto">
-                Download now. 15 MB binary, zero dependencies, one command to start.
-              </p>
-            </motion.div>
-            <motion.div variants={fadeUp} custom={1} className="flex flex-wrap justify-center gap-4">
-              <Link to="/docs/quickstart">
-                <Button size="lg" className="rounded-full bg-foreground text-primary-foreground hover:bg-foreground/90 shadow-lg shadow-foreground/10 px-8 h-12 text-base font-semibold">
-                  Get Started
-                </Button>
-              </Link>
-              <Link to="/pricing">
-                <Button size="lg" variant="outline" className="rounded-full border-border text-muted-foreground hover:bg-muted hover:text-foreground px-8 h-12 text-base font-semibold">
-                  See Pricing
-                </Button>
-              </Link>
-            </motion.div>
-          </motion.div>
-        </div>
       </section>
     </div>
   )

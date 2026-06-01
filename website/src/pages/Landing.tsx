@@ -1,13 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import {
-  DatabaseIcon, BrainIcon, TerminalIcon, PromptIcon,
-  BoltIcon, CompareIcon, EyeIcon, ShieldIcon, CubeIcon,
-} from '@/components/icons'
-import TiltCard from '@/components/TiltCard'
 
-/* ── animation helpers ── */
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   visible: (i: number = 0) => ({
@@ -20,7 +14,6 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.08 } },
 }
 
-/* ── section label ── */
 function Label({ children }: { children: string }) {
   return (
     <div className="flex items-center gap-3 mb-6">
@@ -29,40 +22,6 @@ function Label({ children }: { children: string }) {
     </div>
   )
 }
-
-/* ── features data ── */
-const features = [
-  {
-    icon: BrainIcon,
-    title: "Natural Language → SQL",
-    desc: "Describe what you need in plain English. basemake generates production-ready SQL — with the right dialect, joins, and filtering — every time.",
-  },
-  {
-    icon: DatabaseIcon,
-    title: "Multi-Dialect",
-    desc: "PostgreSQL, MySQL, SQLite. Plus MariaDB and TimescaleDB via wire-compatible drivers. One tool, same interface. The query you wrote for Postgres just works on SQLite.",
-  },
-  {
-    icon: ShieldIcon,
-    title: "CI/CD Gate",
-    desc: "`basemake check` exits 0, 1, or 2. Plug it into your pipeline. Block slow queries, detect dangerous patterns, enforce performance budgets.",
-  },
-  {
-    icon: BoltIcon,
-    title: "Index Recommendations",
-    desc: "Not just \"add an index.\" It tells you which columns, in what order, and why. Apply with one command or review the diff first.",
-  },
-  {
-    icon: CompareIcon,
-    title: "Schema Diffing",
-    desc: "Compare dev, staging, and prod in seconds. Catch drift before it becomes an incident. Works offline, no server needed.",
-  },
-  {
-    icon: EyeIcon,
-    title: "Query Monitoring",
-    desc: "Schedule recurring checks. Get alerted when a query slows down. Track regressions over time — built in, no Datadog bill.",
-  },
-]
 
 export default function Landing() {
   return (
@@ -292,7 +251,7 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ─── WHY vs ALTERNATIVES ─── */}
+      {/* ─── DESIGN ─── */}
       <section className="py-24 border-b border-white/[0.06]">
         <div className="mx-auto max-w-6xl px-6">
           <motion.div
@@ -300,79 +259,16 @@ export default function Landing() {
             whileInView="visible"
             viewport={{ once: true }}
             variants={stagger}
-            className="mb-16"
           >
             <motion.div variants={fadeUp}>
-              <Label>Why basemake</Label>
               <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-                Not another GUI client
+                Design
               </h2>
               <p className="text-white/40 max-w-xl text-lg">
-                Every database already comes with a GUI. basemake lives where you work — the terminal, the pipeline, the CI runner.
+                Written in Go. Single binary, zero runtime dependencies. Interface-based drivers with a registry pattern. PlanCheck runs before every NL query with zero side effects. Observe module surfaces one signal per startup — or stays silent.
               </p>
             </motion.div>
           </motion.div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {[
-              {
-                title: "vs DataGrip / TablePlus",
-                points: [
-                  "€109–200/yr per seat — basemake is $0 for the CLI, $15/mo for CI/CD gates",
-                  "GUI-only — can't run in a GitHub Action or SSH session",
-                  "No built-in performance analysis or index recommendations",
-                  "basemake gives you all of this in a 15 MB binary",
-                ],
-              },
-              {
-                title: "vs raw psql / mysql",
-                points: [
-                  "You still type SQL — basemake generates it from natural language",
-                  "No .explain integration — basemake surfaces slow scans automatically",
-                  "No CI/CD gate — basemake check exits 0/1/2 for your pipeline",
-                  "No index suggestions, no budget policies, no schema diffing",
-                ],
-              },
-              {
-                title: "vs AI chat (ChatGPT, Claude)",
-                points: [
-                  "You copy-paste schema manually — basemake introspects it automatically",
-                  "No query execution — basemake runs the SQL and shows results",
-                  "No context window issues — basemake knows your full schema",
-                  "No data leaks — basemake keeps everything local with BYOK",
-                ],
-              },
-              {
-                title: "vs hosted query tools (Datadog, New Relic)",
-                points: [
-                  "$15+/host/mo — basemake watch is built in, no per-host pricing",
-                  "Requires agents and network egress — basemake runs locally",
-                  "Not designed for ad-hoc queries — basemake is a REPL first",
-                  "basemake replaces 3-4 separate tools with one binary",
-                ],
-              },
-            ].map((group, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: i * 0.1 }}
-              >
-                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-7 h-full">
-                  <h3 className="text-base font-semibold mb-4 text-white/70">{group.title}</h3>
-                  <ul className="space-y-3">
-                    {group.points.map((p, j) => (
-                      <li key={j} className="flex items-start gap-3 text-sm text-white/40">
-                        <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[#ff3131]/60" />
-                        {p}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -507,19 +403,9 @@ export default function Landing() {
                 Download now. 15 MB binary, zero dependencies, one command to start.
               </p>
             </motion.div>
-            <motion.div variants={fadeUp} custom={1} className="flex flex-wrap justify-center gap-4">
-              <Link to="/docs/quickstart">
-                <Button size="lg" variant="destructive" className="bg-[#ff3131] hover:bg-[#d90c18] text-white shadow-lg shadow-[#ff3131]/20">
-                  Get Started
-                </Button>
-              </Link>
-              <Link to="/pricing">
-                <Button size="lg" variant="outline" className="border-white/20 text-white/80 hover:bg-white/10 hover:text-white">See Pricing</Button>
-              </Link>
-            </motion.div>
-            <motion.p variants={fadeUp} custom={2} className="mt-6 text-xs text-white/20">
-              macOS · Linux · Windows
-            </motion.p>
+              <motion.p variants={fadeUp} custom={1} className="mt-6 text-xs text-white/20">
+                macOS · Linux · Windows
+              </motion.p>
           </motion.div>
         </div>
       </section>

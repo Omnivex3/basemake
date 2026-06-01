@@ -2,8 +2,7 @@ import { Link } from "react-router-dom"
 
 const footerLinks = {
   Product: [
-    { label: "Features", to: "/#features" },
-    { label: "Pricing", to: "/pricing" },
+    { label: "Features", to: "/features" },
     { label: "Docs", to: "/docs/quickstart" },
     { label: "Changelog", to: "/docs/changelog" },
   ],
@@ -14,8 +13,8 @@ const footerLinks = {
     { label: "CI/CD", to: "/docs/ci-cd" },
     { label: "FAQ", to: "/docs/faq" },
   ],
-  Company: [
-    { label: "License", to: "/docs/licensing" },
+  Resources: [
+    { label: "Docs", to: "/docs/quickstart" },
   ],
 }
 

@@ -1,6 +1,6 @@
 # basemake Documentation
 
-Welcome to the comprehensive documentation for **basemake** — the AI-powered database CLI.
+Documentation for **basemake** — the AI-powered database CLI.
 
 ## Quick Navigation
 
@@ -13,7 +13,6 @@ Welcome to the comprehensive documentation for **basemake** — the AI-powered d
 | [Output Formats](output-formats.md) | Table, JSON, CSV, TSV formatting rules |
 | [AI Integration](ai-integration.md) | NL→SQL generation, OpenAI API, model selection |
 | [Guardrails](guardrails.md) | SELECT * protection, schema truncation, FK context |
-| [Payment Flow](payment-flow.md) | Lemon Squeezy webhook, license key generation, Vercel deploy |
 | [Operations](operations.md) | Self-hosted runner, CI/CD pipeline, pre-commit hooks |
 | [Development](development.md) | Building, testing, CI/CD, adding drivers/commands |
 
@@ -84,5 +83,4 @@ Server Data:
 | CI build targets | 1 (push), 5 (tags) — self-hosted runner |
 | Go version | 1.26 |
 | Lines of Go | ~6,700 |
-| Payment | Lemon Squeezy → Vercel → Resend |
 | External deps | 4 (cobra, lib/pq, go-sql-driver/mysql, modernc.org/sqlite) |

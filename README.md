@@ -1,39 +1,27 @@
-# basemake — a DBA that checks its own work
+# basemake — DBA that checks its own work
 
-[![Release](https://img.shields.io/github/v/release/DynamicKarabo/basemake?style=flat&label=release)](https://github.com/DynamicKarabo/basemake/releases)
-[![CI](https://github.com/DynamicKarabo/basemake/actions/workflows/release.yml/badge.svg)](https://github.com/DynamicKarabo/basemake/actions/workflows/release.yml)
+[![Release](https://img.shields.io/github/v/release/karabo-labs/basemake?style=flat&label=release)](https://github.com/karabo-labs/basemake/releases)
+[![CI](https://github.com/karabo-labs/basemake/actions/workflows/release.yml/badge.svg)](https://github.com/karabo-labs/basemake/actions/workflows/release.yml)
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat&logo=go)](https://go.dev)
-[![GitHub Downloads](https://img.shields.io/github/downloads/DynamicKarabo/basemake/total?style=flat&label=downloads)](https://github.com/DynamicKarabo/basemake/releases)
 
-> **All local. All private. All yours.**  
-> Talk to your database in plain English. No data leaves your machine.
-
-Most database AI tools are translators: schema in, SQL out. They don't know if the query they just wrote is slow, whether an index was dropped since last week, or if the plan changed since yesterday's deploy.
-
-Basemake is different. It watches your database over time, remembers how queries behaved before, and checks its own work before showing you results. It's a DBA that double-checks every query, learns from each run, and stays quiet when everything's fine.
+A CLI tool that wraps an AI around your database with memory. It translates natural language to SQL, profiles every query it runs, detects plan regressions over time, and checks its own work before executing.
 
 ![basemake demo](assets/basemake-demo.gif)
 
-## The real product isn't chat — it's memory
+Basemake maintains a **profile history** for every query — storing execution plans, timings, row counts, and plan changes. That history powers four capabilities that get better the longer you use the tool:
 
-Basemake doesn't just translate questions into SQL. It builds a **profile history** for every query you run — storing execution plans, timings, row counts, plan changes. That history powers four capabilities that get smarter the longer you use the tool:
+| Capability | What it does |
+|------------|-------------|
+| **Schema** | Knows your tables, columns, types, foreign keys, indexes |
+| **Profile** | Remembers every query's plan and timing across runs |
+| **PlanCheck** | Compares current plan against history before executing |
+| **Observe** | Scans all profiles on REPL startup, surfaces what changed |
 
-| Capability | What it does | Why it matters |
-|---|---|---|
-| **Schema** | Knows your tables, columns, types, foreign keys, indexes | Generates accurate SQL with correct joins, not guesswork |
-| **Profile** | Remembers every query's plan and timing across runs | Detects when a query changed behavior — even if you didn't ask |
-| **PlanCheck** | Compares current plan against history before executing | Warns you if an index was dropped or the plan regressed *before* you run the query |
-| **Observe** | Scans all profiles on REPL startup, surfaces the one thing worth knowing | Your database talks to you before you type anything — or stays silent if nothing's wrong |
-
-These aren't features bolted on top of a chatbot. They're four tools that know your database's reality — not just its structure, but its behavior over time.
-
-The AI uses all four. It checks its work. It notices regressions. It taps you on the shoulder when something changed. And when nothing's wrong, it stays out of your way.
-
----
+The AI uses all four. It checks its work, notices regressions, and flags changes. When nothing's wrong, it stays quiet.
 
 ### What this looks like in practice
 
-**You ask a question. Basemake generates SQL, then checks the plan:**
+**A question goes through AI, then PlanCheck catches a regression before execution:**
 
 ```
 You > show me orders with status 0
@@ -44,9 +32,9 @@ You > show me orders with status 0
 Run anyway? [Y/n]:
 ```
 
-The AI caught that the plan changed before executing — because it compared the current plan against the last time this query ran. It warned you. You chose whether to proceed.
+The AI caught the plan change before executing — because it compared against the profile history.
 
-**You start the REPL. Basemake surfaces what changed:**
+**REPL startup surfaces observations:**
 
 ```
 📦 1 tables — schema cached ✅
@@ -61,20 +49,11 @@ Type .help for commands  ·  ask your question or enter SQL
 >
 ```
 
-It noticed a plan regression while you weren't looking. One line. Then it got out of the way.
+One line. Then it gets out of the way.
 
-**Nothing changed. Basemake says nothing:**
+**Nothing changed — says nothing:**
 
-No "everything looks good!" confirmation. No dashboard. Silence is the signal that the database is healthy.
-
----
-
-### What it is not
-
-- Not a chatbot. The AI doesn't wait for questions — it notices things and surfaces the most important one.
-- Not a dashboard. A dashboard shows you everything. Basemake shows you the one thing that changed.
-- Not a SaaS. Your queries, profiles, and history stay on your machine. Bring your own API key or run Ollama locally.
-- Not a toy. It handles PostgreSQL, MySQL, and SQLite with real query profiling, plan parsing, CI/CD gating, and team sync.
+No confirmation. No dashboard. Silence is the signal that the database is healthy.
 
 ## Quick Start
 
@@ -103,7 +82,7 @@ You > SELECT * FROM or[Tab] → SELECT * FROM orders
 
 # Cancel a running query with Ctrl+C or Escape
 You > SELECT * FROM really_big_table
-⏹️  Query cancelled
+⏹  Query cancelled
 
 # Save queries as named bookmarks
 You > .save weekly-report
@@ -132,38 +111,38 @@ basemake init   # one-command setup wizard
 
 ```bash
 # Linux amd64
-curl -sfL https://github.com/DynamicKarabo/basemake/releases/latest/download/basemake-linux-amd64.tar.gz | tar xz
+curl -sfL https://github.com/karabo-labs/basemake/releases/latest/download/basemake-linux-amd64.tar.gz | tar xz
 sudo mv basemake /usr/local/bin/
 
 # macOS (Apple Silicon)
-curl -sfL https://github.com/DynamicKarabo/basemake/releases/latest/download/basemake-darwin-arm64.tar.gz | tar xz
+curl -sfL https://github.com/karabo-labs/basemake/releases/latest/download/basemake-darwin-arm64.tar.gz | tar xz
 sudo mv basemake /usr/local/bin/
 
 # macOS (Intel)
-curl -sfL https://github.com/DynamicKarabo/basemake/releases/latest/download/basemake-darwin-amd64.tar.gz | tar xz
+curl -sfL https://github.com/karabo-labs/basemake/releases/latest/download/basemake-darwin-amd64.tar.gz | tar xz
 sudo mv basemake /usr/local/bin/
 ```
 
 ### Via Go
 
 ```bash
-go install github.com/DynamicKarabo/basemake@latest
+go install github.com/karabo-labs/basemake@latest
 ```
 
 ### Docker
 
 ```bash
-docker pull ghcr.io/dynamickarabo/basemake:latest
-docker run --rm ghcr.io/dynamickarabo/basemake --help
+docker pull ghcr.io/karabo-labs/basemake:latest
+docker run --rm ghcr.io/karabo-labs/basemake --help
 ```
 
 ## AI Providers
 
-basemake works with three AI providers. Choose the one that fits your workflow.
+Works with four AI providers:
 
-### Ollama (Local — recommended)
+### Ollama (Local)
 
-Zero API costs, zero data leaves your machine. Requires [Ollama](https://ollama.ai) running locally.
+Zero API costs, no data leaves your machine. Requires [Ollama](https://ollama.ai) running locally.
 
 ```bash
 basemake config set ai_provider ollama
@@ -315,7 +294,7 @@ jobs:
 
       - name: Install basemake
         run: |
-          curl -sfL https://github.com/DynamicKarabo/basemake/releases/latest/download/basemake-linux-amd64.tar.gz | tar xz
+          curl -sfL https://github.com/karabo-labs/basemake/releases/latest/download/basemake-linux-amd64.tar.gz | tar xz
           sudo mv basemake /usr/local/bin/
 
       - name: Run migrations
@@ -449,8 +428,8 @@ basemake completion powershell | Out-String | Invoke-Expression  # PowerShell
 
 | Database | Driver | Connection String |
 |----------|--------|-------------------|
-| PostgreSQL | `lib/pq` | `postgres://user:pass@host:5432/dbname` |
-| MySQL | `go-sql-driver/mysql` | `mysql://user:pass@host:3306/dbname` |
+| PostgreSQL | `lib/pq` | `postgres://user:***@host:5432/dbname` |
+| MySQL | `go-sql-driver/mysql` | `mysql://user:***@host:3306/dbname` |
 | SQLite | `modernc.org/sqlite` | `sqlite:/path/to/file.db` |
 
 ## Documentation

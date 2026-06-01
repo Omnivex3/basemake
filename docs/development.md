@@ -10,7 +10,7 @@
 
 ```bash
 # Clone
-git clone https://github.com/DynamicKarabo/basemake.git
+git clone https://github.com/karabo-labs/basemake.git
 cd basemake
 
 # Build

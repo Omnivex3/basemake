@@ -124,33 +124,7 @@ export default function FAQ() {
           </P>
         </FAQItem>
 
-        <FAQItem question="How is the free tier different from Pro?">
-          <P>
-            The <strong className="text-foreground">Free tier</strong> gives you full access to
-            basemake's core CLI — REPL mode, natural language queries, and local
-            configuration. It's designed for individual developers and personal projects.
-          </P>
-          <P>
-            <strong className="text-foreground">Pro</strong> adds CI/CD integration with{' '}
-            <Code>basemake check</Code>, custom check policies, budget profiles, index
-            recommendations, and schema diffing. It's designed for professional developers
-            who need to gate SQL quality in their pipelines.
-          </P>
-          <P>
-            <strong className="text-foreground">Team</strong> adds the Team Server — shared AI
-            proxy and caching (40-60% cost savings), RBAC, audit logging, and Slack/Teams
-            integrations. It's designed for organizations.
-          </P>
-          <P>
-            See the{' '}
-            <Link to="/docs/licensing" className="text-[#ff3131] hover:underline">
-              Licensing page
-            </Link>{' '}
-            for pricing details.
-          </P>
-        </FAQItem>
-
-        <FAQItem question="How does Bring Your Own Key (BYOK) work?">
+        <FAQItem question="What does basemake do?">
           <P>
             basemake does not charge per-token or bundle AI credits. You configure
             basemake with your own API key from OpenAI, Anthropic, OpenCode, or a local

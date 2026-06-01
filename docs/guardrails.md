@@ -286,53 +286,6 @@ User Input (NL or SQL)
 
 ---
 
-## 6. Tier Gating via `requireLicense()`
-
-Guardrails and schema features are available at all tiers (including Free), but some **diagnosis features** are gated.
-
-### `requireLicense()` mechanics
-
-Located in `cmd/license.go`, this helper checks the configured license key and feature tier:
-
-```go
-func requireLicense(feature license.Feature) bool {
-    // 1. Load config — if no key, print error and return false
-    // 2. Validate key via license.Validate() — checks HMAC signature
-    // 3. Check HasFeature() — verifies tier allows this feature
-}
-```
-
-### Feature-to-Tier Mapping
-
-| Feature | Free | Pro | Team |
-|---------|------|-----|------|
-| `.explain` (query plan) | ✅ | ✅ | ✅ |
-| `.analyze` (index recs) | ✅ | ✅ | ✅ |
-| TUI (`.repl`) | ✅ | ✅ | ✅ |
-| NL→SQL (basemake query) | ✅ | ✅ | ✅ |
-| Query execution | ✅ | ✅ | ✅ |
-| SELECT * guardrail | ✅ | ✅ | ✅ |
-| Schema prompt truncation | ✅ | ✅ | ✅ |
-| **basemake check** (CI/CD) | ❌ | ✅ | ✅ |
-| **basemake budget** (policy) | ❌ | ✅ | ✅ |
-| **basemake watch** (monitoring) | ❌ | ✅ | ✅ |
-| **basemake diff** (schema diff) | ❌ | ✅ | ✅ |
-| **basemake index apply** | ❌ | ✅ | ✅ |
-| **basemake server** (team sync) | ❌ | ❌ | ✅ |
-
-### Free Tier = Diagnosis Only
-
-Free users get full read-only tooling:
-- EXPLAIN query plans
-- Index recommendations via `.analyze`
-- NL→SQL AI generation (with their own API key)
-- SELECT * guardrails (safety, not monetized)
-- Schema introspection and caching
-
-Pro- and Team-only features are the **write/apply** commands: `check`, `budget`, `watch`, `diff`, `index apply`, `server`.
-
----
-
 ## 7. Schema Cache
 
 The schema is cached locally as JSON to avoid repeated introspection:

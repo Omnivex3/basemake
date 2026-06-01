@@ -23,7 +23,7 @@ To reduce reliance on GitHub-hosted runners for heavy builds, a self-hosted runn
 |--------|-------|
 | **Runner user** | `gh-runner` |
 | **Installation path** | `/home/gh-runner/actions-runner` |
-| **Service name** | `actions.runner.DynamicKarabo-basemake.basemake-runner.service` |
+| **Service name** | `actions.runner.karabo-labs-basemake.basemake-runner.service` |
 | **Labels** | `[self-hosted, linux, x64]` |
 | **Docker access** | Via `docker` group membership |
 
@@ -32,19 +32,19 @@ To reduce reliance on GitHub-hosted runners for heavy builds, a self-hosted runn
 Check if the service is running:
 
 ```bash
-sudo systemctl status actions.runner.DynamicKarabo-basemake.basemake-runner.service
+sudo systemctl status actions.runner.karabo-labs-basemake.basemake-runner.service
 ```
 
 View recent logs:
 
 ```bash
-journalctl -u actions.runner.DynamicKarabo-basemake.basemake-runner.service -n 50 -f
+journalctl -u actions.runner.karabo-labs-basemake.basemake-runner.service -n 50 -f
 ```
 
 Check the runner's registration and status from GitHub CLI:
 
 ```bash
-gh run list --repo DynamicKarabo/basemake --limit 10
+gh run list --repo karabo-labs/basemake --limit 10
 ```
 
 ### Restarting the Runner
@@ -167,55 +167,6 @@ On a typical PR, only the lint and test jobs consume GitHub Actions minutes (~2 
 
 ---
 
-## License Key Verification
-
-The dev secret for license verification is compiled directly into the binary, enabling fully offline verification without contacting a license server.
-
-### How It Works
-
-File: `internal/license/license.go`
-
-```go
-var hmacSecret = []byte("bmk-v1-2026-secret-change-in-production")
-
-func Generate(tier Tier, email string, duration time.Duration) (string, error) {
-    payload := fmt.Sprintf("%s:%s", tier, email)
-    mac := hmac.New(sha256.New, hmacSecret)
-    mac.Write([]byte(payload))
-    sig := hex.EncodeToString(mac.Sum(nil))
-    // ...
-}
-
-func Validate(key string) (*License, error) {
-    // Parses and verifies HMAC signature client-side
-}
-```
-
-### Key Format
-
-```
-bmk_<tier>_<base64(email)>_<hmac-hex>
-```
-
-Example: `bmk_pro_dXNlckBleGFtcGxlLmNvbQ==_a1b2c3d4e5f6...`
-
-### Tier System
-
-| Tier | Features |
-|------|----------|
-| **free** | No key needed — full tool access |
-| **pro** | `check`, `budget`, `watch`, `diff`, `index-apply` |
-| **team** | All pro features + `server` (team sync) |
-
-### Security Notes
-
-- **v1**: Uses symmetric HMAC (same key for sign + verify). The compiled-in secret is sufficient for open-source binaries. Customers who purchase get a unique signing key.
-- **v2 (planned)**: Will switch to asymmetric crypto (Ed25519) so the binary only contains a public verification key.
-- **Expiry**: v1 keys are perpetual. Expiry is enforced server-side by key re-issuance rather than embedded timestamps.
-- The secret is a Go `var` and can be overridden at runtime via `license.SetHMACSecret()` for testing or server-side use.
-
----
-
 ## Pre-Commit Hooks
 
 Local development quality gates are enforced via a Git pre-commit hook in `.githooks/pre-commit`.
@@ -311,16 +262,16 @@ Both use `tmpfs` for data, so they're purely in-memory. Start with `docker compo
 
 ```bash
 # Runner status
-sudo systemctl status actions.runner.DynamicKarabo-basemake.basemake-runner.service
+sudo systemctl status actions.runner.karabo-labs-basemake.basemake-runner.service
 
 # Runner logs
-journalctl -u actions.runner.DynamicKarabo-basemake.basemake-runner.service -f
+journalctl -u actions.runner.karabo-labs-basemake.basemake-runner.service -f
 
 # Restart runner
 cd /home/gh-runner/actions-runner && sudo ./svc.sh stop && sudo ./svc.sh start
 
 # View recent workflow runs
-gh run list --repo DynamicKarabo/basemake --limit 10
+gh run list --repo karabo-labs/basemake --limit 10
 
 # Install pre-commit hooks (local dev)
 make hooks
