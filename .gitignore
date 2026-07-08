@@ -1,5 +1,6 @@
 basemake
 basemake_new
+dbai
 /basemake-demo.gif
 *.test
 record-with-size.py
@@ -7,3 +8,4 @@ coverage.out
 coverage.html
 release/
 .vercel
+stress/results/

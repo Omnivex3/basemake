@@ -1,4 +1,0 @@
-Latest 2 query events (server: http://localhost:9876)
-
-  2026-05-18T20:21:17Z  [SELECT * FROM stress_orders LIMIT 5]  150ms  hermes
-  2026-05-18T20:21:12Z  [SELECT 1]  50ms  stress-test
